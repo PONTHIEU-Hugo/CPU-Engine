@@ -1,9 +1,12 @@
 #include "engine.h"
 #include <stdlib.h>
 #include <SDL3/SDL_events.h>
+#include <windows.h>
 //Students can change whever they want in this file
 
 #define STB_IMAGE_IMPLEMENTATION
+#include <iostream>
+
 #include "stb_image.h"
 #include <vector>
 #include <glm/mat4x4.hpp>
@@ -47,6 +50,8 @@ void resetFire()
     }
 }
 
+static std::vector<Triangle> v_triangles;
+static Triangle* main;
 void Engine::init()
 {
     printf("Init engine \n");
@@ -71,6 +76,10 @@ void Engine::init()
     }
     free(data);
     resetFire();
+    v_triangles.push_back({0.0f, 0.0f, { {10.0f, 100.0f, }, { 50.0f, 10.0f}, {20.0f, 10.0f} }});
+    v_triangles.push_back({100.0f, 0.0f, { {10.0f, 100.0f}, { 50.0f, 10.0f}, {20.0f, 10.0f} }});
+    v_triangles.push_back({100.0f, 100.0f, { {10.0f, 100.0f}, { 50.0f, 10.0f}, {20.0f, 10.0f} }});
+    main = &v_triangles[0];
 }
 
 void Engine::handleEvent(const SDL_Event& event)
@@ -79,8 +88,52 @@ void Engine::handleEvent(const SDL_Event& event)
     {
         if (event.key.key == SDLK_SPACE)
         {
-            //We reset the fire on space bar down
             resetFire();
+        }
+    }
+}
+
+void DrawHorizontalLine(FinalFrameBuffer& frameBufferOut, int32_t startX, int32_t endX, uint32_t y)
+{
+    for (int i = 0; i < abs(endX - startX); i++)
+    {
+         frameBufferOut.put_pixel(startX + i, y, 0xFFFFFF);
+    }
+}
+void Engine::Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangle>& triangles)
+{
+    for (int i = 0; i < triangles.size(); i++)
+    {
+        glm::vec2 p1 = {triangles[i].vertices[0].x , triangles[i].vertices[0].y};
+        glm::vec2 p2 = {triangles[i].vertices[1].x , triangles[i].vertices[1].y};
+        glm::vec2 p3 = {triangles[i].vertices[2].x , triangles[i].vertices[2].y};
+        
+        if (p1.y > p2.y) std::swap(p1, p2);
+        if (p1.y > p3.y) std::swap(p1, p3);
+        if (p2.y > p3.y) std::swap(p2, p3);
+
+        if (p1.y == p3.y) return;
+
+        for (int y = (int)p1.y; y < (int)p2.y; ++y) 
+        {
+            float t1 = ((float)y - p1.y) / (p3.y - p1.y);
+            float t2 = ((float)y - p1.y) / (p2.y - p1.y);
+        
+            int32_t xStart = int32_t(p1.x + (p3.x - p1.x) * t1);
+            int32_t xEnd   = int32_t(p1.x + (p2.x - p1.x) * t2);
+        
+            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y);
+        }
+
+        for (int y = (int)p2.y; y <= (int)p3.y; ++y) 
+        {
+            float t1 = ((float)y - p1.y) / (p3.y - p1.y);
+            float t2 = ((float)y - p2.y) / (p3.y - p2.y);
+        
+            int32_t xStart = int32_t(p1.x + (p3.x - p1.x) * t1);
+            int32_t xEnd   = int32_t(p2.x + (p3.x - p2.x) * t2);
+        
+            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y);
         }
     }
 }
@@ -126,6 +179,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
                 frameBufferOut.put_pixel(x, y, fire_palette[idx]);
         }
     }
+    Rasterization(frameBufferOut, v_triangles);
 }
 
 void Engine::destroy()
