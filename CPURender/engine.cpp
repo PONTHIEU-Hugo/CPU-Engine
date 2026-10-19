@@ -8,27 +8,15 @@
 #include <iostream>
 
 #include "stb_image.h"
-#include <vector>
 #include <glm/mat4x4.hpp>
-
 
 /* Doom fire variables and color palette */
 #define FIRE_W WIDTH
 #define FIRE_H HEIGHT
 
-#define FIRE_PALETTE_SIZE 37
-
 static uint8_t firePixels[FIRE_W * FIRE_H];
 
-static const uint32_t fire_palette[FIRE_PALETTE_SIZE] = {
-    0x070707, 0x1F0707, 0x2F0F07, 0x470F07, 0x571707, 0x671F07, 0x771F07,
-    0x8F2707, 0x9F2F07, 0xAF3F07, 0xBF4707, 0xC74707, 0xDF4F07, 0xDF5707,
-    0xDF5707, 0xD75F07, 0xD75F07, 0xD7670F, 0xCF6F0F, 0xCF770F, 0xCF7F0F,
-    0xCF8717, 0xC78717, 0xC78F17, 0xC7971F, 0xBF9F1F, 0xBF9F1F, 0xBFA727,
-    0xBFA727, 0xBFAF2F, 0xB7AF2F, 0xB7B72F, 0xB7B737, 0xCFCF6F, 0xDFDF9F,
-    0xEFEFC7, 0xFFFFFF
-};
-
+#include "core.h"
 
 struct PixelData {
     int width, height;
@@ -50,10 +38,12 @@ void resetFire()
     }
 }
 
-static std::vector<Triangle> v_triangles;
-static Triangle* main;
 void Engine::init()
 {
+    // RANDOM;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
     printf("Init engine \n");
     static int nbrChannel;
     unsigned char* data = stbi_load("Assets/doomguy.png", &doomFace.width, &doomFace.height, &nbrChannel, 4);
@@ -76,21 +66,14 @@ void Engine::init()
     }
     free(data);
     resetFire();
-    float scaleX = 20.0f;
-    float scaleY = 20.0f;
-    for (int j = 0; j < 6 ; j++)
-    {
-        for (int i = 0; i < 8 ; i++)
-        {
-            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0xFF03EF, { {-scaleX, -scaleY}, { -scaleX, scaleY}, {scaleX, -scaleY} }});
-            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0xFF03EF,{ {scaleX, -scaleY}, { scaleX, scaleY}, {-scaleX, scaleY} }});
-        
-            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0x000000, { {-scaleX, -scaleY}, { -scaleX, scaleY}, {scaleX, -scaleY} }});
-            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0x000000,{ {scaleX, -scaleY}, { scaleX, scaleY}, {-scaleX, scaleY} }});
-        
-        }
-    }
-    main = &v_triangles[0];
+    m_emitter = new Emitter({50.0f, 50.0f}, {0xFFFFF, 0x070707}, 1000);
+    m_emitter->Init();
+}
+
+void Engine::Update(float _dt)
+{
+    if ( m_emitter )
+        m_emitter->Update(_dt);
 }
 
 void Engine::handleEvent(const SDL_Event& event)
@@ -101,52 +84,10 @@ void Engine::handleEvent(const SDL_Event& event)
         {
             resetFire();
         }
-    }
-}
-
-void DrawHorizontalLine(FinalFrameBuffer& frameBufferOut, int32_t startX, int32_t endX, uint32_t y, uint32_t color)
-{
-    for (int i = 0; i < abs(endX - startX); i++)
-    {
-         frameBufferOut.put_pixel(startX + i, y, color);
-    }
-}
-void Engine::Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangle>& triangles)
-{
-    for (int i = 0; i < triangles.size(); i++)
-    {
-        glm::vec2 p1 = {triangles[i].vertices[0].x , triangles[i].vertices[0].y};
-        glm::vec2 p2 = {triangles[i].vertices[1].x , triangles[i].vertices[1].y};
-        glm::vec2 p3 = {triangles[i].vertices[2].x , triangles[i].vertices[2].y};
         
-        if (p1.y > p2.y) std::swap(p1, p2);
-        if (p1.y > p3.y) std::swap(p1, p3);
-        if (p2.y > p3.y) std::swap(p2, p3);
-
-        if (p1.y == p3.y) return;
-        
-        for (int y = (int)p1.y; y < (int)p2.y; ++y) 
+        if ( event.key.key == SDLK_P )
         {
-            float t1 = ((float)y - p1.y) / (p3.y - p1.y);
-            float t2 = ((float)y - p1.y) / (p2.y - p1.y);
-        
-            int32_t xStart = int32_t(p1.x + (p3.x - p1.x) * t1);
-            int32_t xEnd   = int32_t(p1.x + (p2.x - p1.x) * t2);
-        
-            if ( xStart > xEnd) std::swap(xStart, xEnd);
-            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y, triangles[i].color);
-        }
-
-        for (int y = (int)p2.y; y < (int)p3.y; ++y) 
-        {
-            float t1 = ((float)y - p1.y) / (p3.y - p1.y);
-            float t2 = ((float)y - p2.y) / (p3.y - p2.y);
-        
-            int32_t xStart = int32_t(p1.x + (p3.x - p1.x) * t1);
-            int32_t xEnd   = int32_t(p2.x + (p3.x - p2.x) * t2);
-        
-            if ( xStart > xEnd) std::swap(xStart, xEnd);
-            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y, triangles[i].color);
+            m_emitter->m_active = !m_emitter->m_active;
         }
     }
 }
@@ -192,7 +133,8 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
                 frameBufferOut.put_pixel(x, y, fire_palette[idx]);
         }
     }
-    Rasterization(frameBufferOut, v_triangles);
+    
+    m_emitter->Render(frameBufferOut);
 }
 
 void Engine::destroy()

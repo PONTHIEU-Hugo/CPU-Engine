@@ -141,11 +141,14 @@
   <ItemGroup>
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ParticleSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine.h" />
     <ClInclude Include="main.h" />
+    <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="core.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

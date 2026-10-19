@@ -3,20 +3,8 @@
 #include <vector>
 
 #include "main.h"
+#include "ParticleSystem.h"
 //Students can change whetever they want in this file
-
-struct Vertex
-{
-	float x, y;
-};
-
-struct Triangle
-{
-	float x, y;
-	uint32_t color;
-	std::vector<Vertex> vertices;
-	std::vector<uint8_t> indices;
-};
 
 union SDL_Event;
 
@@ -24,11 +12,11 @@ struct Engine {
 
 	void init();
 
+	void Update(float _dt);
 	void handleEvent(const SDL_Event& event);
-
-	void Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangle>& triangles);
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
 	void destroy();
 
+	Emitter* m_emitter;
 };
