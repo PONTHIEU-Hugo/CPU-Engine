@@ -76,9 +76,20 @@ void Engine::init()
     }
     free(data);
     resetFire();
-    v_triangles.push_back({0.0f, 0.0f, { {10.0f, 100.0f, }, { 50.0f, 10.0f}, {20.0f, 10.0f} }});
-    v_triangles.push_back({100.0f, 0.0f, { {10.0f, 100.0f}, { 50.0f, 10.0f}, {20.0f, 10.0f} }});
-    v_triangles.push_back({100.0f, 100.0f, { {10.0f, 100.0f}, { 50.0f, 10.0f}, {20.0f, 10.0f} }});
+    float scaleX = 20.0f;
+    float scaleY = 20.0f;
+    for (int j = 0; j < 6 ; j++)
+    {
+        for (int i = 0; i < 8 ; i++)
+        {
+            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0xFF03EF, { {-scaleX, -scaleY}, { -scaleX, scaleY}, {scaleX, -scaleY} }});
+            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0xFF03EF,{ {scaleX, -scaleY}, { scaleX, scaleY}, {-scaleX, scaleY} }});
+        
+            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0x000000, { {-scaleX, -scaleY}, { -scaleX, scaleY}, {scaleX, -scaleY} }});
+            v_triangles.push_back({scaleX + scaleX * 2.0f * i, scaleY + scaleY * 2.0f * j, 0x000000,{ {scaleX, -scaleY}, { scaleX, scaleY}, {-scaleX, scaleY} }});
+        
+        }
+    }
     main = &v_triangles[0];
 }
 
@@ -93,11 +104,11 @@ void Engine::handleEvent(const SDL_Event& event)
     }
 }
 
-void DrawHorizontalLine(FinalFrameBuffer& frameBufferOut, int32_t startX, int32_t endX, uint32_t y)
+void DrawHorizontalLine(FinalFrameBuffer& frameBufferOut, int32_t startX, int32_t endX, uint32_t y, uint32_t color)
 {
     for (int i = 0; i < abs(endX - startX); i++)
     {
-         frameBufferOut.put_pixel(startX + i, y, 0xFFFFFF);
+         frameBufferOut.put_pixel(startX + i, y, color);
     }
 }
 void Engine::Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangle>& triangles)
@@ -113,7 +124,7 @@ void Engine::Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangl
         if (p2.y > p3.y) std::swap(p2, p3);
 
         if (p1.y == p3.y) return;
-
+        
         for (int y = (int)p1.y; y < (int)p2.y; ++y) 
         {
             float t1 = ((float)y - p1.y) / (p3.y - p1.y);
@@ -122,10 +133,11 @@ void Engine::Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangl
             int32_t xStart = int32_t(p1.x + (p3.x - p1.x) * t1);
             int32_t xEnd   = int32_t(p1.x + (p2.x - p1.x) * t2);
         
-            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y);
+            if ( xStart > xEnd) std::swap(xStart, xEnd);
+            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y, triangles[i].color);
         }
 
-        for (int y = (int)p2.y; y <= (int)p3.y; ++y) 
+        for (int y = (int)p2.y; y < (int)p3.y; ++y) 
         {
             float t1 = ((float)y - p1.y) / (p3.y - p1.y);
             float t2 = ((float)y - p2.y) / (p3.y - p2.y);
@@ -133,7 +145,8 @@ void Engine::Rasterization(FinalFrameBuffer& frameBufferOut, std::vector<Triangl
             int32_t xStart = int32_t(p1.x + (p3.x - p1.x) * t1);
             int32_t xEnd   = int32_t(p2.x + (p3.x - p2.x) * t2);
         
-            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y);
+            if ( xStart > xEnd) std::swap(xStart, xEnd);
+            DrawHorizontalLine(frameBufferOut, xStart + triangles[i].x, xEnd + triangles[i].x, y + triangles[i].y, triangles[i].color);
         }
     }
 }

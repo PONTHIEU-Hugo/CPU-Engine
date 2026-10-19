@@ -8,12 +8,12 @@
 struct Vertex
 {
 	float x, y;
-	uint32_t color;
 };
 
 struct Triangle
 {
 	float x, y;
+	uint32_t color;
 	std::vector<Vertex> vertices;
 	std::vector<uint8_t> indices;
 };
