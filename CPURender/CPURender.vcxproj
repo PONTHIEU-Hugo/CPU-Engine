@@ -142,6 +142,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chrono.cpp" />
     <ClCompile Include="engine.cpp" />
+    <ClCompile Include="GeometryFactory.hpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />

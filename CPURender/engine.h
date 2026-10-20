@@ -25,6 +25,7 @@ private:
 	Pipeline m_pipeline;
 	std::vector<Vertex> m_triangle;
 	std::vector<Vertex> m_cube;
+	std::vector<Vertex> m_obj;
 	std::vector<Vertex> m_particleVertices;
 
 	Camera m_camera;

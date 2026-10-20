@@ -4,6 +4,7 @@
 #include <SDL3/SDL_events.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include "Chrono.h"
+#include "GeometryFactory.hpp"
 
 void Engine::init()
 {
@@ -53,6 +54,8 @@ void Engine::init()
 		m_cube.push_back({ pos[idx[i]], col[idx[i]] });
 	}
 
+	m_obj = GeometryFactory::LoadGeometry("Assets/singe.obj");
+	
 	m_pipeline.BindShader(BasicShader);
 
 	float aspect = float(WIDTH) / float(HEIGHT);
@@ -121,7 +124,11 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
 	
-	m_pipeline.BindVertexBuffer(&m_cube);
+	// m_pipeline.BindVertexBuffer(&m_cube);
+	// m_pipeline.BindUniforms(uniforms);
+	// m_pipeline.Draw();
+	
+	m_pipeline.BindVertexBuffer(&m_obj);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
 
