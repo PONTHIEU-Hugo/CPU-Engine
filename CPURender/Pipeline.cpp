@@ -40,6 +40,12 @@ void Pipeline::DrawTriangle(const Varyings& a, const Varyings& b, const Varyings
 	glm::vec3 v1 = glm::vec3(b.position) / b.position.w;
 	glm::vec3 v2 = glm::vec3(c.position) / c.position.w;
 
+	glm::vec3 vec1 = glm::vec3(b.position - a.position);
+	glm::vec3 vec2 = glm::vec3(c.position - a.position);
+
+	if (glm::cross(vec1, vec2).z < 0)
+		return;
+
 	glm::vec3 pixel0 = glm::vec3((v0.x * 0.5f + 0.5f) * WIDTH, (1.0f - (v0.y * 0.5f + 0.5f)) * HEIGHT, v0.z);
 	glm::vec3 pixel1 = glm::vec3((v1.x * 0.5f + 0.5f) * WIDTH, (1.0f - (v1.y * 0.5f + 0.5f)) * HEIGHT, v1.z);
 	glm::vec3 pixel2 = glm::vec3((v2.x * 0.5f + 0.5f) * WIDTH, (1.0f - (v2.y * 0.5f + 0.5f)) * HEIGHT, v2.z);
