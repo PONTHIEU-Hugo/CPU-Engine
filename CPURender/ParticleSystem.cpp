@@ -19,8 +19,13 @@ void Particle::Update(float _dt)
 
 void Emitter::Init()
 {
-    float size = 4.0f;
-    std::vector<Vertex> vertices = {{-size, size}, {0.0f, -size}, { size, size}};
+    float size = 1.0f;
+    std::vector<Vertex> vertices = {
+        {{-size, size, 0}, ToColor(0xFFFFFFFF)},
+        {{size, size, 0},  ToColor(0xFFFFFFFF)},
+        {{0.0f, -size, 0},  ToColor(0xFFFFFFFF)}
+    };
+    
     m_geo.vertices = vertices;
     for (int i = 0; i < m_nbrParticles; i++)
     {
@@ -40,16 +45,24 @@ void Emitter::Update(float _dt)
     }
 }
 
-void Emitter::Render(FinalFrameBuffer& frameBufferOut)
+void Emitter::Render(std::vector<Vertex>& _out)
 {
     for (auto& element : m_particles)
     {
         if (element.alive)
         {
-            m_geo.pos = element.pos;
-            int index = FIRE_PALETTE_SIZE * element.lifeSpan * element.lifeSpanMaxInv;
-            m_geo.color = (uint32_t)fire_palette[index];
-            Rasterization(frameBufferOut, m_geo);
+            float t = element.lifeSpan * element.lifeSpanMaxInv;
+            int index = (int)(t * (FIRE_PALETTE_SIZE - 1));
+            index = clamp(index, 0, FIRE_PALETTE_SIZE - 1);
+            vec3 color = ToColor(fire_palette[index]);
+            
+            for (const Vertex& base : m_geo.vertices)
+            {
+                Vertex v;
+                v.position = base.position + element.pos;
+                v.color = color;
+                _out.push_back(v);
+            }
         }
     }
 }
@@ -59,7 +72,7 @@ void Emitter::SpawnParticle(Particle& _particle)
     _particle.pos = m_origin;
     
     float angle = getRandomFloat(0.0f, 2.0f* pi<float>());
-    vec2 dir = vec2(cosf(angle), sinf(angle));
+    vec3 dir = vec3(cosf(angle), sinf(angle), 0.0f);
     float speed = getRandomFloat(2.0f, 15.0f);
     _particle.vel = dir * speed;
     
