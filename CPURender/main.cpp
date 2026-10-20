@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "main.h"
 #include "engine.h"
+#include <iostream>
+#include "Chrono.h"
 //Students cannot change anything in this file
 
 
@@ -72,7 +74,8 @@ int main(void) {
     bool isRunning = true;
     uint32_t frame = 1;
     FinalFrameBuffer frameBuffer;
-    
+    CHRONO;
+
 
     /* Frame loop */
     while (isRunning) {
@@ -101,14 +104,17 @@ int main(void) {
         SDL_RenderTexture(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
 
+        CHRONO->Update();
+        std::cout << CHRONO->ShowFPS() << std::endl;
+
         uint64_t end = SDL_GetPerformanceCounter();
 
         double elapsed = (double)(end - start) / (double)SDL_GetPerformanceFrequency();
 
         /* Cap the framerate to 60 FPS (16 milliseconds each frame) */
-        if (elapsed < target_frame) {
-            SDL_Delay((uint32_t)((target_frame - elapsed) * 1000.0));
-        }
+        //if (elapsed < target_frame) {
+        //    SDL_Delay((uint32_t)((target_frame - elapsed) * 1000.0));
+        //}
 
         frame++;
     }
