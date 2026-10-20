@@ -72,15 +72,11 @@ int main(void) {
     Engine engine;
     engine.init();
     bool isRunning = true;
-    uint32_t frame = 1;
     FinalFrameBuffer frameBuffer;
-    CHRONO;
-
+    CHRONO->SetFPSCap(60);
 
     /* Frame loop */
     while (isRunning) {
-        uint64_t start = SDL_GetPerformanceCounter();
-
         /* Poll events */
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
@@ -106,17 +102,6 @@ int main(void) {
 
         CHRONO->Update();
         std::cout << CHRONO->ShowFPS() << std::endl;
-
-        uint64_t end = SDL_GetPerformanceCounter();
-
-        double elapsed = (double)(end - start) / (double)SDL_GetPerformanceFrequency();
-
-        /* Cap the framerate to 60 FPS (16 milliseconds each frame) */
-        //if (elapsed < target_frame) {
-        //    SDL_Delay((uint32_t)((target_frame - elapsed) * 1000.0));
-        //}
-
-        frame++;
     }
 
     engine.destroy();

@@ -1,6 +1,7 @@
 #include "Chrono.h"
 #include <sstream>
 #include <iomanip>
+#include <SDL3/SDL_timer.h>
 
 Chrono* Chrono::s_pInstance = nullptr;
 
@@ -42,7 +43,7 @@ void Chrono::Restart()
 void Chrono::Update()
 {
 	auto now = std::chrono::steady_clock::now();
-	m_DeltaTime = std::chrono::duration<float>(now - m_LastPoint).count();
+	m_DeltaTime = std::chrono::duration<double>(now - m_LastPoint).count();
 	m_LastPoint = now;
 
 	m_Frame++;
@@ -53,6 +54,9 @@ void Chrono::Update()
 		m_Frame = 0;
 		m_BeginFPS = now;
 	}
+
+	if (m_DeltaTime < m_CapFPS && m_CapFPS > 0.f)
+		SDL_Delay((m_CapFPS - m_DeltaTime) * 1000);
 }
 
 std::string Chrono::GetCurrentTimeAsString() const
