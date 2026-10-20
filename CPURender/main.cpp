@@ -84,7 +84,7 @@ int main(void) {
             }
             engine.handleEvent(event);
         }
-        engine.Update((float)target_frame);
+        engine.Update();
         
         engine.renderFrame(frameBuffer);
 

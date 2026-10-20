@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <SDL3/SDL_events.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Chrono.h"
 //Students can change whever they want in this file
 
 void Engine::init()
@@ -25,10 +26,10 @@ void Engine::init()
 	m_emitter->Init();
 }
 
-void Engine::Update(float _dt)
+void Engine::Update()
 {
 	if (m_emitter != nullptr)
-		m_emitter->Update(_dt);
+		m_emitter->Update();
 }
 
 void Engine::handleEvent(const SDL_Event& event)
@@ -44,14 +45,12 @@ void Engine::handleEvent(const SDL_Event& event)
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 {
-	m_time += 1.0f / 60.0f; // faut faire un vrai delta time
-
 	frameBufferOut.clear(0x000000);
 	m_pipeline.ClearDepth();
 	m_pipeline.BindFrameBuffer(&frameBufferOut);
 
 	Uniforms uniforms;
-	mat4 model = rotate(mat4(1.0f), m_time, vec3(0, 1, 0));
+	mat4 model = rotate(mat4(1.0f), static_cast<float>(CHRONO->GetDeltaTime()), vec3(0, 1, 0));
 	uniforms.mvp = m_proj * m_view * model;
 	m_pipeline.BindVertexBuffer(&m_triangle);
 	m_pipeline.BindUniforms(uniforms);

@@ -14,7 +14,7 @@ struct Engine
 
 	void init();
 
-	void Update(float _dt);
+	void Update();
 	void handleEvent(const SDL_Event& event);
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
@@ -25,7 +25,7 @@ private:
 	Pipeline m_pipeline;
 	std::vector<Vertex> m_triangle;
 	std::vector<Vertex> m_particleVertices;
-	float m_time = 0.0f;
+	//float m_time = 0.0f;
 
 	mat4 m_view{ 1.0f };
 	mat4 m_proj{ 1.0f };

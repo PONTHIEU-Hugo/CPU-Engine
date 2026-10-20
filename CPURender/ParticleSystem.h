@@ -15,7 +15,7 @@ struct Particle
     float lifeSpanMaxInv;
     vec3 pos;
     vec3 vel;
-    void Update(float _dt);
+    void Update();
 };
 
 class Emitter
@@ -26,7 +26,7 @@ public:
     ~Emitter() = default;
     
     void Init();
-    void Update(float _dt);
+    void Update();
     void Render(std::vector<Vertex>& _out);
     
     bool m_active = true;

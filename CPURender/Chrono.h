@@ -32,8 +32,8 @@ public:
 
     void Update();
 
-    float GetDeltaTime() const { return m_DeltaTime; }
-    float GetTotalTime() const { return std::chrono::duration<float>(m_LastPoint - m_StartPoint).count(); }
+    double GetDeltaTime() const { return m_DeltaTime; }
+    double GetTotalTime() const { return std::chrono::duration<double>(m_LastPoint - m_StartPoint).count(); }
     
     std::string GetCurrentTimeAsString() const;
     std::string GetCurrentTimeAsStringWithMS() const;
