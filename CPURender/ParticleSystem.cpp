@@ -5,7 +5,7 @@
 #include "core.h"
 #include <glm/gtc/constants.hpp>
 
-void Particle::Update(float _dt, i32vec2& _colors)
+void Particle::Update(float _dt)
 {
     if ( alive == false )
         return;
@@ -19,7 +19,7 @@ void Particle::Update(float _dt, i32vec2& _colors)
 
 void Emitter::Init()
 {
-    float size = 2.5f;
+    float size = 4.0f;
     std::vector<Vertex> vertices = {{-size, size}, {0.0f, -size}, { size, size}};
     m_geo.vertices = vertices;
     for (int i = 0; i < m_nbrParticles; i++)
@@ -34,7 +34,7 @@ void Emitter::Update(float _dt)
 {
     for (auto& element : m_particles)
     {
-        element.Update(_dt, m_colors);
+        element.Update(_dt);
         if ( element.alive == false && m_active)
             SpawnParticle(element);
     }

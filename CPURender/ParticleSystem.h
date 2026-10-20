@@ -10,7 +10,7 @@ struct Particle
     float lifeSpanMaxInv;
     vec2 pos;
     vec2 vel;
-    void Update(float _dt, i32vec2& _color);
+    void Update(float _dt);
 };
 
 class Emitter
