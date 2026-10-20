@@ -2,10 +2,10 @@
 
 #include <vector>
 
+#include "Camera.h"
 #include "ParticleSystem.h"
 #include "main.h"
 #include "core.h"
-//Students can change whetever they want in this file
 
 union SDL_Event;
 
@@ -24,9 +24,12 @@ private:
 	Emitter* m_emitter = nullptr;
 	Pipeline m_pipeline;
 	std::vector<Vertex> m_triangle;
+	std::vector<Vertex> m_cube;
 	std::vector<Vertex> m_particleVertices;
 	float m_time = 0.0f;
 
-	mat4 m_view{ 1.0f };
-	mat4 m_proj{ 1.0f };
+	Camera m_camera;
+	vec3  m_camPos   = { 0.0f, 0.0f, 5.0f };
+	float m_camYaw = 0.0f; 
+	float m_camPitch = 0.0f;
 };
