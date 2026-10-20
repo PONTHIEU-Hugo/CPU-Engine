@@ -84,9 +84,8 @@ void Pipeline::DrawTriangle(const Varyings& a, const Varyings& b, const Varyings
 			frag.color = w0 * a.color + w1 * b.color + w2 * c.color;
 
 			glm::vec3 col = m_pixelShader(frag, m_uniforms);
-			col = glm::clamp(col, 0.0f, 1.0f);
 
-			m_frameBuffer->put_pixel(x, y, (int)(col.r * 255) << 16 | (int)(col.g * 255) << 8 | (int)(col.b * 255));
+			m_frameBuffer->put_pixel(x, y, (int)col.r << 16 | (int)col.g << 8 | (int)col.b);
 		}
 	}
 }
