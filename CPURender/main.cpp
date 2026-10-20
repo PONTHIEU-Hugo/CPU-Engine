@@ -24,8 +24,8 @@ int main(void) {
 
     window = SDL_CreateWindow(
         "Framebuffer",
-        WIDTH * 2,
-        HEIGHT * 2,
+        WIDTH * 4,
+        HEIGHT * 4,
         0
     );
 
@@ -84,7 +84,8 @@ int main(void) {
             }
             engine.handleEvent(event);
         }
-
+        engine.Update((float)target_frame);
+        
         engine.renderFrame(frameBuffer);
 
         /* Copy contents of the framebuffer to our SDL texture */
