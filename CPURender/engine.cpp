@@ -19,10 +19,10 @@ void Engine::init()
 
 	m_pipeline.BindShader(BasicShader);
 
-	m_view = lookAt(vec3(0, 0, 5), vec3(0, 0, 0), vec3(0, 1, 0));
+	m_view = lookAt(vec3(0, 0, 50), vec3(0, 0, 0), vec3(0, 1, 0));
 	m_proj = perspective(radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 	
-	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 0);
+	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 10);
 	m_emitter->Init();
 }
 
@@ -50,8 +50,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindFrameBuffer(&frameBufferOut);
 
 	Uniforms uniforms;
-	mat4 model = rotate(mat4(1.0f), static_cast<float>(CHRONO->GetDeltaTime()), vec3(0, 1, 0));
-	uniforms.mvp = m_proj * m_view * model;
+	uniforms.mvp = m_proj * m_view;
 	m_pipeline.BindVertexBuffer(&m_triangle);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
