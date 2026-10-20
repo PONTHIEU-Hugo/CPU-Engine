@@ -112,5 +112,7 @@ int main(void) {
     SDL_DestroyWindow(window);
     SDL_Quit();
 
+    CHRONO->Release();
+
     return EXIT_SUCCESS;
 }

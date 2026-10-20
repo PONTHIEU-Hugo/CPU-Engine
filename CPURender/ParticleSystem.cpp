@@ -11,7 +11,7 @@ void Particle::Update()
     if ( alive == false )
         return;
     
-    float dt = static_cast<float>(CHRONO->GetDeltaTime());
+    float dt = static_cast<float>(DELTA_TIME);
     pos += vel * dt;
     
     lifeSpan -= dt;

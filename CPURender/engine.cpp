@@ -50,7 +50,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindFrameBuffer(&frameBufferOut);
 
 	Uniforms uniforms;
-	mat4 model = rotate(mat4(1.0f), static_cast<float>(CHRONO->GetDeltaTime()), vec3(0, 1, 0));
+	mat4 model = rotate(mat4(1.0f), static_cast<float>(DELTA_TIME), vec3(0, 1, 0));
 	uniforms.mvp = m_proj * m_view * model;
 	m_pipeline.BindVertexBuffer(&m_triangle);
 	m_pipeline.BindUniforms(uniforms);
