@@ -1,6 +1,7 @@
 #pragma once
 #include <stdint.h>
 #include <stddef.h>
+#include <random>
 
 //Students cannot change anything in this file
 
@@ -28,7 +29,7 @@ struct FinalFrameBuffer {
     }
 
     /* Clear the entire framebuffer with a unique color */
-    void clear(uint8_t color) {
+    void clear(uint32_t color) {
         for (uint32_t i = 0; i < WIDTH * HEIGHT; i++) {
             colorData[i] = color;
         }
