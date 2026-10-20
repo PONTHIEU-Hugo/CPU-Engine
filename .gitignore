@@ -1,4 +1,4 @@
-*
+﻿*
 !*/
 !Libs/SDL3/lib/x64/*
 !*.cpp
@@ -8,4 +8,4 @@
 !.gitignore
 !Assets/*
 !*.vcxproj*
-!*.inl
+!*.inl!*.md
