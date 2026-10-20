@@ -29,13 +29,13 @@ void Engine::init()
 
 	const vec3 col[8] = {
 		{0, 0, 0},   // 0 noir
-		{1, 0, 0},   // 1 rouge
-		{0, 1, 0},   // 2 vert
-		{1, 1, 0},   // 3 jaune
-		{0, 0, 1},   // 4 bleu
-		{1, 0, 1},   // 5 magenta
-		{0, 1, 1},   // 6 cyan
-		{1, 1, 1},   // 7 blanc
+		{255, 0, 0},   // 1 rouge
+		{0, 255, 0},   // 2 vert
+		{255, 255, 0},   // 3 jaune
+		{0, 0, 255},   // 4 bleu
+		{255, 0, 255},   // 5 magenta
+		{0, 255, 255},   // 6 cyan
+		{255, 255, 255},   // 7 blanc
 	};
 
 	const int idx[36] = {
@@ -58,8 +58,8 @@ void Engine::init()
 	float aspect = float(WIDTH) / float(HEIGHT);
 	
 	// m_camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
-	m_camera.SetPerspective(radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
-	m_camera.SetMatrix(translate(mat4(1.0f), vec3(0.0f, 0.0f, 5.0f)));
+	m_camera.SetPerspective(radians(45.0f), aspect, 0.1f, 100.0f);
+	m_camera.SetMatrix(translate(mat4(1.0f), vec3(0.0f, 0.0f, 10.0f)));
 	
 	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 10);
 	m_emitter->Init();
@@ -72,10 +72,11 @@ void Engine::Update()
 	const float speed = 3.0f;
 	const float turn  = 1.5f;
 
-	if (keys[SDL_SCANCODE_LEFT])  m_camYaw   += turn * _dt;
-	if (keys[SDL_SCANCODE_RIGHT]) m_camYaw   -= turn * _dt;
-	if (keys[SDL_SCANCODE_UP])    m_camPitch += turn * _dt;
-	if (keys[SDL_SCANCODE_DOWN])  m_camPitch -= turn * _dt;
+	float dt = CHRONO->GetDeltaTime();
+	if (keys[SDL_SCANCODE_LEFT])  m_camYaw   += turn * dt;
+	if (keys[SDL_SCANCODE_RIGHT]) m_camYaw   -= turn * dt;
+	if (keys[SDL_SCANCODE_UP])    m_camPitch += turn * dt;
+	if (keys[SDL_SCANCODE_DOWN])  m_camPitch -= turn * dt;
 
 	mat4 rot = rotate(mat4(1.0f), m_camYaw,   vec3(0, 1, 0))
 			 * rotate(mat4(1.0f), m_camPitch, vec3(1, 0, 0));
@@ -83,10 +84,10 @@ void Engine::Update()
 	vec3 right   = vec3(rot[0]);
 	vec3 forward = -vec3(rot[2]); 
 
-	if (keys[SDL_SCANCODE_W]) m_camPos += forward * speed * _dt;
-	if (keys[SDL_SCANCODE_S]) m_camPos -= forward * speed * _dt;
-	if (keys[SDL_SCANCODE_D]) m_camPos += right   * speed * _dt;
-	if (keys[SDL_SCANCODE_A]) m_camPos -= right   * speed * _dt;
+	if (keys[SDL_SCANCODE_W]) m_camPos += forward * speed * dt;
+	if (keys[SDL_SCANCODE_S]) m_camPos -= forward * speed * dt;
+	if (keys[SDL_SCANCODE_D]) m_camPos += right   * speed * dt;
+	if (keys[SDL_SCANCODE_A]) m_camPos -= right   * speed * dt;
 
 	mat4 world = translate(mat4(1.0f), m_camPos) * rot;
 	m_camera.SetMatrix(world);            
