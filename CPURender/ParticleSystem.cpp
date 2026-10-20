@@ -4,15 +4,17 @@
 #include "ParticleSystem.h"
 #include "core.h"
 #include <glm/gtc/constants.hpp>
+#include "Chrono.h"
 
-void Particle::Update(float _dt)
+void Particle::Update()
 {
     if ( alive == false )
         return;
     
-    pos += vel * _dt;
+    float dt = static_cast<float>(DELTA_TIME);
+    pos += vel * dt;
     
-    lifeSpan -= _dt;
+    lifeSpan -= dt;
     if ( lifeSpan <= 0.0f )
         alive = false;
 }
@@ -39,11 +41,11 @@ void Emitter::Init()
     }
 }
 
-void Emitter::Update(float _dt)
+void Emitter::Update()
 {
     for (auto& element : m_particles)
     {
-        element.Update(_dt);
+        element.Update();
         if ( element.alive == false && m_active)
             SpawnParticle(element);
     }

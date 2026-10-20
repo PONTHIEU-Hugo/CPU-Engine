@@ -140,6 +140,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Chrono.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
@@ -148,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Chrono.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="ParticleSystem.h" />

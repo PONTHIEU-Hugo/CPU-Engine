@@ -14,7 +14,7 @@ struct Engine
 
 	void init();
 
-	void Update(float _dt);
+	void Update();
 	void handleEvent(const SDL_Event& event);
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
@@ -26,7 +26,6 @@ private:
 	std::vector<Vertex> m_triangle;
 	std::vector<Vertex> m_cube;
 	std::vector<Vertex> m_particleVertices;
-	float m_time = 0.0f;
 
 	Camera m_camera;
 	vec3  m_camPos   = { 0.0f, 0.0f, 5.0f };

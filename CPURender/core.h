@@ -36,7 +36,7 @@ inline vec3 ToColor(uint32_t _color)
     uint8_t g = (_color >> 8) & 0xFF;
     uint8_t b = (_color >> 0)  & 0xFF;
     
-    return vec3(r, g, b) / 255.0f;
+    return vec3(r, g, b);
 }
 
 #endif

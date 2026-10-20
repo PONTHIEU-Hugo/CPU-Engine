@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <SDL3/SDL_events.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Chrono.h"
 
 void Engine::init()
 {
@@ -10,9 +11,9 @@ void Engine::init()
 
 	m_triangle = 
 	{
-		{ {-1.0f, -1.0f, 0.0f}, {1, 0, 0} },
-		{ { 1.0f, -1.0f, 0.0f}, {0, 1, 0} },
-		{ { 0.0f,  1.0f, 0.0f}, {0, 0, 1} },
+		{ {-1.0f, -1.0f, 0.0f}, {255, 0, 0} },
+		{ { 1.0f, -1.0f, 0.0f}, {0, 255, 0} },
+		{ { 0.0f,  1.0f, 0.0f}, {0, 0, 255} },
 	};
 	
 	const vec3 pos[8] = {
@@ -60,11 +61,11 @@ void Engine::init()
 	m_camera.SetPerspective(radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 	m_camera.SetMatrix(translate(mat4(1.0f), vec3(0.0f, 0.0f, 5.0f)));
 	
-	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 1000);
+	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 10);
 	m_emitter->Init();
 }
 
-void Engine::Update(float _dt)
+void Engine::Update()
 {
 	const bool* keys = SDL_GetKeyboardState(nullptr);
 
@@ -91,7 +92,7 @@ void Engine::Update(float _dt)
 	m_camera.SetMatrix(world);            
 
 	if (m_emitter != nullptr)
-		m_emitter->Update(_dt);
+		m_emitter->Update();
 }
 
 void Engine::handleEvent(const SDL_Event& event)
@@ -107,8 +108,6 @@ void Engine::handleEvent(const SDL_Event& event)
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 {
-	m_time += 1.0f / 60.0f; // faut faire un vrai delta time
-
 	frameBufferOut.clear(0x000000);
 	m_pipeline.ClearDepth();
 	m_pipeline.BindFrameBuffer(&frameBufferOut);
@@ -137,5 +136,6 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 void Engine::destroy()
 {
+	delete m_emitter;
 	printf("Killing engine \n");
 }
