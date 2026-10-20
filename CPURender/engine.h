@@ -7,6 +7,7 @@
 #include "main.h"
 #include "core.h"
 #include "Texture.h"
+#include "Frustum.h"
 
 union SDL_Event;
 
@@ -28,6 +29,8 @@ private:
 	std::vector<Vertex> m_cube;
 	std::vector<Vertex> m_particleVertices;
 	Texture m_texture;
+	AABB m_triangleBounds;
+	AABB m_cubeBounds;
 
 	Camera m_camera;
 	vec3  m_camPos   = { 0.0f, 0.0f, 5.0f };

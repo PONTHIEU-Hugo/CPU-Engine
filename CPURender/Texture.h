@@ -12,7 +12,6 @@ struct Texture
 	std::vector<uint32_t> pixels;
 
 	bool Load(const char* path);
-
 	bool IsValid() const { return width > 0 && height > 0; }
 
 	glm::vec3 Sample(glm::vec2 uv) const;

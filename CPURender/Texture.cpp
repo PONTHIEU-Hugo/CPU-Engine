@@ -9,13 +9,14 @@ bool Texture::Load(const char* path)
 {
 	int channels = 0;
 	unsigned char* data = stbi_load(path, &width, &height, &channels, 4);
+	
 	if (!data)
 	{
 		width = 0;
 		height = 0;
 		pixels.clear();
 
-		printf("Texture: impossible de charger %s\n", path);
+		printf("Texture: impossible de charger %s : %s\n", path, stbi_failure_reason());
 		return false;
 	}
 

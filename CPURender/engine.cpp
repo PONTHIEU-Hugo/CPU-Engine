@@ -1,4 +1,4 @@
-﻿#include "engine.h"
+#include "engine.h"
 #include "Shaders.h"
 #include <stdio.h>
 #include <SDL3/SDL_events.h>
@@ -11,9 +11,9 @@ void Engine::init()
 
 	m_triangle = 
 	{
-		{ {-1.0f, -1.0f, 0.0f}, {255, 0, 0} },
-		{ { 1.0f, -1.0f, 0.0f}, {0, 255, 0} },
-		{ { 0.0f,  1.0f, 0.0f}, {0, 0, 255} },
+		{ {-5.0f, -1.0f, 0.0f}, {255, 0, 0} },
+		{ { -3.0f, -1.0f, 0.0f}, {0, 255, 0}},
+		{ { -4.0f,  1.0f, 0.0f}, {0, 0, 255} },
 	};
 	
 	const vec3 pos[8] = {
@@ -70,7 +70,10 @@ void Engine::init()
 		m_cube.push_back(vertex);
 	}
 
-	m_texture.Load("Assets/doomguy.png");
+	m_texture.Load("Assets/tmo.png");
+
+	m_triangleBounds = ComputeAABB(m_triangle);
+	m_cubeBounds = ComputeAABB(m_cube);
 
 	m_pipeline.BindShader(BasicShader);
 
@@ -91,7 +94,7 @@ void Engine::Update()
 	const float speed = 3.0f;
 	const float turn  = 1.5f;
 
-	float dt = CHRONO->GetDeltaTime();
+	float dt = static_cast<float>(CHRONO->GetDeltaTime());
 	if (keys[SDL_SCANCODE_LEFT])  m_camYaw   += turn * dt;
 	if (keys[SDL_SCANCODE_RIGHT]) m_camYaw   -= turn * dt;
 	if (keys[SDL_SCANCODE_UP])    m_camPitch += turn * dt;
@@ -134,20 +137,29 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 	Uniforms uniforms;
 	mat4 model = mat4(1.0f);
-	uniforms.mvp = m_camera.GetVPMatrix() * model;
+	uniforms.mvp = m_camera.GetVPMatrix();
 	
-	m_pipeline.BindShader(BasicShader);
-	m_pipeline.BindVertexBuffer(&m_triangle);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
+	Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
+
+
+	if (frustum.Intersects(m_triangleBounds))
+	{
+		m_pipeline.BindShader(BasicShader);
+		m_pipeline.BindVertexBuffer(&m_triangle);
+		m_pipeline.BindUniforms(uniforms);
+		m_pipeline.Draw();
+	}
 
 	// Cube
-	uniforms.texture = &m_texture;
-	m_pipeline.BindShader(TextureShader);
-	m_pipeline.BindVertexBuffer(&m_cube);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
-	uniforms.texture = nullptr;
+	if (frustum.Intersects(m_cubeBounds))
+	{
+		uniforms.texture = &m_texture;
+		m_pipeline.BindShader(TextureShader);
+		m_pipeline.BindVertexBuffer(&m_cube);
+		m_pipeline.BindUniforms(uniforms);
+		m_pipeline.Draw();
+		uniforms.texture = nullptr;
+	}
 
 	m_pipeline.BindShader(BasicShader);
 

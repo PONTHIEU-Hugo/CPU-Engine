@@ -1,4 +1,5 @@
 #include "Pipeline.h"
+#include "Clipping.h"
 #include <algorithm>
 #include <cmath>
 
@@ -14,7 +15,7 @@ void Pipeline::Draw()
 	if (!m_vertices || !m_frameBuffer || !m_vertexShader || !m_pixelShader) return;
 
 	std::vector<Varyings> varyings;
-	
+
 	for (const Vertex& v : *m_vertices)
 	{
 		varyings.push_back(m_vertexShader(v, m_uniforms));
@@ -22,41 +23,45 @@ void Pipeline::Draw()
 
 	for (size_t i = 0; i + 2 < varyings.size(); i += 3)
 	{
-		DrawTriangle(varyings[i], varyings[i + 1], varyings[i + 2]);
+		Varyings poly[12];
+		int count = ClipTriangle(varyings[i], varyings[i + 1], varyings[i + 2], poly);
+
+		for (int k = 1; k + 1 < count; ++k)
+		{
+			DrawTriangle(poly[0], poly[k], poly[k + 1]);
+		}
 	}
 }
 
-static float EdgeFunction(const glm::vec2& a, const glm::vec2& b, const glm::vec2& p)
+static float EdgeFunction(const glm::vec2& edgeStart, const glm::vec2& edgeEnd, const glm::vec2& point)
 {
-	return (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+	return (edgeEnd.x - edgeStart.x) * (point.y - edgeStart.y) - (edgeEnd.y - edgeStart.y) * (point.x - edgeStart.x);
 }
 
-void Pipeline::DrawTriangle(const Varyings& a, const Varyings& b, const Varyings& c)
+void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, const Varyings& vertexC)
 {
-	if (a.position.w <= 0 || b.position.w <= 0 || c.position.w <= 0)
+	if (vertexA.position.w <= 0 || vertexB.position.w <= 0 || vertexC.position.w <= 0)
 		return;
 
-	glm::vec3 v0 = glm::vec3(a.position) / a.position.w;
-	glm::vec3 v1 = glm::vec3(b.position) / b.position.w;
-	glm::vec3 v2 = glm::vec3(c.position) / c.position.w;
+	// Pour la perspective (clip space -> NDC)
+	glm::vec3 ndcA = glm::vec3(vertexA.position) / vertexA.position.w;
+	glm::vec3 ndcB = glm::vec3(vertexB.position) / vertexB.position.w;
+	glm::vec3 ndcC = glm::vec3(vertexC.position) / vertexC.position.w;
 
-	glm::vec3 vec1 = glm::vec3(b.position - a.position);
-	glm::vec3 vec2 = glm::vec3(c.position - a.position);
+	// Transformation viewport (NDC -> pixels)
+	glm::vec3 screenA = glm::vec3((ndcA.x * 0.5f + 0.5f) * WIDTH, (1.0f - (ndcA.y * 0.5f + 0.5f)) * HEIGHT, ndcA.z);
+	glm::vec3 screenB = glm::vec3((ndcB.x * 0.5f + 0.5f) * WIDTH, (1.0f - (ndcB.y * 0.5f + 0.5f)) * HEIGHT, ndcB.z);
+	glm::vec3 screenC = glm::vec3((ndcC.x * 0.5f + 0.5f) * WIDTH, (1.0f - (ndcC.y * 0.5f + 0.5f)) * HEIGHT, ndcC.z);
 
-	if (glm::cross(vec1, vec2).z < 0)
-		return;
+	// Back-face culling
+	float area = EdgeFunction(screenA, screenB, screenC);
+	if (area >= 0.0f) return;
 
-	glm::vec3 pixel0 = glm::vec3((v0.x * 0.5f + 0.5f) * WIDTH, (1.0f - (v0.y * 0.5f + 0.5f)) * HEIGHT, v0.z);
-	glm::vec3 pixel1 = glm::vec3((v1.x * 0.5f + 0.5f) * WIDTH, (1.0f - (v1.y * 0.5f + 0.5f)) * HEIGHT, v1.z);
-	glm::vec3 pixel2 = glm::vec3((v2.x * 0.5f + 0.5f) * WIDTH, (1.0f - (v2.y * 0.5f + 0.5f)) * HEIGHT, v2.z);
-
-	float area = EdgeFunction(pixel0, pixel1, pixel2);
-	if (area == 0.0f) return;
-
-	int minX = (int)glm::clamp(glm::min(glm::min(pixel0.x, pixel1.x), pixel2.x), 0.0f, (float)(WIDTH - 1));
-	int maxX = (int)glm::clamp(glm::max(glm::max(pixel0.x, pixel1.x), pixel2.x), 0.0f, (float)(WIDTH - 1));
-	int minY = (int)glm::clamp(glm::min(glm::min(pixel0.y, pixel1.y), pixel2.y), 0.0f, (float)(HEIGHT - 1));
-	int maxY = (int)glm::clamp(glm::max(glm::max(pixel0.y, pixel1.y), pixel2.y), 0.0f, (float)(HEIGHT - 1));
+	// Boite englobante du triangle
+	int minX = (int)glm::clamp(glm::min(glm::min(screenA.x, screenB.x), screenC.x), 0.0f, (float)(WIDTH - 1));
+	int maxX = (int)glm::clamp(glm::max(glm::max(screenA.x, screenB.x), screenC.x), 0.0f, (float)(WIDTH - 1));
+	int minY = (int)glm::clamp(glm::min(glm::min(screenA.y, screenB.y), screenC.y), 0.0f, (float)(HEIGHT - 1));
+	int maxY = (int)glm::clamp(glm::max(glm::max(screenA.y, screenB.y), screenC.y), 0.0f, (float)(HEIGHT - 1));
 
 	const float invArea = 1.0f / area;
 
@@ -64,39 +69,46 @@ void Pipeline::DrawTriangle(const Varyings& a, const Varyings& b, const Varyings
 	{
 		for (int x = minX; x <= maxX; ++x)
 		{
-			glm::vec2 p(x + 0.5f, y + 0.5f);
+			glm::vec2 pixelCenter(x + 0.5f, y + 0.5f);
 
-			float w0 = EdgeFunction(pixel1, pixel2, p) * invArea;
-			float w1 = EdgeFunction(pixel2, pixel0, p) * invArea;
-			float w2 = EdgeFunction(pixel0, pixel1, p) * invArea;
+			// Rasterisation
+			float weightA = EdgeFunction(screenB, screenC, pixelCenter) * invArea;
+			float weightB = EdgeFunction(screenC, screenA, pixelCenter) * invArea;
+			float weightC = EdgeFunction(screenA, screenB, pixelCenter) * invArea;
 
-			if (w0 < 0.0f || w1 < 0.0f || w2 < 0.0f)
+			// Poids negatif = pixel hors du triangle.
+			// La tolerance evite les trous sur l'arete commune de deux triangles (erreurs d'arrondi) ;
+			// un pixel dessine deux fois est ecarte par le z-buffer.
+			const float edgeTolerance = -1e-5f;
+			if (weightA < edgeTolerance || weightB < edgeTolerance || weightC < edgeTolerance)
 				continue;
 
-			float z = w0 * pixel0.z + w1 * pixel1.z + w2 * pixel2.z;
-			if (z >= m_depth[y * WIDTH + x])
+			// Depth Test (z-buffer)
+			float depth = weightA * screenA.z + weightB * screenB.z + weightC * screenC.z;
+			if (depth >= m_depth[y * WIDTH + x])
 				continue;
 
-			m_depth[y * WIDTH + x] = z;
+			m_depth[y * WIDTH + x] = depth;
 
-			float p0 = w0 / a.position.w;
-			float p1 = w1 / b.position.w;
-			float p2 = w2 / c.position.w;
+			// Interpolation et correction perspective
+			float perspectiveA = weightA / vertexA.position.w;
+			float perspectiveB = weightB / vertexB.position.w;
+			float perspectiveC = weightC / vertexC.position.w;
 
-			float invSum = 1.0f / (p0 + p1 + p2);
+			float invPerspectiveSum = 1.0f / (perspectiveA + perspectiveB + perspectiveC);
 
-			p0 *= invSum;
-			p1 *= invSum;
-			p2 *= invSum;
+			perspectiveA *= invPerspectiveSum;
+			perspectiveB *= invPerspectiveSum;
+			perspectiveC *= invPerspectiveSum;
 
-			Varyings frag;
-			frag.position = glm::vec4(p.x, p.y, z, 1.0f);
-			frag.color = p0 * a.color + p1 * b.color + p2 * c.color;
-			frag.uv = p0 * a.uv + p1 * b.uv + p2 * c.uv;
+			Varyings fragment;
+			fragment.position = glm::vec4(pixelCenter.x, pixelCenter.y, depth, 1.0f);
+			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
+			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 
-			glm::vec3 col = m_pixelShader(frag, m_uniforms);
+			glm::vec3 pixelColor = m_pixelShader(fragment, m_uniforms);
 
-			m_frameBuffer->put_pixel(x, y, (int)col.r << 16 | (int)col.g << 8 | (int)col.b);
+			m_frameBuffer->put_pixel(x, y, (int)pixelColor.r << 16 | (int)pixelColor.g << 8 | (int)pixelColor.b);
 		}
 	}
 }
