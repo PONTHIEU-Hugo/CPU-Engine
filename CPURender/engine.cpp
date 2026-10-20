@@ -50,8 +50,27 @@ void Engine::init()
 	m_cube.clear();
 	for (int i = 0; i < 36; ++i)
 	{
-		m_cube.push_back({ pos[idx[i]], col[idx[i]] });
+		const vec3& p = pos[idx[i]];
+
+		float u = 0.0f, v = 0.0f;
+
+		switch (i / 6)
+		{
+		case 0: u =  p.x; v =  p.y; break; // avant  (+Z)
+		case 1: u = -p.x; v =  p.y; break; // arriere (-Z)
+		case 2: u = -p.z; v =  p.y; break; // droite (+X)
+		case 3: u =  p.z; v =  p.y; break; // gauche (-X)
+		case 4: u =  p.x; v = -p.z; break; // haut   (+Y)
+		case 5: u =  p.x; v =  p.z; break; // bas    (-Y)
+		}
+
+		Vertex vertex{ p, col[idx[i]] };
+		vertex.uv = vec2(u * 0.5f + 0.5f, 0.5f - v * 0.5f);
+
+		m_cube.push_back(vertex);
 	}
+
+	m_texture.Load("Assets/doomguy.png");
 
 	m_pipeline.BindShader(BasicShader);
 
@@ -117,13 +136,20 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	mat4 model = mat4(1.0f);
 	uniforms.mvp = m_camera.GetVPMatrix() * model;
 	
+	m_pipeline.BindShader(BasicShader);
 	m_pipeline.BindVertexBuffer(&m_triangle);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
-	
+
+	// Cube
+	uniforms.texture = &m_texture;
+	m_pipeline.BindShader(TextureShader);
 	m_pipeline.BindVertexBuffer(&m_cube);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
+	uniforms.texture = nullptr;
+
+	m_pipeline.BindShader(BasicShader);
 
 	m_particleVertices.clear();
 	if (m_emitter)

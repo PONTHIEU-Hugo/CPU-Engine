@@ -79,9 +79,20 @@ void Pipeline::DrawTriangle(const Varyings& a, const Varyings& b, const Varyings
 
 			m_depth[y * WIDTH + x] = z;
 
+			float p0 = w0 / a.position.w;
+			float p1 = w1 / b.position.w;
+			float p2 = w2 / c.position.w;
+
+			float invSum = 1.0f / (p0 + p1 + p2);
+
+			p0 *= invSum;
+			p1 *= invSum;
+			p2 *= invSum;
+
 			Varyings frag;
 			frag.position = glm::vec4(p.x, p.y, z, 1.0f);
-			frag.color = w0 * a.color + w1 * b.color + w2 * c.color;
+			frag.color = p0 * a.color + p1 * b.color + p2 * c.color;
+			frag.uv = p0 * a.uv + p1 * b.uv + p2 * c.uv;
 
 			glm::vec3 col = m_pixelShader(frag, m_uniforms);
 
