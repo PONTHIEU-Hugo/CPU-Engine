@@ -11,10 +11,13 @@ void Engine::init()
 
 	m_triangle = 
 	{
-		{ {-5.0f, -1.0f, 0.0f}, {255, 0, 0} },
-		{ { -3.0f, -1.0f, 0.0f}, {0, 255, 0}},
-		{ { -4.0f,  1.0f, 0.0f}, {0, 0, 255} },
+		{ { -5.0f, -1.0f, 0.0f }, {255, 0, 0} },
+		{ { -3.0f, -1.0f, 0.0f }, {0, 255, 0} },
+		{ { -4.0f,  1.0f, 0.0f }, {0, 0, 255} },
 	};
+
+	std::vector<int> triIdx = { 0, 1, 2 };
+	m_pipeline.ComputeNormals(m_triangle, triIdx);
 	
 	const vec3 pos[8] = {
 		{-1, -1, -1},   // 0

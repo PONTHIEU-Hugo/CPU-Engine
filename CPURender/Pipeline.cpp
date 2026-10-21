@@ -10,6 +10,24 @@ void Pipeline::ClearDepth()
 	std::fill(m_depth.begin(), m_depth.end(), 1.0f);
 }
 
+void Pipeline::ComputeNormals(std::vector<Vertex>& vertices, std::vector<int> indexes)
+{
+	for (size_t i = 0; i < indexes.size(); i += 3)
+	{
+		Vertex& a = vertices[indexes[i]];
+		Vertex& b = vertices[indexes[i + 1]];
+		Vertex& c = vertices[indexes[i + 2]];
+
+		glm::vec3 n = glm::cross(b.position - a.position, c.position - a.position);
+		a.normal = n;
+		b.normal = n;
+		c.normal = n;
+	}
+
+	for (auto& v : vertices)
+		v.normal = glm::normalize(v.normal);
+}
+
 void Pipeline::Draw()
 {
 	if (!m_vertices || !m_frameBuffer || !m_vertexShader || !m_pixelShader) return;
@@ -107,9 +125,9 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 
 			glm::vec3 pixelColor = m_pixelShader(fragment, m_uniforms);
-			pixelColor.x = glm::clamp((int)pixelColor.x, 0, 255);
-			pixelColor.y = glm::clamp((int)pixelColor.y, 0, 255);
-			pixelColor.z = glm::clamp((int)pixelColor.z, 0, 255);
+			pixelColor.x = static_cast<float>(glm::clamp((int)pixelColor.x, 0, 255));
+			pixelColor.y = static_cast<float>(glm::clamp((int)pixelColor.y, 0, 255));
+			pixelColor.z = static_cast<float>(glm::clamp((int)pixelColor.z, 0, 255));
 
 			m_frameBuffer->put_pixel(x, y, (int)pixelColor.r << 16 | (int)pixelColor.g << 8 | (int)pixelColor.b);
 		}
