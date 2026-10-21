@@ -107,6 +107,9 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 
 			glm::vec3 pixelColor = m_pixelShader(fragment, m_uniforms);
+			pixelColor.x = glm::clamp((int)pixelColor.x, 0, 255);
+			pixelColor.y = glm::clamp((int)pixelColor.y, 0, 255);
+			pixelColor.z = glm::clamp((int)pixelColor.z, 0, 255);
 
 			m_frameBuffer->put_pixel(x, y, (int)pixelColor.r << 16 | (int)pixelColor.g << 8 | (int)pixelColor.b);
 		}
