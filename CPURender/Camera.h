@@ -35,7 +35,7 @@ private:
     mat4 m_viewProj = mat4(1.0f);
     CameraType m_type = PERSPECTIVE;
     
-    vec3  m_camPos   = { 0.0f, 5.0f, 20.0f };
+    vec3  m_camPos   = { 0.0f, 0.0f, 2.0f };
     float m_camYaw = 0.0f; 
     float m_camPitch = 0.0f;
 };

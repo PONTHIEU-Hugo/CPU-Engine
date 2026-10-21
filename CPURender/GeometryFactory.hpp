@@ -59,8 +59,8 @@ namespace GeometryFactory
     			{
     				Vertex v;
     				v.position = rawPositions[posIdx[k] - 1];
-    				v.uv       = rawUVs.empty() ? XMFLOAT2() : rawUVs[uvIdx[k] - 1];
-    				v.normal   = XMFLOAT3();
+    				v.uv       = rawUVs.empty() ? vec2() : rawUVs[uvIdx[k] - 1];
+    				v.color = ToColor(RANDOM::GetRandomInt32_t(0, 255));
     				indices.push_back((uint32)vertices.size());
     				vertices.push_back(v);
     			}

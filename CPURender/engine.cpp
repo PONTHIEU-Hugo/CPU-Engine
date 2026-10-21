@@ -71,9 +71,9 @@ void Engine::init()
 		m_cube.push_back(vertex);
 	}
 
-	m_obj = GeometryFactory::LoadGeometry("Assets/tutureKehvin.obj");
+	m_obj = GeometryFactory::LoadGeometry("Assets/bust.obj");
 	
-	m_texture.Load("Assets/tmo.png");
+	m_texture.Load("Assets/vivien.png");
 
 	m_triangleBounds = ComputeAABB(m_triangle);
 	m_cubeBounds = ComputeAABB(m_cube);
@@ -116,7 +116,6 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindFrameBuffer(&frameBufferOut);
 
 	Uniforms uniforms;
-	mat4 model = mat4(1.0f);
 	uniforms.mvp = m_camera.GetVPMatrix();
 	
 	Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
@@ -130,7 +129,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 		m_pipeline.Draw();
 	}
 
-	// Cube
+	/*// Cube
 	if (frustum.Intersects(m_cubeBounds))
 	{
 		uniforms.texture = &m_texture;
@@ -139,7 +138,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 		m_pipeline.BindUniforms(uniforms);
 		m_pipeline.Draw();
 		uniforms.texture = nullptr;
-	}
+	}*/
 
 	m_pipeline.BindShader(BasicShader);
 
@@ -152,6 +151,8 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
 
+	uniforms.texture = &m_texture;
+	m_pipeline.BindShader(TextureShader);
 	m_pipeline.BindVertexBuffer(&m_obj);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
