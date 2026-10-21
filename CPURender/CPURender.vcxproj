@@ -144,7 +144,9 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />
+    <ClCompile Include="ProceduralGeneration.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="TerrainGenerator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chrono.h" />
@@ -152,9 +154,11 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="ProceduralGeneration.h" />
     <ClInclude Include="Shaders.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="core.h" />
+    <ClInclude Include="TerrainGenerator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

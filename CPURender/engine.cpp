@@ -24,6 +24,9 @@ void Engine::init()
 	
 	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 10);
 	m_emitter->Init();
+
+	m_Terrain = new TerrainGenerator();
+	m_Terrain->GenerateHeighmap(5);
 }
 
 void Engine::Update()
@@ -63,10 +66,16 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindVertexBuffer(&m_particleVertices);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
+
+	uniforms.mvp = m_proj * m_view;
+	m_pipeline.BindVertexBuffer(m_Terrain->GetVertices());
+	m_pipeline.BindUniforms(uniforms);
+	m_pipeline.Draw();
 }
 
 void Engine::destroy()
 {
 	delete m_emitter;
+	delete m_Terrain;
 	printf("Killing engine \n");
 }
