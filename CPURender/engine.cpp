@@ -71,9 +71,21 @@ void Engine::init()
 		m_cube.push_back(vertex);
 	}
 
-	m_obj = GeometryFactory::LoadGeometry("Assets/bust.obj");
 	
-	m_texture.Load("Assets/vivien.png");
+	// m_obj = GeometryFactory::BuildTriangle();
+	// m_obj = GeometryFactory::BuildPyramid();
+	// m_obj = GeometryFactory::BuildCube();
+	// m_obj = GeometryFactory::BuildIcosphere(3);         
+	// m_obj = GeometryFactory::BuildIcosphere(4, 1.0f);
+	// m_obj = GeometryFactory::BuildUVSphere(32, 16);        
+	// m_obj = GeometryFactory::BuildUVSphere(64, 32, 2.0f);
+	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, true);
+	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, false);
+	// m_obj = GeometryFactory::BuildCylinder(32);
+	// m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
+	m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
+	
+	m_texture.Load("Assets/mael.png");
 
 	m_triangleBounds = ComputeAABB(m_triangle);
 	m_cubeBounds = ComputeAABB(m_cube);
