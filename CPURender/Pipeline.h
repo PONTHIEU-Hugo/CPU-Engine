@@ -5,22 +5,27 @@
 #include <glm/glm.hpp>
 #include "main.h"
 
-struct Vertex 
+struct Texture;
+
+struct Vertex
 {
-	glm::vec3 position;
-	glm::vec3 color;
+	glm::vec3 position = { 0.0f, 0.0f, 0.0f };
+	glm::vec3 color = { 255.0f, 0.0f, 255.0f };
+	glm::vec2 uv = { 0.0f, 0.0f };
 };
 
 // out du vertex shader / in du pixel shader (position clipSpace).
-struct Varyings 
+struct Varyings
 {
-	glm::vec4 position;
-	glm::vec3 color;
+	glm::vec4 position = { 0.0f, 0.0f, 0.0f, 1.0f };
+	glm::vec3 color = { 255.0f, 0.0f, 255.0f };
+	glm::vec2 uv = { 0.0f, 0.0f };
 };
 
-struct Uniforms 
+struct Uniforms
 {
 	glm::mat4 mvp{ 1.0f };
+	const Texture* texture = nullptr;
 };
 
 using VertexShader = std::function<Varyings(const Vertex&, const Uniforms&)>;
@@ -50,7 +55,7 @@ public:
 	void Draw();
 
 private:
-	void DrawTriangle(const Varyings& a, const Varyings& b, const Varyings& c);
+	void DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, const Varyings& vertexC);
 
 	const std::vector<Vertex>* m_vertices = nullptr;
 

@@ -1,4 +1,4 @@
-﻿#include "engine.h"
+#include "engine.h"
 #include "Shaders.h"
 #include <stdio.h>
 #include <SDL3/SDL_events.h>
@@ -12,9 +12,9 @@ void Engine::init()
 
 	m_triangle = 
 	{
-		{ {-1.0f, -1.0f, 0.0f}, {255, 0, 0} },
-		{ { 1.0f, -1.0f, 0.0f}, {0, 255, 0} },
-		{ { 0.0f,  1.0f, 0.0f}, {0, 0, 255} },
+		{ {-5.0f, -1.0f, 0.0f}, {255, 0, 0} },
+		{ { -3.0f, -1.0f, 0.0f}, {0, 255, 0}},
+		{ { -4.0f,  1.0f, 0.0f}, {0, 0, 255} },
 	};
 	
 	const vec3 pos[8] = {
@@ -51,11 +51,33 @@ void Engine::init()
 	m_cube.clear();
 	for (int i = 0; i < 36; ++i)
 	{
-		m_cube.push_back({ pos[idx[i]], col[idx[i]] });
+		const vec3& p = pos[idx[i]];
+
+		float u = 0.0f, v = 0.0f;
+
+		switch (i / 6)
+		{
+		case 0: u =  p.x; v =  p.y; break; // avant  (+Z)
+		case 1: u = -p.x; v =  p.y; break; // arriere (-Z)
+		case 2: u = -p.z; v =  p.y; break; // droite (+X)
+		case 3: u =  p.z; v =  p.y; break; // gauche (-X)
+		case 4: u =  p.x; v = -p.z; break; // haut   (+Y)
+		case 5: u =  p.x; v =  p.z; break; // bas    (-Y)
+		}
+
+		Vertex vertex{ p, col[idx[i]] };
+		vertex.uv = vec2(u * 0.5f + 0.5f, 0.5f - v * 0.5f);
+
+		m_cube.push_back(vertex);
 	}
 
 	m_obj = GeometryFactory::LoadGeometry("Assets/tutureKehvin.obj");
 	
+	m_texture.Load("Assets/tmo.png");
+
+	m_triangleBounds = ComputeAABB(m_triangle);
+	m_cubeBounds = ComputeAABB(m_cube);
+
 	m_pipeline.BindShader(BasicShader);
 
 	float aspect = float(WIDTH) / float(HEIGHT);
@@ -95,19 +117,31 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 	Uniforms uniforms;
 	mat4 model = mat4(1.0f);
-	uniforms.mvp = m_camera.GetVPMatrix() * model;
+	uniforms.mvp = m_camera.GetVPMatrix();
 	
-	m_pipeline.BindVertexBuffer(&m_triangle);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
-	
-	// m_pipeline.BindVertexBuffer(&m_cube);
-	// m_pipeline.BindUniforms(uniforms);
-	// m_pipeline.Draw();
-	
-	m_pipeline.BindVertexBuffer(&m_obj);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
+	Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
+
+
+	if (frustum.Intersects(m_triangleBounds))
+	{
+		m_pipeline.BindShader(BasicShader);
+		m_pipeline.BindVertexBuffer(&m_triangle);
+		m_pipeline.BindUniforms(uniforms);
+		m_pipeline.Draw();
+	}
+
+	// Cube
+	if (frustum.Intersects(m_cubeBounds))
+	{
+		uniforms.texture = &m_texture;
+		m_pipeline.BindShader(TextureShader);
+		m_pipeline.BindVertexBuffer(&m_cube);
+		m_pipeline.BindUniforms(uniforms);
+		m_pipeline.Draw();
+		uniforms.texture = nullptr;
+	}
+
+	m_pipeline.BindShader(BasicShader);
 
 	m_particleVertices.clear();
 	if (m_emitter)
@@ -115,6 +149,10 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 	uniforms.mvp = m_camera.GetVPMatrix();
 	m_pipeline.BindVertexBuffer(&m_particleVertices);
+	m_pipeline.BindUniforms(uniforms);
+	m_pipeline.Draw();
+
+	m_pipeline.BindVertexBuffer(&m_obj);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
 }
