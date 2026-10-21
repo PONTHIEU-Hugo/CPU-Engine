@@ -77,12 +77,12 @@ void Emitter::SpawnParticle(Particle& _particle)
 {
     _particle.pos = m_origin;
     
-    float angle = getRandomFloat(0.0f, 2.0f* pi<float>());
+    float angle = RANDOM::GetRandomFloat(0.0f, 2.0f* pi<float>());
     vec3 dir = vec3(cosf(angle), sinf(angle), 0.0f);
-    float speed = getRandomFloat(2.0f, 15.0f);
+    float speed = RANDOM::GetRandomFloat(2.0f, 15.0f);
     _particle.vel = dir * speed;
     
-    _particle.lifeSpan = getRandomFloat(1.0f, 2.0f);
+    _particle.lifeSpan = RANDOM::GetRandomFloat(1.0f, 2.0f);
     _particle.lifeSpanMaxInv = 1 / _particle.lifeSpan;
     _particle.alive = true;
 }

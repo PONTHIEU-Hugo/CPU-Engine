@@ -7,15 +7,16 @@ namespace GeometryFactory
 {
     static std::vector<Vertex> LoadGeometry(std::string _path)
     {
-    	
     	std::vector<vec3> rawPositions;
+    	std::vector<vec2> rawUVs;
+    	
     	std::vector<Vertex>   vertices;
+    	std::vector<uint32>   indices;
 
     	FILE* file = nullptr;
     	errno_t err = fopen_s(&file, _path.c_str(), "r");
     	if (err != 0 || file == nullptr)
     	{
-    		// std::cout << "Impossible to open the file: " << _path << '\n';
     		return {};
     	}
 
@@ -30,8 +31,14 @@ namespace GeometryFactory
     		{
     			vec3 pos;
     			fscanf_s(file, "%f %f %f\n", &pos.x, &pos.y, &pos.z);
-    			pos.z = -pos.z;
     			rawPositions.push_back(pos);
+    		}
+    		else if (strcmp(lineHeader, "vt") == 0)
+    		{
+    			vec2 uv;
+    			fscanf_s(file, "%f %f\n", &uv.x, &uv.y);
+    			uv.y = 1.0f - uv.y;
+    			rawUVs.push_back(uv);
     		}
     		else if (strcmp(lineHeader, "f") == 0)
     		{
@@ -48,13 +55,13 @@ namespace GeometryFactory
     				return {};
     			}
 
-    			int order[3] = {0, 2, 1};
     			for (int k = 0; k < 3; ++k)
     			{
-    				int idx = order[k];
     				Vertex v;
-    				v.position = rawPositions[posIdx[idx] - 1];
-    				v.color = ToColor(getRandomFloat(0, 255));
+    				v.position = rawPositions[posIdx[k] - 1];
+    				v.uv       = rawUVs.empty() ? XMFLOAT2() : rawUVs[uvIdx[k] - 1];
+    				v.normal   = XMFLOAT3();
+    				indices.push_back((uint32)vertices.size());
     				vertices.push_back(v);
     			}
     		}

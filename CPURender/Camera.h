@@ -12,6 +12,7 @@ enum CameraType
 class Camera
 {
 public:
+    void HandleEvent(float _dt);
     void SetOrthographic(float32 viewWidth, float32 viewHeight, float32 nearZ, float32 farZ);
     void SetPerspective(float32 fovAngleY, float32 aspectRatio, float32 nearZ, float32 farZ);
 
@@ -33,6 +34,10 @@ private:
     mat4 m_proj     = mat4(1.0f);
     mat4 m_viewProj = mat4(1.0f);
     CameraType m_type = PERSPECTIVE;
+    
+    vec3  m_camPos   = { 0.0f, 5.0f, 20.0f };
+    float m_camYaw = 0.0f; 
+    float m_camPitch = 0.0f;
 };
 
 

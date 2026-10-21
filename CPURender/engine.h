@@ -29,7 +29,4 @@ private:
 	std::vector<Vertex> m_particleVertices;
 
 	Camera m_camera;
-	vec3  m_camPos   = { 0.0f, 0.0f, 5.0f };
-	float m_camYaw = 0.0f; 
-	float m_camPitch = 0.0f;
 };

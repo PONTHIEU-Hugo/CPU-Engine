@@ -54,7 +54,7 @@ void Engine::init()
 		m_cube.push_back({ pos[idx[i]], col[idx[i]] });
 	}
 
-	m_obj = GeometryFactory::LoadGeometry("Assets/singe.obj");
+	m_obj = GeometryFactory::LoadGeometry("Assets/tutureKehvin.obj");
 	
 	m_pipeline.BindShader(BasicShader);
 
@@ -62,7 +62,7 @@ void Engine::init()
 	
 	// m_camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
 	m_camera.SetPerspective(radians(45.0f), aspect, 0.1f, 100.0f);
-	m_camera.SetMatrix(translate(mat4(1.0f), vec3(0.0f, 0.0f, 10.0f)));
+	m_camera.SetMatrix(translate(mat4(1.0f), vec3(100.0f, 100.0f, 150.0f)));
 	
 	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 10);
 	m_emitter->Init();
@@ -70,31 +70,8 @@ void Engine::init()
 
 void Engine::Update()
 {
-	const bool* keys = SDL_GetKeyboardState(nullptr);
-
-	const float speed = 3.0f;
-	const float turn  = 1.5f;
-
-	float dt = CHRONO->GetDeltaTime();
-	if (keys[SDL_SCANCODE_LEFT])  m_camYaw   += turn * dt;
-	if (keys[SDL_SCANCODE_RIGHT]) m_camYaw   -= turn * dt;
-	if (keys[SDL_SCANCODE_UP])    m_camPitch += turn * dt;
-	if (keys[SDL_SCANCODE_DOWN])  m_camPitch -= turn * dt;
-
-	mat4 rot = rotate(mat4(1.0f), m_camYaw,   vec3(0, 1, 0))
-			 * rotate(mat4(1.0f), m_camPitch, vec3(1, 0, 0));
-
-	vec3 right   = vec3(rot[0]);
-	vec3 forward = -vec3(rot[2]); 
-
-	if (keys[SDL_SCANCODE_W]) m_camPos += forward * speed * dt;
-	if (keys[SDL_SCANCODE_S]) m_camPos -= forward * speed * dt;
-	if (keys[SDL_SCANCODE_D]) m_camPos += right   * speed * dt;
-	if (keys[SDL_SCANCODE_A]) m_camPos -= right   * speed * dt;
-
-	mat4 world = translate(mat4(1.0f), m_camPos) * rot;
-	m_camera.SetMatrix(world);            
-
+	float dt = static_cast<float>(CHRONO->GetDeltaTime());
+	m_camera.HandleEvent(dt);
 	if (m_emitter != nullptr)
 		m_emitter->Update();
 }
