@@ -83,7 +83,9 @@ void Engine::init()
 	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, false);
 	// m_obj = GeometryFactory::BuildCylinder(32);
 	// m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
+	
 	m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
+	
 	
 	m_texture.Load("Assets/mael.png");
 
@@ -98,7 +100,7 @@ void Engine::init()
 	m_camera.SetPerspective(radians(45.0f), aspect, 0.1f, 100.0f);
 	m_camera.SetMatrix(translate(mat4(1.0f), vec3(100.0f, 100.0f, 150.0f)));
 	
-	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 10);
+	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 1000);
 	m_emitter->Init();
 }
 
@@ -108,6 +110,17 @@ void Engine::Update()
 	m_camera.HandleEvent(dt);
 	if (m_emitter != nullptr)
 		m_emitter->Update();
+	
+	// m_duration_flag -= dt;
+	// if ( m_duration_flag <= 0.0f )
+	// {
+	// 	if ( m_currentFlag == m_flags.size() - 1)
+	// 		m_currentFlag = 0;
+	// 	else
+	// 		m_currentFlag++;
+	// 	m_obj = m_flags[m_currentFlag];
+	// 	m_duration_flag = m_time_flag;
+	// }
 }
 
 void Engine::handleEvent(const SDL_Event& event)
@@ -162,7 +175,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindVertexBuffer(&m_particleVertices);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
-
+	
 	uniforms.texture = &m_texture;
 	m_pipeline.BindShader(TextureShader);
 	m_pipeline.BindVertexBuffer(&m_obj);
