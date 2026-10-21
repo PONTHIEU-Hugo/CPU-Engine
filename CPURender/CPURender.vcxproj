@@ -139,16 +139,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chrono.cpp" />
     <ClCompile Include="engine.cpp" />
+    <ClCompile Include="GeometryFactory.hpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="ProceduralGeneration.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="TerrainGenerator.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="Clipping.cpp" />
+    <ClCompile Include="Frustum.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="Chrono.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="main.h" />
@@ -156,6 +162,9 @@
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="ProceduralGeneration.h" />
     <ClInclude Include="Shaders.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="Clipping.h" />
+    <ClInclude Include="Frustum.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="core.h" />
     <ClInclude Include="TerrainGenerator.h" />

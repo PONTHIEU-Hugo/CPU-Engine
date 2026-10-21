@@ -7,35 +7,38 @@
 
 #include "main.h"
 #include "Pipeline.h"
+#include "Chrono.h"
+#include <SDL3/SDL_keyboard.h>
+#include <glm/ext/matrix_transform.hpp>
 
 using namespace glm;
 
 namespace RANDOM
 {
-    inline float GetRandomFloat(float min, float max)
+    inline float GetRandomFloat(float min, float max) 
     {
         static std::random_device rd;
         static std::mt19937 gen(rd());
-
+    
         std::uniform_real_distribution<float> dis(min, max);
         return dis(gen);
     }
 
-    inline int GetRandomInt(int min, int max)
+    inline int GetRandomInt(int min, int max) 
     {
         static std::random_device rd;
         static std::mt19937 gen(rd());
-
+    
         std::uniform_int_distribution<int> dis(min, max);
         return dis(gen);
     }
 
-    inline int32_t GetRandomInt32_t(int min, int max)
+    inline int32_t GetRandomInt32_t(int min, int max) 
     {
         static std::random_device rd;
         static std::mt19937 gen(rd());
-
-        std::uniform_int_distribution<int32_t> dis(std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max());
+    
+        std::uniform_int_distribution<int32_t> dis( std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max());
         return dis(gen);
     }
 }

@@ -21,11 +21,15 @@ void Particle::Update()
 
 void Emitter::Init()
 {
-    float size = 1.0f;
+    float size = 0.1f;
     std::vector<Vertex> vertices = {
         {{-size, size, 0}, ToColor(0xFFFFFFFF)},
         {{0.0f, -size, 0},  ToColor(0xFFFFFFFF)},
-        {{size, size, 0},  ToColor(0xFFFFFFFF)}
+        {{size, size, 0},  ToColor(0xFFFFFFFF)},
+        
+        {{-size, size, 0}, ToColor(0xFFFFFFFF)},
+        {{size, size, 0},  ToColor(0xFFFFFFFF)},
+        {{0.0f, -size, 0},  ToColor(0xFFFFFFFF)},
     };
     
     m_geo.vertices = vertices;
