@@ -10,68 +10,9 @@ void Engine::init()
 {
 	printf("Init engine \n");
 
-	m_triangle = 
-	{
-		{ {-5.0f, -1.0f, 0.0f}, {255, 0, 0} },
-		{ { -3.0f, -1.0f, 0.0f}, {0, 255, 0}},
-		{ { -4.0f,  1.0f, 0.0f}, {0, 0, 255} },
-	};
-	
-	const vec3 pos[8] = {
-		{-1, -1, -1},   // 0
-		{ 1, -1, -1},   // 1
-		{-1,  1, -1},   // 2
-		{ 1,  1, -1},   // 3
-		{-1, -1,  1},   // 4
-		{ 1, -1,  1},   // 5
-		{-1,  1,  1},   // 6
-		{ 1,  1,  1},   // 7
-	};
+	m_triangle = GeometryFactory::BuildTriangle();
+	m_cube = GeometryFactory::BuildCube();
 
-	const vec3 col[8] = {
-		{0, 0, 0},   // 0 noir
-		{255, 0, 0},   // 1 rouge
-		{0, 255, 0},   // 2 vert
-		{255, 255, 0},   // 3 jaune
-		{0, 0, 255},   // 4 bleu
-		{255, 0, 255},   // 5 magenta
-		{0, 255, 255},   // 6 cyan
-		{255, 255, 255},   // 7 blanc
-	};
-
-	const int idx[36] = {
-		4, 5, 6,   6, 5, 7,   // avant  (+Z)
-		1, 0, 3,   3, 0, 2,   // arrière (-Z)
-		5, 1, 7,   7, 1, 3,   // droite (+X)
-		0, 4, 2,   2, 4, 6,   // gauche (-X)
-		6, 7, 2,   2, 7, 3,   // haut   (+Y)
-		0, 1, 4,   4, 1, 5,   // bas    (-Y)
-	};
-
-	m_cube.clear();
-	for (int i = 0; i < 36; ++i)
-	{
-		const vec3& p = pos[idx[i]];
-
-		float u = 0.0f, v = 0.0f;
-
-		switch (i / 6)
-		{
-		case 0: u =  p.x; v =  p.y; break; // avant  (+Z)
-		case 1: u = -p.x; v =  p.y; break; // arriere (-Z)
-		case 2: u = -p.z; v =  p.y; break; // droite (+X)
-		case 3: u =  p.z; v =  p.y; break; // gauche (-X)
-		case 4: u =  p.x; v = -p.z; break; // haut   (+Y)
-		case 5: u =  p.x; v =  p.z; break; // bas    (-Y)
-		}
-
-		Vertex vertex{ p, col[idx[i]] };
-		vertex.uv = vec2(u * 0.5f + 0.5f, 0.5f - v * 0.5f);
-
-		m_cube.push_back(vertex);
-	}
-
-	
 	// m_obj = GeometryFactory::BuildTriangle();
 	// m_obj = GeometryFactory::BuildPyramid();
 	// m_obj = GeometryFactory::BuildCube();
@@ -110,17 +51,6 @@ void Engine::Update()
 	m_camera.HandleEvent(dt);
 	if (m_emitter != nullptr)
 		m_emitter->Update();
-	
-	// m_duration_flag -= dt;
-	// if ( m_duration_flag <= 0.0f )
-	// {
-	// 	if ( m_currentFlag == m_flags.size() - 1)
-	// 		m_currentFlag = 0;
-	// 	else
-	// 		m_currentFlag++;
-	// 	m_obj = m_flags[m_currentFlag];
-	// 	m_duration_flag = m_time_flag;
-	// }
 }
 
 void Engine::handleEvent(const SDL_Event& event)
