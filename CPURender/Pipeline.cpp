@@ -10,24 +10,6 @@ void Pipeline::ClearDepth()
 	std::fill(m_depth.begin(), m_depth.end(), 1.0f);
 }
 
-void Pipeline::ComputeNormals(std::vector<Vertex>& vertices, std::vector<int> indexes)
-{
-	for (size_t i = 0; i < indexes.size(); i += 3)
-	{
-		Vertex& a = vertices[indexes[i]];
-		Vertex& b = vertices[indexes[i + 1]];
-		Vertex& c = vertices[indexes[i + 2]];
-
-		glm::vec3 n = glm::cross(b.position - a.position, c.position - a.position);
-		a.normal = n;
-		b.normal = n;
-		c.normal = n;
-	}
-
-	for (auto& v : vertices)
-		v.normal = glm::normalize(v.normal);
-}
-
 void Pipeline::Draw()
 {
 	if (!m_vertices || !m_frameBuffer || !m_vertexShader || !m_pixelShader) return;
@@ -121,6 +103,7 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 
 			Varyings fragment;
 			fragment.position = glm::vec4(pixelCenter.x, pixelCenter.y, depth, 1.0f);
+			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 

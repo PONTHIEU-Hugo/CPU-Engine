@@ -25,6 +25,7 @@ namespace GeometryFactory
 		{
 			Vertex v;
 			v.position = _pos;
+			v.normal   = { 0.0f, 0.0f, 1.0f };
 			v.color    = White();
 			v.uv       = _uv;
 			return v;
@@ -82,10 +83,9 @@ namespace GeometryFactory
 	//// NORMALES / TANGENTES
 	////////////////////////////////////////////
 
-	// Flat : une normale / tangente par triangle (les vertices sont deja dupliques).
-	inline void CalculateNormalsAndTangents(std::vector<Vertex>& _vertices)
+	inline void CalculateNormals(std::vector<Vertex>& _vertices)
 	{
-		/*for (size_t i = 0; i + 2 < _vertices.size(); i += 3)
+		for (size_t i = 0; i + 2 < _vertices.size(); i += 3)
 		{
 			Vertex& v0 = _vertices[i];
 			Vertex& v1 = _vertices[i + 1];
@@ -96,19 +96,8 @@ namespace GeometryFactory
 
 			vec3 N = detail::SafeNormalize(cross(e1, e2), vec3(0, 1, 0));
 
-			vec2 d1 = v1.uv - v0.uv;
-			vec2 d2 = v2.uv - v0.uv;
-			float denom = d1.x * d2.y - d2.x * d1.y;
-
-			vec3 T(0.0f);
-			if (std::abs(denom) > 1e-8f)
-				T = (e1 * d2.y - e2 * d1.y) / denom;
-
-			T = detail::OrthogonalizeTangent(T, N);
-
 			v0.normal = v1.normal = v2.normal = N;
-			v0.tangent = v1.tangent = v2.tangent = T;
-		}*/
+		}
 	}
 
 	inline void CalculateNormalsAndTangentsSeamless(std::vector<Vertex>& _vertices)
@@ -179,12 +168,18 @@ namespace GeometryFactory
 	{
 		std::vector<Vertex> vertices;
 
-		// Vu depuis +Z : bas-gauche -> bas-droite -> haut = CCW
-		detail::AddTriangle(vertices, { -0.5f, -0.5f, 0.0f },
-		                              {  0.5f, -0.5f, 0.0f },
-		                              {  0.0f,  0.5f, 0.0f });
+		// Memes sommets (et memes uv) pour les deux faces : seul le sens d'enroulement change.
+		Vertex bottomLeft  = detail::MakeVertex({ -0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f });
+		Vertex bottomRight = detail::MakeVertex({  0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f });
+		Vertex top         = detail::MakeVertex({  0.0f,  0.5f, 0.0f }, { 0.5f, 0.0f });
 
-		CalculateNormalsAndTangents(vertices);
+		// Face avant : vue depuis +Z, bas-gauche -> bas-droite -> haut = CCW
+		detail::PushTriangle(vertices, bottomLeft, bottomRight, top);
+
+		// Face arriere : vue depuis -Z, ordre inverse = CCW
+		detail::PushTriangle(vertices, bottomLeft, top, bottomRight);
+
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -208,7 +203,7 @@ namespace GeometryFactory
 		detail::AddTriangle(vertices, A, D, T); // gauche (-X)
 		detail::AddQuad(vertices, A, B, C, D);  // base   (-Y)
 
-		CalculateNormalsAndTangents(vertices);
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -227,7 +222,7 @@ namespace GeometryFactory
 		detail::AddQuad(vertices, {-0.5f,-0.5f, 0.5f}, { 0.5f,-0.5f, 0.5f}, { 0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}); // +Z
 		detail::AddQuad(vertices, { 0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,-0.5f}, {-0.5f, 0.5f,-0.5f}, { 0.5f, 0.5f,-0.5f}); // -Z
 
-		CalculateNormalsAndTangents(vertices);
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -322,6 +317,7 @@ namespace GeometryFactory
 			}
 		}
 
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -384,6 +380,7 @@ namespace GeometryFactory
 			}
 		}
 
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -421,6 +418,7 @@ namespace GeometryFactory
 	{
 		std::vector<Vertex> vertices;
 		AddCircle(vertices, std::max(_stackCount, 3), _posY, _isTop);
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -458,6 +456,7 @@ namespace GeometryFactory
 			detail::PushTriangle(vertices, top0,    top1,    bottom1);
 		}
 
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -508,6 +507,7 @@ namespace GeometryFactory
 			}
 		}
 
+		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -597,7 +597,7 @@ namespace GeometryFactory
 			}
 		}
 
-		CalculateNormalsAndTangents(vertices);
+		CalculateNormals(vertices);
 		return vertices;
 	}
 }

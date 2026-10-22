@@ -25,7 +25,7 @@ void Engine::init()
 	// m_obj = GeometryFactory::BuildCylinder(32);
 	// m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
 	
-	m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
+	//m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
 	
 	
 	m_texture.Load("Assets/mael.png");
@@ -39,7 +39,6 @@ void Engine::init()
 	
 	// m_camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
 	m_camera.SetPerspective(radians(45.0f), aspect, 0.1f, 100.0f);
-	m_camera.SetMatrix(translate(mat4(1.0f), vec3(100.0f, 100.0f, 150.0f)));
 	
 	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 1000);
 	m_emitter->Init();
@@ -72,45 +71,39 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 	Uniforms uniforms;
 	uniforms.mvp = m_camera.GetVPMatrix();
-	
+	uniforms.lightDirection = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.3f));
+	uniforms.ambient = 0.2f;
+
 	Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
 
-
+	//Triangle
 	if (frustum.Intersects(m_triangleBounds))
 	{
 		m_pipeline.BindShader(BasicShader);
 		m_pipeline.BindVertexBuffer(&m_triangle);
 		m_pipeline.BindUniforms(uniforms);
-		m_pipeline.Draw();
+		//m_pipeline.Draw();
 	}
 
-	/*// Cube
+	// Cube
 	if (frustum.Intersects(m_cubeBounds))
 	{
-		uniforms.texture = &m_texture;
-		m_pipeline.BindShader(TextureShader);
+		m_pipeline.BindShader(LambertShader);
 		m_pipeline.BindVertexBuffer(&m_cube);
 		m_pipeline.BindUniforms(uniforms);
 		m_pipeline.Draw();
-		uniforms.texture = nullptr;
-	}*/
+	}
 
 	m_pipeline.BindShader(BasicShader);
 
-	m_particleVertices.clear();
-	if (m_emitter)
-		m_emitter->Render(m_particleVertices);
+	//m_particleVertices.clear();
+	//if (m_emitter)
+	//	m_emitter->Render(m_particleVertices);
 
-	uniforms.mvp = m_camera.GetVPMatrix();
-	m_pipeline.BindVertexBuffer(&m_particleVertices);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
-	
-	uniforms.texture = &m_texture;
-	m_pipeline.BindShader(TextureShader);
-	m_pipeline.BindVertexBuffer(&m_obj);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
+	//uniforms.mvp = m_camera.GetVPMatrix();
+	//m_pipeline.BindVertexBuffer(&m_particleVertices);
+	//m_pipeline.BindUniforms(uniforms);
+	//m_pipeline.Draw();
 }
 
 void Engine::destroy()

@@ -7,3 +7,7 @@
 
 extern const Shader BasicShader;
 extern const Shader TextureShader;
+
+// Texture (ou couleur des sommets) eclairee par la lumiere directionnelle des Uniforms.
+// Necessite des normales dans les sommets (voir Pipeline::ComputeNormals).
+extern const Shader LambertShader;

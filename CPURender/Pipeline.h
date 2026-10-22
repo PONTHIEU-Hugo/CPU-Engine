@@ -28,6 +28,8 @@ struct Uniforms
 {
 	glm::mat4 mvp{ 1.0f };
 	const Texture* texture = nullptr;
+	glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f }; 
+	float ambient = 0.2f;                            
 };
 
 using VertexShader = std::function<Varyings(const Vertex&, const Uniforms&)>;
@@ -53,8 +55,6 @@ public:
 	void BindFrameBuffer(FinalFrameBuffer* fb) { m_frameBuffer = fb; }
 
 	void ClearDepth();
-
-	void ComputeNormals(std::vector<Vertex>& vertices, std::vector<int> indexes);
 
 	void Draw();
 
