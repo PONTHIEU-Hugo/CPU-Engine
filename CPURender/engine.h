@@ -27,13 +27,11 @@ private:
 	Pipeline m_pipeline;
 	std::vector<Vertex> m_triangle;
 	std::vector<Vertex> m_cube;
+	std::vector<Vertex> m_obj;
 	std::vector<Vertex> m_particleVertices;
 	Texture m_texture;
 	AABB m_triangleBounds;
 	AABB m_cubeBounds;
 
 	Camera m_camera;
-	vec3  m_camPos   = { 0.0f, 0.0f, 5.0f };
-	float m_camYaw = 0.0f; 
-	float m_camPitch = 0.0f;
 };
