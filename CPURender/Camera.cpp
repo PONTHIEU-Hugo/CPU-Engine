@@ -34,8 +34,8 @@ void Camera::HandleEvent(float _dt)
     if (keys[SDL_SCANCODE_S]) m_camPos -= forward * speed * _dt;
     if (keys[SDL_SCANCODE_D]) m_camPos += right   * speed * _dt;
     if (keys[SDL_SCANCODE_A]) m_camPos -= right   * speed * _dt;
-	if (keys[SDL_SCANCODE_LCTRL]) m_camPos += up * speed * _dt;
-	if (keys[SDL_SCANCODE_SPACE]) m_camPos -= up * speed * _dt;
+	if (keys[SDL_SCANCODE_SPACE]) m_camPos += up * speed * _dt;
+	if (keys[SDL_SCANCODE_LCTRL]) m_camPos -= up * speed * _dt;
 
     mat4 world = translate(mat4(1.0f), m_camPos) * rot;
     SetMatrix(world);   
