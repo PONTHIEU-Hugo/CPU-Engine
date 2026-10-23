@@ -102,7 +102,7 @@ void Engine::init()
 	m_emitter->Init();
 
 	m_Terrain = new TerrainGenerator();
-	m_Terrain->GenerateHeighmap(5);
+	m_Terrain->GenerateHeighmap(33);
 }
 
 void Engine::Update()
@@ -166,16 +166,15 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
 
-	uniforms.mvp = m_proj * m_view;
 	m_pipeline.BindVertexBuffer(m_Terrain->GetVertices());
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw();
 
-	uniforms.texture = &m_texture;
-	m_pipeline.BindShader(TextureShader);
-	m_pipeline.BindVertexBuffer(&m_obj);
-	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw();
+	//uniforms.texture = &m_texture;
+	//m_pipeline.BindShader(TextureShader);
+	//m_pipeline.BindVertexBuffer(&m_obj);
+	//m_pipeline.BindUniforms(uniforms);
+	//m_pipeline.Draw();
 }
 
 void Engine::destroy()

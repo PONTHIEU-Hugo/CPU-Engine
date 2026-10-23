@@ -7,6 +7,9 @@ enum class HeighMapType : uint8_t
 	_DIAMOND_SQUARE
 };
 
+constexpr float HeighmapValueSpace = 2.5f;
+constexpr float HeighmapValueFactor = 0.025f;
+
 class TerrainGenerator
 {
 private:
@@ -21,4 +24,3 @@ public:
 
 	void GenerateHeighmap(size_t size, HeighMapType type = HeighMapType::_DIAMOND_SQUARE);
 };
-

@@ -65,7 +65,7 @@ Generation* Generation_Algorithm::DiamondSquare_HeighMap(size_t size)
 				}
 
 				value /= added;
-				value += RANDOM::GetRandomInt(0, 255);
+				value += RANDOM::GetRandomInt(0, 127);
 				row[y][x] = value;
 			}
 		}
@@ -100,7 +100,7 @@ Generation* Generation_Algorithm::DiamondSquare_HeighMap(size_t size)
 				}
 
 				value /= added;
-				value += RANDOM::GetRandomInt(0, 255);
+				value += RANDOM::GetRandomInt(0, 127);
 				row[y][x] = value;
 			}
 		}
