@@ -515,89 +515,73 @@ namespace GeometryFactory
 	//// OBJ LOADER
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> LoadGeometry(const std::string& _path)
-	{
-		std::ifstream file(_path);
-		if (!file.is_open())
-			return {};
+	inline std::vector<Vertex> LoadGeometry(std::string _path)
+    {
+		std::vector<Vertex> vertices;
+    	
+    	std::vector<vec3> rawPositions;
+    	std::vector<vec2> rawUVs;
 
-		std::vector<vec3> rawPositions;
-		std::vector<vec2> rawUVs;
-		std::vector<Vertex>    vertices;
+    	FILE* file = nullptr;
+    	errno_t err = fopen_s(&file, _path.c_str(), "r");
+    	if (err != 0 || file == nullptr)
+    	{
+    		return {};
+    	}
 
-		auto resolve = [](int _i, size_t _count) -> int
-		{
-			if (_i > 0) return _i - 1;
-			if (_i < 0) return (int)_count + _i;
-			return -1;
-		};
+    	while (1)
+    	{
+    		char lineHeader[128];
+    		int res = fscanf_s(file, "%s", lineHeader, (unsigned)_countof(lineHeader));
+    		if (res == EOF)
+    			break;
 
-		std::string line;
-		while (std::getline(file, line))
-		{
-			std::istringstream ss(line);
-			std::string header;
-			ss >> header;
+    		if (strcmp(lineHeader, "v") == 0)
+    		{
+    			vec3 pos;
+    			fscanf_s(file, "%f %f %f\n", &pos.x, &pos.y, &pos.z);
+    			pos.z = -pos.z;
+    			rawPositions.push_back(pos);
+    		}
+    		else if (strcmp(lineHeader, "vt") == 0)
+    		{
+    			vec2 uv;
+    			fscanf_s(file, "%f %f\n", &uv.x, &uv.y);
+    			uv.y = 1 - uv.y;
+    			rawUVs.push_back(uv);
+    		}
+    		else if (strcmp(lineHeader, "f") == 0)
+    		{
+    			unsigned int posIdx[3], uvIdx[3], normalIdx[3];
+    			int matches = fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
+					&posIdx[0], &uvIdx[0], &normalIdx[0],
+					&posIdx[1], &uvIdx[1], &normalIdx[1],
+					&posIdx[2], &uvIdx[2], &normalIdx[2]);
 
-			if (header == "v")
-			{
-				vec3 p;
-				ss >> p.x >> p.y >> p.z;
-				rawPositions.push_back(p);
-			}
-			else if (header == "vt")
-			{
-				vec2 uv;
-				ss >> uv.x >> uv.y;
-				uv.y = 1.0f - uv.y;
-				rawUVs.push_back(uv);
-			}
-			else if (header == "f")
-			{
-				struct Ref { int v = -1; int vt = -1; };
-				std::vector<Ref> face;
+    			if (matches != 9)
+    			{
+    				printf("File can't be read by our simple parser\n");
+    				fclose(file);
+    				return {};
+    			}
 
-				std::string token;
-				while (ss >> token)
-				{
-					Ref r;
-					size_t s1 = token.find('/');
-					r.v = resolve(std::stoi(token.substr(0, s1)), rawPositions.size());
+    			int order[3] = {0, 2, 1};
+    			for (int k = 0; k < 3; ++k)
+    			{
+    				int idx = order[k];
+    				Vertex v;
+    				v.position = rawPositions[posIdx[idx] - 1];
+    				v.uv       = rawUVs.empty() ? vec2() : rawUVs[uvIdx[idx] - 1];
+    				v.normal   = vec3();
+    				v.color = vec3 (255, 255, 255);
+    				vertices.push_back(v);
+    			}
+    		}
+    	}
 
-					if (s1 != std::string::npos)
-					{
-						size_t s2 = token.find('/', s1 + 1);
-						std::string vt = token.substr(s1 + 1, s2 == std::string::npos ? std::string::npos : s2 - s1 - 1);
-						if (!vt.empty())
-							r.vt = resolve(std::stoi(vt), rawUVs.size());
-					}
-					face.push_back(r);
-				}
+    	fclose(file);
 
-				if (face.size() < 3)
-					continue;
-
-				bool valid = true;
-				for (const Ref& r : face)
-					if (r.v < 0 || r.v >= (int)rawPositions.size()) valid = false;
-				if (!valid)
-					continue;
-
-				for (size_t k = 1; k + 1 < face.size(); ++k)
-				{
-					for (const Ref* r : { &face[0], &face[k], &face[k + 1] })
-					{
-						Vertex v;
-						v.position = rawPositions[r->v];
-						v.uv       = (r->vt >= 0 && r->vt < (int)rawUVs.size()) ? rawUVs[r->vt] : vec2(0.0f);
-						v.color    = vec3((float)RANDOM::GetRandomInt32_t(0, 255));
-						vertices.push_back(v);
-					}
-				}
-			}
-		}
-
-		CalculateNormals(vertices);
+    	CalculateNormals(vertices);
 		return vertices;
 	}
 }

@@ -32,6 +32,7 @@ private:
 	Texture m_texture;
 	AABB m_triangleBounds;
 	AABB m_cubeBounds;
+	AABB m_objBounds;
 
 	Camera m_camera;
 };

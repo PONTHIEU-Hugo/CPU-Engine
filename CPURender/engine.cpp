@@ -25,13 +25,14 @@ void Engine::init()
 	// m_obj = GeometryFactory::BuildCylinder(32);
 	// m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
 	
-	//m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
+	m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
 	
 	
-	m_texture.Load("Assets/mael.png");
+	m_texture.Load("Assets/vivien.png");
 
 	m_triangleBounds = ComputeAABB(m_triangle);
 	m_cubeBounds = ComputeAABB(m_cube);
+	m_objBounds = ComputeAABB(m_obj);
 
 	m_pipeline.BindShader(BasicShader);
 
@@ -90,6 +91,16 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	{
 		m_pipeline.BindShader(LambertShader);
 		m_pipeline.BindVertexBuffer(&m_cube);
+		m_pipeline.BindUniforms(uniforms);
+		// m_pipeline.Draw();
+	}
+	
+	// Obj
+	if (frustum.Intersects(m_objBounds))
+	{
+		m_pipeline.BindShader(LambertShader);
+		// uniforms.texture = &m_texture;
+		m_pipeline.BindVertexBuffer(&m_obj);
 		m_pipeline.BindUniforms(uniforms);
 		m_pipeline.Draw();
 	}
