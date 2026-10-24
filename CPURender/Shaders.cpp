@@ -1,6 +1,8 @@
 #include "Shaders.h"
 #include "Texture.h"
 
+#include <cmath>
+
 static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;

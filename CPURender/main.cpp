@@ -102,7 +102,7 @@ int main(void) {
         SDL_RenderPresent(renderer);
 
         CHRONO->Update();
-        std::cout << CHRONO->ShowFPS() << std::endl;
+        // std::cout << CHRONO->ShowFPS() << std::endl;
     }
 
     engine.destroy();

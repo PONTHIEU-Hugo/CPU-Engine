@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "main.h"
+#include "RenderTarget.h"
 
 struct Texture;
 
@@ -22,6 +23,7 @@ struct Varyings
 	glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 color = { 255.0f, 0.0f, 255.0f };
 	glm::vec2 uv = { 0.0f, 0.0f };
+	glm::vec3 lightPos = { 0.0f, 0.0f, 0.0f };
 };
 
 struct Uniforms
@@ -29,8 +31,16 @@ struct Uniforms
 	glm::mat4 mvp{ 1.0f };
 	const Texture* texture = nullptr;
 	glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f }; 
-	float ambient = 0.2f;                            
+	float ambient = 0.2f; 
+	
+	// Ombres
+	glm::mat4 lightVP{ 1.0f };
+	const RenderTarget* shadowMap = nullptr;  
+	float shadowBiasConst = 0.0f;        
+	float shadowBiasSlope = 0.0f;
 };
+
+enum class CullMode { None, Back, Front };
 
 using VertexShader = std::function<Varyings(const Vertex&, const Uniforms&)>;
 using PixelShader = std::function<glm::vec3(const Varyings&, const Uniforms&)>;
@@ -46,13 +56,17 @@ class Pipeline
 {
 public:
 	Pipeline();
-
+	Pipeline(const Pipeline&) = delete;
+	Pipeline& operator=(const Pipeline&) = delete;
+	
 	void BindVertexBuffer(const std::vector<Vertex>* vertices) { m_vertices = vertices; }
 	void BindVertexShader(VertexShader vs) { m_vertexShader = std::move(vs); }
 	void BindPixelShader(PixelShader ps) { m_pixelShader = std::move(ps); }
 	void BindShader(const Shader& shader) { m_vertexShader = shader.vs; m_pixelShader = shader.ps; }
 	void BindUniforms(const Uniforms& uniforms) { m_uniforms = uniforms; }
-	void BindFrameBuffer(FinalFrameBuffer* fb) { m_frameBuffer = fb; }
+	void BindFrameBuffer(FinalFrameBuffer* fb) { m_screen.color = fb; m_target = &m_screen; }
+	void BindTarget(RenderTarget* target)      { m_target = target; }
+	void SetCullMode(CullMode mode)            { m_cull = mode; }
 
 	void ClearDepth();
 
@@ -67,8 +81,9 @@ private:
 	PixelShader m_pixelShader;
 
 	Uniforms m_uniforms;
-
-	FinalFrameBuffer* m_frameBuffer = nullptr;
-
-	std::vector<float> m_depth; // z-buffer, 1 = loin
+	
+	RenderTarget  m_screen;               
+	RenderTarget* m_target = nullptr;
+	
+	CullMode      m_cull   = CullMode::Back;
 };

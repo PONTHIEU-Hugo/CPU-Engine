@@ -21,7 +21,8 @@ static Varyings LerpVaryings(const Varyings& a, const Varyings& b, float t)
 	r.normal = glm::mix(a.normal, b.normal, t);
 	r.color = glm::mix(a.color, b.color, t);
 	r.uv = glm::mix(a.uv, b.uv, t);
-
+	r.lightPos = glm::mix(a.lightPos, b.lightPos, t);
+	
 	return r;
 }
 

@@ -147,6 +147,7 @@
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Clipping.cpp" />
     <ClCompile Include="Frustum.cpp" />
@@ -158,7 +159,10 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="Profiler.h" />
+    <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="Shaders.h" />
+    <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Clipping.h" />
     <ClInclude Include="Frustum.h" />

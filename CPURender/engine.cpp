@@ -1,3 +1,6 @@
+#ifndef ENGINE_CPP_INCLUDED
+#define ENGINE_CPP_INCLUDED
+
 #include "engine.h"
 #include "Shaders.h"
 #include <stdio.h>
@@ -5,6 +8,22 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Chrono.h"
 #include "GeometryFactory.hpp"
+#include "Profiler.h"
+
+// Quad horizontal qui reçoit les ombres
+static std::vector<Vertex> BuildGround(float y, float half)
+{
+	auto make = [&](float x, float z)
+	{
+		Vertex v;
+		v.position = { x, y, z };
+		v.normal   = { 0.0f, 1.0f, 0.0f };
+		v.color    = { 180.0f, 180.0f, 180.0f };
+		return v;
+	};
+	Vertex p0 = make(-half, half), p1 = make(half, half), p2 = make(half, -half), p3 = make(-half, -half);
+	return { p0, p1, p2, p0, p2, p3 };
+}
 
 void Engine::init()
 {
@@ -27,12 +46,22 @@ void Engine::init()
 	
 	m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
 	
-	
 	m_texture.Load("Assets/vivien.png");
 
 	m_triangleBounds = ComputeAABB(m_triangle);
 	m_cubeBounds = ComputeAABB(m_cube);
 	m_objBounds = ComputeAABB(m_obj);
+
+	float r = glm::length(m_objBounds.max - m_objBounds.min) * 0.5f;
+	m_ground = BuildGround(m_objBounds.min.y, r * 1.2f);
+	m_groundBounds = ComputeAABB(m_ground);
+
+	m_sceneBounds.min = glm::min(m_objBounds.min, m_groundBounds.min);
+	m_sceneBounds.max = glm::max(m_objBounds.max, m_groundBounds.max);
+
+	m_shadow.Init(256);
+	m_shadow.SetLight(vec3(-0.5f, -1.0f, -0.3f), m_sceneBounds);
+	m_shadowCasters = { { &m_obj, m_objBounds } };
 
 	m_pipeline.BindShader(BasicShader);
 
@@ -55,66 +84,116 @@ void Engine::Update()
 
 void Engine::handleEvent(const SDL_Event& event)
 {
-    if (event.type == SDL_EVENT_KEY_DOWN)
-    {
-        if ( event.key.key == SDLK_P )
-        {
-            m_emitter->m_active = !m_emitter->m_active;
-        }
-    }
+	if (event.type != SDL_EVENT_KEY_DOWN)
+		return;
+
+	#if SHADOW_DEBUG
+		if (event.key.key == SDLK_L) 
+		{
+			m_forceShadowEveryFrame = !m_forceShadowEveryFrame;
+			printf("Regeneration de la carte a chaque trame : %s\n", m_forceShadowEveryFrame ? "oui" : "non");
+		}
+		if (event.key.key == SDLK_R)
+		{
+			mat4 rot = rotate(mat4(1.0f), radians(15.0f), vec3(0, 1, 0));
+			m_shadow.SetLight(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), m_sceneBounds);
+		}
+	#endif
 }
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 {
-	frameBufferOut.clear(0x000000);
-	m_pipeline.ClearDepth();
-	m_pipeline.BindFrameBuffer(&frameBufferOut);
-
 	Uniforms uniforms;
-	uniforms.mvp = m_camera.GetVPMatrix();
-	uniforms.lightDirection = glm::normalize(glm::vec3(-0.5f, -1.0f, -0.3f));
+	uniforms.mvp     = m_camera.GetVPMatrix();
 	uniforms.ambient = 0.2f;
+	m_shadow.ApplyTo(uniforms);   // lumière, matrice, carte, biais
 
-	Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
-
-	//Triangle
-	if (frustum.Intersects(m_triangleBounds))
+	// Passe 1 : depuis la lumière, seulement si la carte est invalide
 	{
-		m_pipeline.BindShader(BasicShader);
-		m_pipeline.BindVertexBuffer(&m_triangle);
-		m_pipeline.BindUniforms(uniforms);
+		#if SHADOW_DEBUG
+		{
+			ScopedTimer timer(m_msShadow);
+			m_shadow.Update(m_pipeline, m_shadowCasters, m_forceShadowEveryFrame);
+		}
+		#else
+			m_shadow.Update(m_pipeline, m_shadowCasters);
+		#endif
+	}
+
+	// Passe 2 : depuis la caméra
+	{
+		#if SHADOW_DEBUG
+		{
+			ScopedTimer timer(m_msShadow);
+		}
+		#endif
+
+		frameBufferOut.clear(0x000000);
+		m_pipeline.BindFrameBuffer(&frameBufferOut);   // rebascule sur l'écran
+		m_pipeline.ClearDepth();
+		m_pipeline.SetCullMode(CullMode::Back);
+
+		Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
+
+		
+		// Cube (désactivé)
+		if (frustum.Intersects(m_cubeBounds))
+		{
+			m_pipeline.BindShader(ShadowLambertShader);
+			m_pipeline.BindVertexBuffer(&m_cube);
+			m_pipeline.BindUniforms(uniforms);
+			m_pipeline.Draw();
+		}
+
+		// Objet : reçoit les ombres
+		if (frustum.Intersects(m_objBounds))
+		{
+			Uniforms objUniforms = uniforms;
+			if (m_texture.IsValid())
+				objUniforms.texture = &m_texture;
+
+			m_pipeline.BindShader(ShadowLambertShader);
+			m_pipeline.BindVertexBuffer(&m_obj);
+			m_pipeline.BindUniforms(objUniforms);
+			m_pipeline.Draw();
+		}
+
+		// Sol : face unique, donc sans culling
+		if (frustum.Intersects(m_groundBounds))
+		{
+			m_pipeline.SetCullMode(CullMode::None);
+			m_pipeline.BindShader(ShadowLambertShader);
+			m_pipeline.BindVertexBuffer(&m_ground);
+			m_pipeline.BindUniforms(uniforms);
+			m_pipeline.Draw();
+			m_pipeline.SetCullMode(CullMode::Back);
+		}
+
+		// Particules (désactivées)
+		//m_particleVertices.clear();
+		//if (m_emitter)
+		//	m_emitter->Render(m_particleVertices);
+		//m_pipeline.BindShader(BasicShader);
+		//m_pipeline.BindVertexBuffer(&m_particleVertices);
+		//m_pipeline.BindUniforms(uniforms);
 		//m_pipeline.Draw();
 	}
 
-	// Cube
-	if (frustum.Intersects(m_cubeBounds))
+	#if SHADOW_DEBUG
 	{
-		m_pipeline.BindShader(LambertShader);
-		m_pipeline.BindVertexBuffer(&m_cube);
-		m_pipeline.BindUniforms(uniforms);
-		// m_pipeline.Draw();
+		m_shadow.DrawDebug(frameBufferOut, 64);
+
+		// Moyenne sur 120 trames
+		if (++m_profFrames == 120)
+		{
+			printf("[prof] ombre %.3f ms | principale %.3f ms (moyenne sur 120 trames)\n",
+				m_msShadow / 120.0, m_msMain / 120.0);
+			m_msShadow = m_msMain = 0.0;
+			m_profFrames = 0;
+		}
 	}
+	#endif
 	
-	// Obj
-	if (frustum.Intersects(m_objBounds))
-	{
-		m_pipeline.BindShader(LambertShader);
-		// uniforms.texture = &m_texture;
-		m_pipeline.BindVertexBuffer(&m_obj);
-		m_pipeline.BindUniforms(uniforms);
-		m_pipeline.Draw();
-	}
-
-	m_pipeline.BindShader(BasicShader);
-
-	//m_particleVertices.clear();
-	//if (m_emitter)
-	//	m_emitter->Render(m_particleVertices);
-
-	//uniforms.mvp = m_camera.GetVPMatrix();
-	//m_pipeline.BindVertexBuffer(&m_particleVertices);
-	//m_pipeline.BindUniforms(uniforms);
-	//m_pipeline.Draw();
 }
 
 void Engine::destroy()
@@ -122,3 +201,5 @@ void Engine::destroy()
 	delete m_emitter;
 	printf("Killing engine \n");
 }
+
+#endif
