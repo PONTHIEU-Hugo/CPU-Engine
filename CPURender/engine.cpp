@@ -8,7 +8,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "Chrono.h"
 #include "GeometryFactory.hpp"
-#include "Profiler.h"
 
 // Quad horizontal qui reçoit les ombres
 static std::vector<Vertex> BuildGround(float y, float half)
@@ -87,18 +86,11 @@ void Engine::handleEvent(const SDL_Event& event)
 	if (event.type != SDL_EVENT_KEY_DOWN)
 		return;
 
-	#if SHADOW_DEBUG
-		if (event.key.key == SDLK_L) 
-		{
-			m_forceShadowEveryFrame = !m_forceShadowEveryFrame;
-			printf("Regeneration de la carte a chaque trame : %s\n", m_forceShadowEveryFrame ? "oui" : "non");
-		}
-		if (event.key.key == SDLK_R)
-		{
-			mat4 rot = rotate(mat4(1.0f), radians(15.0f), vec3(0, 1, 0));
-			m_shadow.SetLight(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), m_sceneBounds);
-		}
-	#endif
+	if (event.key.key == SDLK_R)
+	{
+		mat4 rot = rotate(mat4(1.0f), radians(15.0f), vec3(0, 1, 0));
+		m_shadow.SetLight(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), m_sceneBounds);
+	}
 }
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
@@ -110,24 +102,11 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 	// Passe 1 : depuis la lumière, seulement si la carte est invalide
 	{
-		#if SHADOW_DEBUG
-		{
-			ScopedTimer timer(m_msShadow);
-			m_shadow.Update(m_pipeline, m_shadowCasters, m_forceShadowEveryFrame);
-		}
-		#else
-			m_shadow.Update(m_pipeline, m_shadowCasters);
-		#endif
+		m_shadow.Update(m_pipeline, m_shadowCasters);
 	}
 
 	// Passe 2 : depuis la caméra
 	{
-		#if SHADOW_DEBUG
-		{
-			ScopedTimer timer(m_msShadow);
-		}
-		#endif
-
 		frameBufferOut.clear(0x000000);
 		m_pipeline.BindFrameBuffer(&frameBufferOut);   // rebascule sur l'écran
 		m_pipeline.ClearDepth();
@@ -178,22 +157,8 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 		//m_pipeline.BindUniforms(uniforms);
 		//m_pipeline.Draw();
 	}
-
-	#if SHADOW_DEBUG
-	{
-		m_shadow.DrawDebug(frameBufferOut, 64);
-
-		// Moyenne sur 120 trames
-		if (++m_profFrames == 120)
-		{
-			printf("[prof] ombre %.3f ms | principale %.3f ms (moyenne sur 120 trames)\n",
-				m_msShadow / 120.0, m_msMain / 120.0);
-			m_msShadow = m_msMain = 0.0;
-			m_profFrames = 0;
-		}
-	}
-	#endif
 	
+	m_shadow.DrawDebug(frameBufferOut, 64);
 }
 
 void Engine::destroy()
