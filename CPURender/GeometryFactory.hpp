@@ -164,7 +164,7 @@ namespace GeometryFactory
 	//// TRIANGLE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildTriangle()
+	inline Geometry BuildTriangle()
 	{
 		std::vector<Vertex> vertices;
 
@@ -180,14 +180,17 @@ namespace GeometryFactory
 		detail::PushTriangle(vertices, bottomLeft, top, bottomRight);
 
 		CalculateNormals(vertices);
-		return vertices;
+		
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// PYRAMID
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildPyramid()
+	inline Geometry BuildPyramid()
 	{
 		std::vector<Vertex> vertices;
 
@@ -204,14 +207,17 @@ namespace GeometryFactory
 		detail::AddQuad(vertices, A, B, C, D);  // base   (-Y)
 
 		CalculateNormals(vertices);
-		return vertices;
+		
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// CUBE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildCube()
+	inline Geometry BuildCube()
 	{
 		std::vector<Vertex> vertices;
 
@@ -223,14 +229,17 @@ namespace GeometryFactory
 		detail::AddQuad(vertices, { 0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,-0.5f}, {-0.5f, 0.5f,-0.5f}, { 0.5f, 0.5f,-0.5f}); // -Z
 
 		CalculateNormals(vertices);
-		return vertices;
+		
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// ICOSPHERE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildIcosphere(int _subdivisions, float _radius = 0.5f)
+	inline Geometry BuildIcosphere(int _subdivisions, float _radius = 0.5f)
 	{
 		_subdivisions = clamp(_subdivisions, 0, 6);
 
@@ -323,14 +332,16 @@ namespace GeometryFactory
 			}
 		}
 
-		return vertices;
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// UV SPHERE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildUVSphere(uint32 _sliceCount, uint32 _stackCount, float _radius = 0.5f)
+	inline Geometry BuildUVSphere(uint32 _sliceCount, uint32 _stackCount, float _radius = 0.5f)
 	{
 		_sliceCount = std::max<uint32>(_sliceCount, 3);
 		_stackCount = std::max<uint32>(_stackCount, 2);
@@ -387,7 +398,9 @@ namespace GeometryFactory
 			}
 		}
  
-		return vertices;
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
@@ -431,19 +444,22 @@ namespace GeometryFactory
 		}
 	}
 
-	inline std::vector<Vertex> BuildCircle(int _stackCount, float _posY, bool _isTop)
+	inline Geometry BuildCircle(int _stackCount, float _posY, bool _isTop)
 	{
 		std::vector<Vertex> vertices;
 		AddCircle(vertices, std::max(_stackCount, 3), _posY, _isTop);
 		CalculateNormals(vertices);
-		return vertices;
+		
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// CYLINDER
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildCylinder(int _stackCount)
+	inline Geometry BuildCylinder(int _stackCount)
 	{
 		_stackCount = std::max(_stackCount, 3);
 
@@ -482,14 +498,16 @@ namespace GeometryFactory
 			detail::PushTriangle(vertices, top0,    top1,    bottom1);
 		}
 
-		return vertices;
+		Geometry geometry;
+		geometry.vertices = std::move(vertices); 
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// DONUT (tore)
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildDonut(float _majorRadius, float _minorRadius, uint32 _majorSlices, uint32 _minorSlices)
+	inline Geometry BuildDonut(float _majorRadius, float _minorRadius, uint32 _majorSlices, uint32 _minorSlices)
 	{
 		std::vector<Vertex> vertices;
 
@@ -521,14 +539,16 @@ namespace GeometryFactory
 			}
 		}
 
-		return vertices;
+		Geometry geometry;
+		geometry.vertices = std::move(vertices);
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// OBJ LOADER
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> LoadGeometry(std::string _path)
+	inline Geometry LoadGeometry(std::string _path)
     {
 		std::vector<Vertex> vertices;
     	
@@ -605,8 +625,9 @@ namespace GeometryFactory
 
     	fclose(file);
 
-    	// CalculateNormals(vertices);
-		return vertices;
+		Geometry geometry;
+		geometry.vertices = std::move(vertices);
+		return geometry;
 	}
 }
 

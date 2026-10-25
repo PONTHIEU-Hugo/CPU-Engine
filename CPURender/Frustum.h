@@ -11,7 +11,7 @@ struct AABB
 	glm::vec3 max{ 0.0f };
 };
 
-AABB ComputeAABB(const std::vector<Vertex>& vertices);
+AABB ComputeAABB(const Geometry& geo);
 
 struct Frustum
 {

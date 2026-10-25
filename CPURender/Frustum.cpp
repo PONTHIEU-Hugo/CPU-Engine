@@ -1,13 +1,13 @@
 #include "Frustum.h"
 
-AABB ComputeAABB(const std::vector<Vertex>& vertices)
+AABB ComputeAABB(const Geometry& geo)
 {
 	AABB box;
-	if (vertices.empty())
+	if (geo.vertices.empty())
 		return box;
 
-	box.min = box.max = vertices[0].position;
-	for (const Vertex& v : vertices)
+	box.min = box.max = geo.vertices[0].position;
+	for (const Vertex& v : geo.vertices)
 	{
 		box.min = glm::min(box.min, v.position);
 		box.max = glm::max(box.max, v.position);

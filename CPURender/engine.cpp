@@ -13,7 +13,7 @@
 #include "GeometryFactory.hpp"
 
 // Quad horizontal qui reçoit les ombres
-static std::vector<Vertex> BuildGround(float y, float half)
+static Geometry BuildGround(float y, float half)
 {
 	auto make = [&](float x, float z)
 	{
@@ -24,7 +24,9 @@ static std::vector<Vertex> BuildGround(float y, float half)
 		return v;
 	};
 	Vertex p0 = make(-half, half), p1 = make(half, half), p2 = make(half, -half), p3 = make(-half, -half);
-	return { p0, p1, p2, p0, p2, p3 };
+	Geometry geometry;
+	geometry.vertices = { p0, p1, p2, p0, p2, p3 };
+	return geometry;
 }
 
 void Engine::init()
@@ -33,6 +35,7 @@ void Engine::init()
 
 	m_triangle = GeometryFactory::BuildTriangle();
 	m_cube = GeometryFactory::BuildCube();
+	m_cube.transform.SetPosition({0.0f, 0.5f, 0.0f});
 
 	// m_obj = GeometryFactory::BuildTriangle();
 	// m_obj = GeometryFactory::BuildPyramid();
@@ -45,6 +48,8 @@ void Engine::init()
 	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, false);
 	// m_obj = GeometryFactory::BuildCylinder(32);
 	 // m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
+	
+	m_obj = GeometryFactory::LoadGeometry("Assets/tuture.obj");
 	
 	m_texture.Load("Assets/vivien.png");
 
@@ -61,7 +66,7 @@ void Engine::init()
 
 	m_shadow.Init(256);
 	m_shadow.SetLight(vec3(-0.5f, -1.0f, -0.3f), m_sceneBounds);
-	m_shadowCasters = { { &m_obj, m_objBounds } };
+	m_shadowCasters = { { &m_obj, m_objBounds }, { &m_cube, m_cubeBounds } };
 
 	m_pipeline.BindShader(BasicShader);
 
@@ -84,14 +89,23 @@ void Engine::Update()
 
 void Engine::handleEvent(const SDL_Event& event)
 {
-	if (event.type != SDL_EVENT_KEY_DOWN)
-		return;
-
 	if (event.key.key == SDLK_R)
 	{
 		mat4 rot = rotate(mat4(1.0f), radians(15.0f), vec3(0, 1, 0));
 		m_shadow.SetLight(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), m_sceneBounds);
 	}
+	
+	float dt = CHRONO->GetDeltaTime();
+	float speed = 5.0f;
+	if (event.key.key == SDLK_KP_8)
+		m_obj.transform.Move(vec3(0.0f, 0.0f, speed * dt));
+	if (event.key.key == SDLK_KP_5)
+		m_obj.transform.Move(vec3(0.0f, 0.0f, -speed * dt));
+	if (event.key.key == SDLK_KP_4)
+		m_obj.transform.Move(vec3(-speed * dt, 0.0f, 0.0f));
+	if (event.key.key == SDLK_KP_6)
+		m_obj.transform.Move(vec3(speed * dt, 0.0f, 0.0f));
+	
 }
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
@@ -99,33 +113,31 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 	Uniforms uniforms;
 	uniforms.mvp     = m_camera.GetVPMatrix();
 	uniforms.ambient = 0.2f;
-	m_shadow.ApplyTo(uniforms);   // lumière, matrice, carte, biais
+	m_shadow.ApplyTo(uniforms);
 
-	// Passe 1 : depuis la lumière, seulement si la carte est invalide
+	// Passe 1
 	{
 		m_shadow.Update(m_pipeline, m_shadowCasters);
 	}
 
-	// Passe 2 : depuis la caméra
+	// Passe 2
 	{
 		frameBufferOut.clear(0x000000);
-		m_pipeline.BindFrameBuffer(&frameBufferOut);   // rebascule sur l'écran
+		m_pipeline.BindFrameBuffer(&frameBufferOut);
 		m_pipeline.ClearDepth();
 		m_pipeline.SetCullMode(CullMode::Back);
 
 		Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
 
 		
-		// Cube (désactivé)
 		if (frustum.Intersects(m_cubeBounds))
 		{
 			m_pipeline.BindShader(ShadowLambertShader);
 			m_pipeline.BindVertexBuffer(&m_cube);
 			m_pipeline.BindUniforms(uniforms);
-			m_pipeline.Draw();
+			m_pipeline.Draw(m_cube.transform.GetWorldMatrix());
 		}
 
-		// Objet : reçoit les ombres
 		if (frustum.Intersects(m_objBounds))
 		{
 			Uniforms objUniforms = uniforms;
@@ -135,28 +147,18 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 			m_pipeline.BindShader(ShadowLambertShader);
 			m_pipeline.BindVertexBuffer(&m_obj);
 			m_pipeline.BindUniforms(objUniforms);
-			m_pipeline.Draw();
+			m_pipeline.Draw(m_obj.transform.GetWorldMatrix());
 		}
 
-		// Sol : face unique, donc sans culling
 		if (frustum.Intersects(m_groundBounds))
 		{
 			m_pipeline.SetCullMode(CullMode::None);
 			m_pipeline.BindShader(ShadowLambertShader);
 			m_pipeline.BindVertexBuffer(&m_ground);
 			m_pipeline.BindUniforms(uniforms);
-			m_pipeline.Draw();
+			m_pipeline.Draw(m_ground.transform.GetWorldMatrix());
 			m_pipeline.SetCullMode(CullMode::Back);
 		}
-
-		// Particules (désactivées)
-		//m_particleVertices.clear();
-		//if (m_emitter)
-		//	m_emitter->Render(m_particleVertices);
-		//m_pipeline.BindShader(BasicShader);
-		//m_pipeline.BindVertexBuffer(&m_particleVertices);
-		//m_pipeline.BindUniforms(uniforms);
-		//m_pipeline.Draw();
 	}
 	
 	m_shadow.DrawDebug(frameBufferOut, 64);

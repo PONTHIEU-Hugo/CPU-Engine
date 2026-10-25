@@ -1,7 +1,5 @@
 #include "Pipeline.h"
 #include "Clipping.h"
-#include <algorithm>
-#include <cmath>
 
 Pipeline::Pipeline() : m_screen(WIDTH, HEIGHT)
 {
@@ -13,17 +11,24 @@ void Pipeline::ClearDepth()
 	if (m_target) m_target->ClearDepth();
 }
 
-void Pipeline::Draw()
+void Pipeline::Draw(glm::mat4 const& mat)
 {
-	if (!m_vertices || !m_target || !m_vertexShader) return;
-	
+	if (!m_geometry || !m_target || !m_vertexShader) return;
 	if (m_target->color && !m_pixelShader) return;
 
-	std::vector<Varyings> varyings;
-	varyings.reserve(m_vertices->size());
+	const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mat)));
 
-	for (const Vertex& v : *m_vertices)
+	std::vector<Varyings> varyings;
+	varyings.reserve(m_geometry->vertices.size());
+
+	for (const Vertex& src : m_geometry->vertices)
+	{
+		Vertex v = src;
+		v.position = glm::vec3(mat * glm::vec4(src.position, 1.0f));
+		v.normal   = glm::normalize(normalMatrix * src.normal);
+
 		varyings.push_back(m_vertexShader(v, m_uniforms));
+	}
 
 	for (size_t i = 0; i + 2 < varyings.size(); i += 3)
 	{

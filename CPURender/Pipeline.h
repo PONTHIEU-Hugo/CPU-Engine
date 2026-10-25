@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include "main.h"
 #include "RenderTarget.h"
+#include "Transform.h"
 
 struct Texture;
 
@@ -15,6 +16,13 @@ struct Vertex
 	glm::vec3 color = { 255.0f, 0.0f, 255.0f };
 	glm::vec2 uv = { 0.0f, 0.0f };
 };
+
+struct Geometry
+{
+	std::vector<Vertex> vertices;
+	Transform transform;
+};
+
 
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
@@ -45,7 +53,7 @@ enum class CullMode { None, Back, Front };
 using VertexShader = std::function<Varyings(const Vertex&, const Uniforms&)>;
 using PixelShader = std::function<glm::vec3(const Varyings&, const Uniforms&)>;
 
-// Un shader = vertex shader + pixel shader 
+// Un shader = vertex shader + pixel shader
 struct Shader
 {
 	VertexShader vs;
@@ -59,7 +67,7 @@ public:
 	Pipeline(const Pipeline&) = delete;
 	Pipeline& operator=(const Pipeline&) = delete;
 	
-	void BindVertexBuffer(const std::vector<Vertex>* vertices) { m_vertices = vertices; }
+	void BindVertexBuffer(const Geometry* geometries) { m_geometry = geometries; }
 	void BindVertexShader(VertexShader vs) { m_vertexShader = std::move(vs); }
 	void BindPixelShader(PixelShader ps) { m_pixelShader = std::move(ps); }
 	void BindShader(const Shader& shader) { m_vertexShader = shader.vs; m_pixelShader = shader.ps; }
@@ -70,12 +78,12 @@ public:
 
 	void ClearDepth();
 
-	void Draw();
+	void Draw(glm::mat4 const& mat);
 
 private:
 	void DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, const Varyings& vertexC);
 
-	const std::vector<Vertex>* m_vertices = nullptr;
+	const Geometry* m_geometry = nullptr;
 
 	VertexShader m_vertexShader;
 	PixelShader m_pixelShader;

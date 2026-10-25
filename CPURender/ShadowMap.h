@@ -8,9 +8,11 @@
 
 struct ShadowCaster
 {
-	const std::vector<Vertex>* vertices = nullptr;
+	Geometry* geometries = nullptr;
 	AABB bounds;
 };
+
+struct Transform;
 
 class ShadowMap
 {

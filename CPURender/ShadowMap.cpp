@@ -5,6 +5,7 @@
 #include "Texture.h"
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
+#include "Transform.h"
 
 static const float kDepthRangeInRadii = 4.0f;
 
@@ -22,14 +23,11 @@ static glm::mat4 ComputeLightVP(const glm::vec3& lightDir, const AABB& bounds, f
 	return proj * view;
 }
 
-// --- Test d'ombre (appelé par le pixel shader) ---
-
 static float ShadowVisibility(const Varyings& in, const Uniforms& u, float cosTheta)
 {
 	const RenderTarget* map = u.shadowMap;
 	if (!map) return 1.0f;
 
-	// MÊME transformation viewport que Pipeline::DrawTriangle (y inversé)
 	float sx = (in.lightPos.x * 0.5f + 0.5f) * (float)map->width;
 	float sy = (1.0f - (in.lightPos.y * 0.5f + 0.5f)) * (float)map->height;
 
@@ -99,7 +97,6 @@ static glm::vec3 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };
 
-// --- Classe ShadowMap ---
 
 void ShadowMap::Init(int resolution)
 {
@@ -128,8 +125,8 @@ void ShadowMap::RecomputeBias()
 
 bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& casters, bool force)
 {
-	if (!m_dirty && !force)
-		return false;
+	// if (!m_dirty && !force)
+	// 	return false;
 
 	Uniforms lightUniforms;
 	lightUniforms.mvp = m_lightVP;
@@ -143,11 +140,11 @@ bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& cast
 	Frustum lightFrustum = Frustum::FromMatrix(m_lightVP);
 	for (const ShadowCaster& caster : casters)
 	{
-		if (!caster.vertices || !lightFrustum.Intersects(caster.bounds))
+		if (!caster.geometries || !lightFrustum.Intersects(caster.bounds))
 			continue;
 
-		pipeline.BindVertexBuffer(caster.vertices);
-		pipeline.Draw();
+		pipeline.BindVertexBuffer(caster.geometries);
+		pipeline.Draw(caster.geometries->transform.GetWorldMatrix());
 	}
 
 	m_dirty = false;
