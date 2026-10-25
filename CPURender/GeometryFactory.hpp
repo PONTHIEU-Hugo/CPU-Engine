@@ -313,11 +313,16 @@ namespace GeometryFactory
 			for (int k = 0; k < 3; ++k)
 			{
 				const vec3& n = tri[k];
-				vertices.push_back(detail::MakeVertex(n * _radius, { u[k], v[k] }));
+				Vertex vertex = detail::MakeVertex(
+						n * _radius,
+						{ u[k], v[k] }
+					);
+
+				vertex.normal = n;
+				vertices.push_back(vertex);
 			}
 		}
 
-		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -344,7 +349,9 @@ namespace GeometryFactory
 			vec3 tangent(-std::sin(theta), 0.0f, std::cos(theta));
 			vec2 uv((float)j / (float)_sliceCount, (float)i / (float)_stackCount);
 
-			return detail::MakeVertex(n * _radius, uv);
+			Vertex vertex = detail::MakeVertex(n * _radius, uv);
+			vertex.normal = n;
+			return vertex;
 		};
 
 		std::vector<Vertex> vertices;
@@ -379,8 +386,7 @@ namespace GeometryFactory
 				}
 			}
 		}
-
-		CalculateNormals(vertices);
+ 
 		return vertices;
 	}
 
@@ -388,7 +394,6 @@ namespace GeometryFactory
 	//// CIRCLE (disque)
 	////////////////////////////////////////////
 
-	// Ajoute un disque a _vertices. Top = normale +Y, sinon -Y. CCW vu de l'exterieur.
 	inline void AddCircle(std::vector<Vertex>& _vertices, int _stackCount, float _posY, bool _isTop)
 	{
 
@@ -396,12 +401,24 @@ namespace GeometryFactory
 
 		Vertex center = detail::MakeVertex({ 0.0f, _posY, 0.0f }, { 0.5f, 0.5f });
 
+		center.normal = _isTop
+				? vec3(0.0f, 1.0f, 0.0f)
+				: vec3(0.0f, -1.0f, 0.0f);
 		auto ringVertex = [&](int i) -> Vertex
 		{
 			float c = std::cos(angle * (float)i);
 			float s = std::sin(angle * (float)i);
-			return detail::MakeVertex({ c * 0.5f, _posY, s * 0.5f },
-			                          { 0.5f + c * 0.5f, 0.5f + s * 0.5f });
+			
+			Vertex vertex = detail::MakeVertex(
+					{ c * 0.5f, _posY, s * 0.5f },
+					{ 0.5f + c * 0.5f, 0.5f + s * 0.5f }
+				);
+
+			vertex.normal = _isTop
+				? vec3(0.0f, 1.0f, 0.0f)
+				: vec3(0.0f, -1.0f, 0.0f);
+
+			return vertex;
 		};
 
 		for (int i = 0; i < _stackCount; ++i)
@@ -439,10 +456,19 @@ namespace GeometryFactory
 		auto sideVertex = [&](int i, float y) -> Vertex
 		{
 			float u = (float)i / (float)_stackCount;
-			float c = std::cos(angle * (float)i);
-			float s = std::sin(angle * (float)i);
-			return detail::MakeVertex({ c * 0.5f, y, s * 0.5f },
-			                          { u, y < 0.0f ? 1.0f : 0.0f });
+			float angle = 2.0f * pi<float>() * u;
+
+			float c = std::cos(angle);
+			float s = std::sin(angle);
+
+			Vertex vertex = detail::MakeVertex(
+				{ c * 0.5f, y, s * 0.5f },
+				{ u, y < 0.0f ? 1.0f : 0.0f }
+			);
+
+			vertex.normal = vec3(c, 0.0f, s);
+
+			return vertex;
 		};
 
 		for (int i = 0; i < _stackCount; ++i)
@@ -456,7 +482,6 @@ namespace GeometryFactory
 			detail::PushTriangle(vertices, top0,    top1,    bottom1);
 		}
 
-		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -466,48 +491,36 @@ namespace GeometryFactory
 
 	inline std::vector<Vertex> BuildDonut(float _majorRadius, float _minorRadius, uint32 _majorSlices, uint32 _minorSlices)
 	{
-		_majorSlices = std::max<uint32>(_majorSlices, 3);
-		_minorSlices = std::max<uint32>(_minorSlices, 3);
-
-		const float twoPi = 2.0f * pi<float>();
-
-		auto donutVertex = [&](uint32 i, uint32 j) -> Vertex
-		{
-			float u     = (float)i / (float)_majorSlices;
-			float v     = (float)j / (float)_minorSlices;
-			float theta = u * twoPi;
-			float phi   = v * twoPi;
-
-			float ring = _majorRadius + _minorRadius * std::cos(phi);
-
-			vec3 p(ring * std::cos(theta),
-			            _minorRadius * std::sin(phi),
-			            ring * std::sin(theta));
-			vec3 n(std::cos(phi) * std::cos(theta),
-			            std::sin(phi),
-			            std::cos(phi) * std::sin(theta));
-			vec3 t(-std::sin(theta), 0.0f, std::cos(theta));
-
-			return detail::MakeVertex(p, { u, v });
-		};
-
 		std::vector<Vertex> vertices;
 
-		for (uint32 i = 0; i < _majorSlices; ++i)
+		for (uint32 i = 0; i <= _majorSlices; ++i)
 		{
-			for (uint32 j = 0; j < _minorSlices; ++j)
+			float u = (float)i / (float)_majorSlices;
+			float theta = u * 2.0f * pi<float>();
+    		
+			for (uint32 j = 0; j <= _minorSlices; ++j)
 			{
-				Vertex a = donutVertex(i,     j);
-				Vertex b = donutVertex(i + 1, j);
-				Vertex c = donutVertex(i,     j + 1);
-				Vertex d = donutVertex(i + 1, j + 1);
+				float v = (float)j / (float)_minorSlices;
+				float phi = v * 2.0f * pi<float>();
 
-				detail::PushTriangle(vertices, a, c, b);
-				detail::PushTriangle(vertices, b, c, d);
+				float x = (_majorRadius + _minorRadius * cos(phi)) * cos(theta);
+				float y = _minorRadius * sin(phi);
+				float z = (_majorRadius + _minorRadius * cos(phi)) * sin(theta);
+
+				Vertex vertex;
+				vertex.position = vec3(x, y, z);
+				vertex.uv = vec2(u, v);
+
+				float nx = cos(phi) * cos(theta);
+				float ny = sin(phi);
+				float nz = cos(phi) * sin(theta);
+
+				vertex.normal = normalize(vec3(nx, ny, nz));
+				
+				vertices.push_back(vertex);
 			}
 		}
 
-		CalculateNormals(vertices);
 		return vertices;
 	}
 
@@ -521,6 +534,7 @@ namespace GeometryFactory
     	
     	std::vector<vec3> rawPositions;
     	std::vector<vec2> rawUVs;
+		std::vector<vec3> rawNormals;
 
     	FILE* file = nullptr;
     	errno_t err = fopen_s(&file, _path.c_str(), "r");
@@ -543,6 +557,16 @@ namespace GeometryFactory
     			pos.z = -pos.z;
     			rawPositions.push_back(pos);
     		}
+    		else if (strcmp(lineHeader, "vn") == 0)
+    		{
+    			vec3 normal;
+    			fscanf_s(file, "%f %f %f",
+					&normal.x, &normal.y, &normal.z);
+
+    			normal.z = -normal.z;
+
+    			rawNormals.push_back(normal);
+    		}
     		else if (strcmp(lineHeader, "vt") == 0)
     		{
     			vec2 uv;
@@ -552,7 +576,7 @@ namespace GeometryFactory
     		}
     		else if (strcmp(lineHeader, "f") == 0)
     		{
-    			unsigned int posIdx[3], uvIdx[3], normalIdx[3];
+    			int posIdx[3], uvIdx[3], normalIdx[3];
     			int matches = fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
 					&posIdx[0], &uvIdx[0], &normalIdx[0],
 					&posIdx[1], &uvIdx[1], &normalIdx[1],
@@ -572,7 +596,7 @@ namespace GeometryFactory
     				Vertex v;
     				v.position = rawPositions[posIdx[idx] - 1];
     				v.uv       = rawUVs.empty() ? vec2() : rawUVs[uvIdx[idx] - 1];
-    				v.normal   = vec3();
+    				v.normal = rawNormals[normalIdx[idx] - 1];
     				v.color = vec3 (255, 255, 255);
     				vertices.push_back(v);
     			}
@@ -581,7 +605,7 @@ namespace GeometryFactory
 
     	fclose(file);
 
-    	CalculateNormals(vertices);
+    	// CalculateNormals(vertices);
 		return vertices;
 	}
 }

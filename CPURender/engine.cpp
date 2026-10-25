@@ -2,6 +2,9 @@
 #define ENGINE_CPP_INCLUDED
 
 #include "engine.h"
+
+#include <iostream>
+
 #include "Shaders.h"
 #include <stdio.h>
 #include <SDL3/SDL_events.h>
@@ -35,15 +38,13 @@ void Engine::init()
 	// m_obj = GeometryFactory::BuildPyramid();
 	// m_obj = GeometryFactory::BuildCube();
 	// m_obj = GeometryFactory::BuildIcosphere(3);         
-	// m_obj = GeometryFactory::BuildIcosphere(4, 1.0f);
-	// m_obj = GeometryFactory::BuildUVSphere(32, 16);        
+	// m_obj = GeometryFactory::BuildIcosphere(1, 1.0f);
+	// m_obj = GeometryFactory::BuildUVSphere(8, 4);        
 	// m_obj = GeometryFactory::BuildUVSphere(64, 32, 2.0f);
 	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, true);
 	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, false);
 	// m_obj = GeometryFactory::BuildCylinder(32);
-	// m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
-	
-	m_obj = GeometryFactory::LoadGeometry("assets/tuture.obj");
+	 // m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
 	
 	m_texture.Load("Assets/vivien.png");
 
