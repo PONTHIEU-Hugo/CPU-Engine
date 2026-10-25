@@ -22,6 +22,7 @@ public:
     mat4 const& GetViewMatrix() const { return m_view; }
     mat4 const& GetProjMatrix() const { return m_proj; }
     mat4 const& GetVPMatrix()   const { return m_viewProj; }
+    vec3 const& GetCameraPos()   const { return m_camPos; }
 
     CameraType GetType() const { return m_type; }
 

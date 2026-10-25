@@ -28,6 +28,9 @@ static float ShadowVisibility(const Varyings& in, const Uniforms& u, float cosTh
 	const RenderTarget* map = u.shadowMap;
 	if (!map) return 1.0f;
 
+	if (in.lightPos.z >= 1.0f || in.lightPos.z <= -1.0f)
+		return 1.0f;
+	
 	float sx = (in.lightPos.x * 0.5f + 0.5f) * (float)map->width;
 	float sy = (1.0f - (in.lightPos.y * 0.5f + 0.5f)) * (float)map->height;
 
@@ -53,8 +56,7 @@ static float ShadowVisibility(const Varyings& in, const Uniforms& u, float cosTh
 	return (float)lit / 9.0f;
 }
 
-// --- Shaders ---
-
+//Shaders
 static Varyings DepthVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
@@ -97,9 +99,21 @@ static glm::vec3 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };
 
+ShadowMap* ShadowMap::s_pInstance = nullptr;
 
+ShadowMap& ShadowMap::GetInstance()
+{
+	if (s_pInstance == nullptr)
+	{
+		s_pInstance = new ShadowMap();
+		s_pInstance->Init(512);
+	}
+
+	return *s_pInstance;
+}
 void ShadowMap::Init(int resolution)
 {
+	s_pInstance = this;
 	m_target = RenderTarget(resolution, resolution);
 	m_dirty = true;
 	RecomputeBias();
@@ -110,7 +124,47 @@ void ShadowMap::SetLight(const glm::vec3& direction, const AABB& sceneBounds)
 	m_lightDir = glm::normalize(direction);
 	m_radius   = glm::length(sceneBounds.max - sceneBounds.min) * 0.5f;
 	m_lightVP  = ComputeLightVP(m_lightDir, sceneBounds, m_radius);
+	m_depthRange = kDepthRangeInRadii * m_radius;
+	m_follow = false;
 	RecomputeBias();
+	m_dirty = true;
+}
+
+void ShadowMap::SetFollowMode(const glm::vec3& direction, float radius, float casterExtra)
+{
+	m_follow      = true;
+	m_lightDir    = glm::normalize(direction);
+	m_radius      = radius;
+	m_casterExtra = casterExtra;
+	m_depthRange  = 2.0f * radius + casterExtra;
+
+	glm::vec3 up = (glm::abs(m_lightDir.y) > 0.99f) ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
+	m_lightRot = glm::lookAt(glm::vec3(0.0f), m_lightDir, up);
+
+	m_snappedCenter = glm::vec3(1e30f);
+	RecomputeBias();
+	m_dirty = true;
+}
+
+void ShadowMap::Follow(const glm::vec3& focus)
+{
+	if (!m_follow) return;
+
+	float texel = (2.0f * m_radius) / (float)m_target.width;
+	
+	glm::vec3 c = glm::vec3(m_lightRot * glm::vec4(focus, 1.0f));
+	c = glm::floor(c / texel + 0.5f) * texel;
+
+	if (c == m_snappedCenter)
+		return;                           
+	m_snappedCenter = c;
+
+	float d = -c.z;                
+	glm::mat4 proj = glm::ortho(c.x - m_radius, c.x + m_radius,
+								c.y - m_radius, c.y + m_radius,
+								d - m_radius - m_casterExtra, 
+								d + m_radius);
+	m_lightVP = proj * m_lightRot;
 	m_dirty = true;
 }
 
@@ -119,14 +173,13 @@ void ShadowMap::RecomputeBias()
 	if (m_target.width <= 0) { m_biasUnit = 0.0f; return; }
 
 	float texelWorld = (2.0f * m_radius) / (float)m_target.width;
-	float depthRange = kDepthRangeInRadii * m_radius;
-	m_biasUnit = 2.0f * texelWorld / depthRange;
+	m_biasUnit = 2.0f * texelWorld / m_depthRange;
 }
 
 bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& casters, bool force)
 {
-	// if (!m_dirty && !force)
-	// 	return false;
+	if (!m_dirty && !force)
+		return false;
 
 	Uniforms lightUniforms;
 	lightUniforms.mvp = m_lightVP;

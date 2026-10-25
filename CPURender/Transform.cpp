@@ -3,6 +3,8 @@
 
 #include "Transform.h"
 
+#include "ShadowMap.h"
+
 void Transform::UpdateMatrix() const
 {
     if (!isDirty) return;
@@ -11,6 +13,7 @@ void Transform::UpdateMatrix() const
           * glm::scale(glm::mat4(1.0f), scale);
     local = world;
     isDirty = false;
+    ShadowMap::GetInstance().SetDirty();
 }
 
 void Transform::SetPosition(glm::vec3 _position)

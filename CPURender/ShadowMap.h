@@ -17,8 +17,13 @@ struct Transform;
 class ShadowMap
 {
 public:
+	static ShadowMap& GetInstance();
+	
 	void Init(int resolution);
+	void SetDirty() { m_dirty = true;}
 	void SetLight(const glm::vec3& direction, const AABB& sceneBounds);
+	void SetFollowMode(const glm::vec3& direction, float radius, float casterExtra);
+	void Follow(const glm::vec3& focus);
 	void Invalidate() { m_dirty = true; }
 	bool Update(Pipeline& pipeline, const std::vector<ShadowCaster>& casters, bool force = false);
 	void ApplyTo(Uniforms& uniforms) const;
@@ -31,11 +36,20 @@ public:
 	const RenderTarget& Target()      const { return m_target; }
 
 private:
+	static ShadowMap* s_pInstance;
 	RenderTarget m_target;
+	
 	glm::vec3 m_lightDir{ 0.0f, -1.0f, 0.0f };
 	glm::mat4 m_lightVP{ 1.0f };
-	float m_radius = 1.0f;          // rayon de la sphère englobant la scène
-	float m_biasUnit = 0.0f;        
+	float m_radius = 1.0f;
+	
+	bool m_follow = false;
+	float m_casterExtra = 0.0f;
+	float m_depthRange = 1.0f;                
+	glm::mat4 m_lightRot{ 1.0f };              
+	glm::vec3 m_snappedCenter{ 1e30f };
+	
+	float m_biasUnit = 0.0f;
 	float m_biasConstScale = 1.0f;
 	float m_biasSlopeScale = 1.0f;
 	bool  m_dirty = true;

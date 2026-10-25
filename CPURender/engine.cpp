@@ -29,6 +29,23 @@ static Geometry BuildGround(float y, float half)
 	return geometry;
 }
 
+static AABB TransformAABB(const AABB& b, const mat4& m)
+{
+	AABB r;
+	r.min = vec3(1e30f);
+	r.max = vec3(-1e30f);
+	for (int i = 0; i < 8; ++i)
+	{
+		vec3 corner((i & 1) ? b.max.x : b.min.x,
+					(i & 2) ? b.max.y : b.min.y,
+					(i & 4) ? b.max.z : b.min.z);
+		vec3 w = vec3(m * vec4(corner, 1.0f));
+		r.min = glm::min(r.min, w);
+		r.max = glm::max(r.max, w);
+	}
+	return r;
+}
+
 void Engine::init()
 {
 	printf("Init engine \n");
@@ -58,14 +75,15 @@ void Engine::init()
 	m_objBounds = ComputeAABB(m_obj);
 
 	float r = glm::length(m_objBounds.max - m_objBounds.min) * 0.5f;
-	m_ground = BuildGround(m_objBounds.min.y, r * 1.2f);
+	m_ground = BuildGround(m_objBounds.min.y, r * 5.0f);
 	m_groundBounds = ComputeAABB(m_ground);
 
-	m_sceneBounds.min = glm::min(m_objBounds.min, m_groundBounds.min);
-	m_sceneBounds.max = glm::max(m_objBounds.max, m_groundBounds.max);
+	m_sceneBounds.min = glm::min(m_objBounds.min, 10.0f);
+	m_sceneBounds.max = glm::max(m_objBounds.max, 10.0f);
 
-	m_shadow.Init(256);
-	m_shadow.SetLight(vec3(-0.5f, -1.0f, -0.3f), m_sceneBounds);
+	m_shadow.Init(512);
+	m_shadow.SetFollowMode(vec3(-0.5f, -1.0f, -0.3f), 50.0f, 30.0f);
+	m_shadow.Follow(m_camera.GetCameraPos());
 	m_shadowCasters = { { &m_obj, m_objBounds }, { &m_cube, m_cubeBounds } };
 
 	m_pipeline.BindShader(BasicShader);
@@ -85,6 +103,9 @@ void Engine::Update()
 	m_camera.HandleEvent(dt);
 	if (m_emitter != nullptr)
 		m_emitter->Update();
+	
+	vec3 cam = m_camera.GetCameraPos();
+	m_shadow.Follow(vec3(cam.x, m_groundBounds.min.y, cam.z));
 }
 
 void Engine::handleEvent(const SDL_Event& event)
@@ -92,11 +113,11 @@ void Engine::handleEvent(const SDL_Event& event)
 	if (event.key.key == SDLK_R)
 	{
 		mat4 rot = rotate(mat4(1.0f), radians(15.0f), vec3(0, 1, 0));
-		m_shadow.SetLight(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), m_sceneBounds);
+		m_shadow.SetFollowMode(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), 50.0f, 30.0f);
 	}
 	
 	float dt = CHRONO->GetDeltaTime();
-	float speed = 5.0f;
+	float speed = 15.0f;
 	if (event.key.key == SDLK_KP_8)
 		m_obj.transform.Move(vec3(0.0f, 0.0f, speed * dt));
 	if (event.key.key == SDLK_KP_5)
@@ -110,6 +131,11 @@ void Engine::handleEvent(const SDL_Event& event)
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 {
+	AABB objWorld  = TransformAABB(m_objBounds,  m_obj.transform.GetWorldMatrix());
+	AABB cubeWorld = TransformAABB(m_cubeBounds, m_cube.transform.GetWorldMatrix());
+	m_shadowCasters[0].bounds = objWorld;
+	m_shadowCasters[1].bounds = cubeWorld;
+	
 	Uniforms uniforms;
 	uniforms.mvp     = m_camera.GetVPMatrix();
 	uniforms.ambient = 0.2f;
@@ -130,7 +156,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 		Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
 
 		
-		if (frustum.Intersects(m_cubeBounds))
+		if (frustum.Intersects(cubeWorld))
 		{
 			m_pipeline.BindShader(ShadowLambertShader);
 			m_pipeline.BindVertexBuffer(&m_cube);
@@ -138,7 +164,7 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 			m_pipeline.Draw(m_cube.transform.GetWorldMatrix());
 		}
 
-		if (frustum.Intersects(m_objBounds))
+		if (frustum.Intersects(objWorld))
 		{
 			Uniforms objUniforms = uniforms;
 			if (m_texture.IsValid())
