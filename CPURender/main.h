@@ -5,8 +5,11 @@
 
 //Students cannot change anything in this file
 
-#define WIDTH 320
-#define HEIGHT 240
+#define WIDTH 640
+#define HEIGHT 360
+
+#define SCREEN_WIDTH 1080
+#define SCREEN_HEIGHT 720
 
 
 struct FinalFrameBuffer {

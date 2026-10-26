@@ -24,8 +24,8 @@ int main(void) {
 
     window = SDL_CreateWindow(
         "Framebuffer",
-        WIDTH * 4,
-        HEIGHT * 4,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
         0
     );
 
@@ -82,8 +82,8 @@ int main(void) {
             if (event.type == SDL_EVENT_QUIT) {
                 isRunning = false;
             }
-            engine.handleEvent(event);
         }
+        engine.handleEvent();
         engine.Update();
         
         engine.renderFrame(frameBuffer);
@@ -102,7 +102,7 @@ int main(void) {
         SDL_RenderPresent(renderer);
 
         CHRONO->Update();
-        // std::cout << CHRONO->ShowFPS() << std::endl;
+        std::cout << CHRONO->ShowFPS() << std::endl;
     }
 
     engine.destroy();

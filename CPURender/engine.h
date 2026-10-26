@@ -16,7 +16,7 @@ struct Engine
 	void init();
 
 	void Update();
-	void handleEvent(const SDL_Event& event);
+	void handleEvent();
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
 	void destroy();
@@ -27,19 +27,25 @@ private:
 	
 	Geometry m_triangle;
 	Geometry m_cube;
-	Geometry m_obj;
+	Geometry m_car;
+	Geometry m_wheelAv;
+	Geometry m_wheelAr;
 	Geometry m_ground;
 	Geometry m_particleVertices;
 	
+	std::vector<Geometry*> m_geo;
+	
 	AABB m_triangleBounds;
 	AABB m_cubeBounds;
-	AABB m_objBounds;
+	AABB m_carBounds;
+	AABB m_wheelAvBounds;
+	AABB m_wheelArBounds;
 	AABB m_groundBounds;
 	AABB m_sceneBounds;
 	
 	Texture m_texture;
-
-	Camera m_camera;
+ 
+	Camera* m_camera = nullptr;
 
 	// Ombres
 	ShadowMap m_shadow;
