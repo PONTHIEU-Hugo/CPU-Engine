@@ -1,11 +1,9 @@
-﻿#ifndef SHADOW_MAP_CPP_INCLUDED
-#define SHADOW_MAP_CPP_INCLUDED
-
 #include "ShadowMap.h"
-#include "Texture.h"
+
 #include <cmath>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Transform.h"
+#include "Frustum.h"
+#include "Shaders.h"  
 
 static const float kDepthRangeInRadii = 4.0f;
 
@@ -23,97 +21,8 @@ static glm::mat4 ComputeLightVP(const glm::vec3& lightDir, const AABB& bounds, f
 	return proj * view;
 }
 
-static float ShadowVisibility(const Varyings& in, const Uniforms& u, float cosTheta)
-{
-	const RenderTarget* map = u.shadowMap;
-	if (!map) return 1.0f;
-
-	if (in.lightPos.z >= 1.0f || in.lightPos.z <= -1.0f)
-		return 1.0f;
-	
-	float sx = (in.lightPos.x * 0.5f + 0.5f) * (float)map->width;
-	float sy = (1.0f - (in.lightPos.y * 0.5f + 0.5f)) * (float)map->height;
-
-	int x0 = (int)std::floor(sx);
-	int y0 = (int)std::floor(sy);
-	if (x0 < 0 || x0 >= map->width || y0 < 0 || y0 >= map->height)
-		return 1.0f;
-
-	float c = glm::max(cosTheta, 0.05f);
-	float tanTheta = glm::min(std::sqrt(1.0f - c * c) / c, 10.0f);
-	float bias = u.shadowBiasConst + u.shadowBiasSlope * tanTheta;
-
-	float z = in.lightPos.z - bias;
-	int lit = 0;
-	for (int dy = -1; dy <= 1; ++dy)
-		for (int dx = -1; dx <= 1; ++dx)
-		{
-			int x = glm::clamp(x0 + dx, 0, map->width  - 1);
-			int y = glm::clamp(y0 + dy, 0, map->height - 1);
-			if (z <= map->depth[(size_t)y * map->width + x])
-				++lit;
-		}
-	return (float)lit / 9.0f;
-}
-
-//Shaders
-static Varyings DepthVS(const Vertex& v, const Uniforms& u)
-{
-	Varyings out;
-	out.position = u.mvp * glm::vec4(v.position, 1.0f);
-	return out;
-}
-
-const Shader DepthShader = { DepthVS, nullptr };
-
-static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
-{
-	Varyings out;
-	out.position = u.mvp * glm::vec4(v.position, 1.0f);
-	out.normal = v.normal;
-	out.color  = v.color;
-	out.uv     = v.uv;
-	out.lightPos = glm::vec3(u.lightVP * glm::vec4(v.position, 1.0f));
-	return out;
-}
-
-static glm::vec3 ShadowLambertPS(const Varyings& in, const Uniforms& u)
-{
-	glm::vec3 baseColor = u.texture ? u.texture->Sample(in.uv) : in.color;
-
-	float normalLength2 = glm::dot(in.normal, in.normal);
-	float diffuse = 1.0f;
-	float visibility = 1.0f;
-
-	if (normalLength2 > 1e-8f)
-	{
-		glm::vec3 normal = in.normal / std::sqrt(normalLength2);
-		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
-		if (diffuse > 0.0f)
-			visibility = ShadowVisibility(in, u, diffuse);
-	}
-
-	float lighting = u.ambient + (1.0f - u.ambient) * diffuse * visibility;
-	return baseColor * lighting;
-}
-
-const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };
-
-ShadowMap* ShadowMap::s_pInstance = nullptr;
-
-ShadowMap& ShadowMap::GetInstance()
-{
-	if (s_pInstance == nullptr)
-	{
-		s_pInstance = new ShadowMap();
-		s_pInstance->Init(512);
-	}
-
-	return *s_pInstance;
-}
 void ShadowMap::Init(int resolution)
 {
-	s_pInstance = this;
 	m_target = RenderTarget(resolution, resolution);
 	m_dirty = true;
 	RecomputeBias();
@@ -148,21 +57,23 @@ void ShadowMap::SetFollowMode(const glm::vec3& direction, float radius, float ca
 
 void ShadowMap::Follow(const glm::vec3& focus)
 {
-	if (!m_follow) return;
+	if (m_follow == false) 
+		return;
 
 	float texel = (2.0f * m_radius) / (float)m_target.width;
-	
+
 	glm::vec3 c = glm::vec3(m_lightRot * glm::vec4(focus, 1.0f));
 	c = glm::floor(c / texel + 0.5f) * texel;
 
 	if (c == m_snappedCenter)
-		return;                           
+		return;
+
 	m_snappedCenter = c;
 
-	float d = -c.z;                
+	float d = -c.z;
 	glm::mat4 proj = glm::ortho(c.x - m_radius, c.x + m_radius,
 								c.y - m_radius, c.y + m_radius,
-								d - m_radius - m_casterExtra, 
+								d - m_radius - m_casterExtra,
 								d + m_radius);
 	m_lightVP = proj * m_lightRot;
 	m_dirty = true;
@@ -178,7 +89,7 @@ void ShadowMap::RecomputeBias()
 
 bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& casters, bool force)
 {
-	if (!m_dirty && !force)
+	if (m_dirty == false && force == false)
 		return false;
 
 	Uniforms lightUniforms;
@@ -193,11 +104,11 @@ bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& cast
 	Frustum lightFrustum = Frustum::FromMatrix(m_lightVP);
 	for (const ShadowCaster& caster : casters)
 	{
-		if (!caster.geometries || !lightFrustum.Intersects(caster.bounds))
+		if (!caster.mesh || lightFrustum.Intersects(caster.bounds) == false)
 			continue;
 
-		pipeline.BindVertexBuffer(caster.geometries);
-		pipeline.Draw(caster.geometries->transform.GetWorldMatrix());
+		pipeline.BindVertexBuffer(caster.mesh);
+		pipeline.Draw(caster.world);
 	}
 
 	m_dirty = false;
@@ -215,6 +126,9 @@ void ShadowMap::ApplyTo(Uniforms& uniforms) const
 
 void ShadowMap::DrawDebug(FinalFrameBuffer& fb, int size) const
 {
+	if (m_target.width <= 0 || m_target.height <= 0)
+		return;
+
 	for (int y = 0; y < size; ++y)
 		for (int x = 0; x < size; ++x)
 		{
@@ -225,5 +139,3 @@ void ShadowMap::DrawDebug(FinalFrameBuffer& fb, int size) const
 			fb.put_pixel(x, y, (g << 16) | (g << 8) | g);
 		}
 }
-
-#endif

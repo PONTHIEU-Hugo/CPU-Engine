@@ -1,28 +1,15 @@
-#pragma once
+#ifndef PIPELINE_H_INCLUDED
+#define PIPELINE_H_INCLUDED
 
 #include <functional>
 #include <vector>
 #include <glm/glm.hpp>
 #include "main.h"
+#include "Vertex.h"
 #include "RenderTarget.h"
-#include "Transform.h"
 
 struct Texture;
-
-struct Vertex
-{
-	glm::vec3 position = { 0.0f, 0.0f, 0.0f };
-	glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
-	glm::vec3 color = { 255.0f, 0.0f, 255.0f };
-	glm::vec2 uv = { 0.0f, 0.0f };
-};
-
-struct Geometry
-{
-	std::vector<Vertex> vertices;
-	Transform transform;
-};
-
+struct Mesh;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
@@ -38,13 +25,13 @@ struct Uniforms
 {
 	glm::mat4 mvp{ 1.0f };
 	const Texture* texture = nullptr;
-	glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f }; 
-	float ambient = 0.2f; 
-	
+	glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f };
+	float ambient = 0.2f;
+
 	// Ombres
 	glm::mat4 lightVP{ 1.0f };
-	const RenderTarget* shadowMap = nullptr;  
-	float shadowBiasConst = 0.0f;        
+	const RenderTarget* shadowMap = nullptr;
+	float shadowBiasConst = 0.0f;
 	float shadowBiasSlope = 0.0f;
 };
 
@@ -60,38 +47,42 @@ struct Shader
 	PixelShader ps;
 };
 
-class Pipeline 
+class Pipeline
 {
 public:
 	Pipeline();
 	Pipeline(const Pipeline&) = delete;
 	Pipeline& operator=(const Pipeline&) = delete;
-	
-	void BindVertexBuffer(const Geometry* geometries) { m_geometry = geometries; }
+
+	void BindVertexBuffer(const Mesh* mesh) { m_mesh = mesh; }
 	void BindVertexShader(VertexShader vs) { m_vertexShader = std::move(vs); }
 	void BindPixelShader(PixelShader ps) { m_pixelShader = std::move(ps); }
 	void BindShader(const Shader& shader) { m_vertexShader = shader.vs; m_pixelShader = shader.ps; }
 	void BindUniforms(const Uniforms& uniforms) { m_uniforms = uniforms; }
 	void BindFrameBuffer(FinalFrameBuffer* fb) { m_screen.color = fb; m_target = &m_screen; }
-	void BindTarget(RenderTarget* target)      { m_target = target; }
-	void SetCullMode(CullMode mode)            { m_cull = mode; }
+	void BindTarget(RenderTarget* target) { m_target = target; }
+	void SetCullMode(CullMode mode) { m_cull = mode; }
 
 	void ClearDepth();
 
-	void Draw(glm::mat4 const& mat);
+	void Draw(glm::mat4 const& model);
 
 private:
 	void DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, const Varyings& vertexC);
 
-	const Geometry* m_geometry = nullptr;
+	const Mesh* m_mesh = nullptr;
 
 	VertexShader m_vertexShader;
 	PixelShader m_pixelShader;
 
 	Uniforms m_uniforms;
-	
-	RenderTarget  m_screen;               
+
+	RenderTarget  m_screen;
 	RenderTarget* m_target = nullptr;
-	
-	CullMode      m_cull   = CullMode::Back;
+
+	CullMode      m_cull = CullMode::Back;
+
+	std::vector<Varyings> m_varyings;   // reutilise d'un Draw a l'autre (pas d'allocation par draw)
 };
+
+#endif // !PIPELINE_H_INCLUDED

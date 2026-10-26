@@ -1,19 +1,16 @@
-#ifndef ENGINE_CPP_INCLUDED
-#define ENGINE_CPP_INCLUDED
-
 #include "engine.h"
 
-#include <iostream>
-
-#include "Shaders.h"
-#include <stdio.h>
+#include <cstdio>
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keyboard.h>
 #include <glm/gtc/matrix_transform.hpp>
+
 #include "Chrono.h"
+#include "Shaders.h"
 #include "GeometryFactory.hpp"
 
 // Quad horizontal qui reçoit les ombres
-static Geometry BuildGround(float y, float half)
+static Mesh BuildGround(float y, float half)
 {
 	auto make = [&](float x, float z)
 	{
@@ -24,176 +21,107 @@ static Geometry BuildGround(float y, float half)
 		return v;
 	};
 	Vertex p0 = make(-half, half), p1 = make(half, half), p2 = make(half, -half), p3 = make(-half, -half);
-	Geometry geometry;
-	geometry.vertices = { p0, p1, p2, p0, p2, p3 };
-	return geometry;
-}
 
-static AABB TransformAABB(const AABB& b, const mat4& m)
-{
-	AABB r;
-	r.min = vec3(1e30f);
-	r.max = vec3(-1e30f);
-	for (int i = 0; i < 8; ++i)
-	{
-		vec3 corner((i & 1) ? b.max.x : b.min.x,
-					(i & 2) ? b.max.y : b.min.y,
-					(i & 4) ? b.max.z : b.min.z);
-		vec3 w = vec3(m * vec4(corner, 1.0f));
-		r.min = glm::min(r.min, w);
-		r.max = glm::max(r.max, w);
-	}
-	return r;
+	Mesh mesh;
+	mesh.vertices = { p0, p1, p2, p0, p2, p3 };
+	mesh.ComputeBounds();
+	return mesh;
 }
 
 void Engine::init()
 {
 	printf("Init engine \n");
 
-	m_triangle = GeometryFactory::BuildTriangle();
-	m_cube = GeometryFactory::BuildCube();
-	m_cube.transform.SetPosition({0.0f, 0.5f, 0.0f});
+	// Ressources
+	m_cubeMesh = GeometryFactory::BuildCube();
 
-	// m_obj = GeometryFactory::BuildTriangle();
-	// m_obj = GeometryFactory::BuildPyramid();
-	// m_obj = GeometryFactory::BuildCube();
-	// m_obj = GeometryFactory::BuildIcosphere(3);         
-	// m_obj = GeometryFactory::BuildIcosphere(1, 1.0f);
-	// m_obj = GeometryFactory::BuildUVSphere(8, 4);        
-	// m_obj = GeometryFactory::BuildUVSphere(64, 32, 2.0f);
-	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, true);
-	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, false);
-	// m_obj = GeometryFactory::BuildCylinder(32);
-	 // m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
-	
-	m_obj = GeometryFactory::LoadGeometry("Assets/tuture.obj");
-	
-	m_texture.Load("Assets/vivien.png");
+	// m_carMesh = GeometryFactory::BuildIcosphere(3);
+	// m_carMesh = GeometryFactory::BuildUVSphere(64, 32, 2.0f);
+	// m_carMesh = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
+	m_carMesh = GeometryFactory::LoadGeometry("Assets/tuture.obj");
+	m_carTexture.Load("Assets/vivien.png");
 
-	m_triangleBounds = ComputeAABB(m_triangle);
-	m_cubeBounds = ComputeAABB(m_cube);
-	m_objBounds = ComputeAABB(m_obj);
+	const AABB& carBounds = m_carMesh.localBounds;
+	float carRadius = glm::length(carBounds.max - carBounds.min) * 0.5f;
+	m_groundMesh = BuildGround(carBounds.min.y, carRadius * 5.0f);
 
-	float r = glm::length(m_objBounds.max - m_objBounds.min) * 0.5f;
-	m_ground = BuildGround(m_objBounds.min.y, r * 5.0f);
-	m_groundBounds = ComputeAABB(m_ground);
+	// Materiaux
+	m_defaultMaterial.shader = &ShadowLambertShader;
 
-	m_sceneBounds.min = glm::min(m_objBounds.min, 10.0f);
-	m_sceneBounds.max = glm::max(m_objBounds.max, 10.0f);
+	m_carMaterial = m_defaultMaterial;
+	if (m_carTexture.IsValid()) 
+		m_carMaterial.albedo = &m_carTexture;
 
-	m_shadow.Init(512);
-	m_shadow.SetFollowMode(vec3(-0.5f, -1.0f, -0.3f), 50.0f, 30.0f);
-	m_shadow.Follow(m_camera.GetCameraPos());
-	m_shadowCasters = { { &m_obj, m_objBounds }, { &m_cube, m_cubeBounds } };
+	m_groundMaterial      = m_defaultMaterial;
+	m_groundMaterial.cull = CullMode::None;
 
-	m_pipeline.BindShader(BasicShader);
+	// Scene 
+	ObjectId cube = m_scene.Add(m_cubeMesh, m_defaultMaterial);
+	m_scene.Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
+
+	m_car = m_scene.Add(m_carMesh, m_carMaterial);
+
+	m_scene.Add(m_groundMesh, m_groundMaterial, /*castShadow*/ false);
 
 	float aspect = float(WIDTH) / float(HEIGHT);
-	
-	// m_camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
-	m_camera.SetPerspective(radians(45.0f), aspect, 0.1f, 100.0f);
-	
-	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 1000);
-	m_emitter->Init();
+	// m_scene.camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
+	m_scene.camera.SetPerspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
+
+	m_scene.sun.direction         = glm::vec3(-0.5f, -1.0f, -0.3f);
+	m_scene.sun.ambient           = 0.2f;
+	m_scene.sun.shadowRadius      = 50.0f;
+	m_scene.sun.shadowCasterExtra = 30.0f;
+	m_scene.sun.shadowFocus       = m_scene.camera.GetCameraPos();
+
+	// Systèmes
+	m_renderer.Init(512);
+	m_emitter.Init();
 }
 
 void Engine::Update()
 {
-	float dt = static_cast<float>(CHRONO->GetDeltaTime());
-	m_camera.HandleEvent(dt);
-	if (m_emitter != nullptr)
-		m_emitter->Update();
-	
-	vec3 cam = m_camera.GetCameraPos();
-	m_shadow.Follow(vec3(cam.x, m_groundBounds.min.y, cam.z));
+	// dt lu une seule fois, puis passe aux systemes
+	const float dt = static_cast<float>(CHRONO->GetDeltaTime());
+
+	m_scene.camera.HandleEvent(dt);
+
+	// Deplacement de la voiture : en continu (etat clavier), independant de la repetition des touches
+	const bool* keys = SDL_GetKeyboardState(nullptr);
+	const float carSpeed = 8.0f;
+	glm::vec3 move(0.0f);
+	if (keys[SDL_SCANCODE_KP_8]) move.z += 1.0f;
+	if (keys[SDL_SCANCODE_KP_5]) move.z -= 1.0f;
+	if (keys[SDL_SCANCODE_KP_4]) move.x -= 1.0f;
+	if (keys[SDL_SCANCODE_KP_6]) move.x += 1.0f;
+	if (move != glm::vec3(0.0f))
+		m_scene.Get(m_car).transform.Move(move * carSpeed * dt);
+
+	m_emitter.Update(dt);
+
+	// La shadow map suit la camera, au niveau du sol
+	glm::vec3 cam = m_scene.camera.GetCameraPos();
+	m_scene.sun.shadowFocus = glm::vec3(cam.x, m_groundMesh.localBounds.min.y, cam.z);
 }
 
 void Engine::handleEvent(const SDL_Event& event)
 {
+	// event est une union : ne lire event.key que pour un evenement clavier
+	if (event.type != SDL_EVENT_KEY_DOWN || event.key.repeat)
+		return;
+
 	if (event.key.key == SDLK_R)
 	{
-		mat4 rot = rotate(mat4(1.0f), radians(15.0f), vec3(0, 1, 0));
-		m_shadow.SetFollowMode(vec3(rot * vec4(m_shadow.LightDirection(), 0.0f)), 50.0f, 30.0f);
+		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0, 1, 0));
+		m_scene.sun.direction = glm::vec3(rot * glm::vec4(m_scene.sun.direction, 0.0f));
 	}
-	
-	float dt = CHRONO->GetDeltaTime();
-	float speed = 15.0f;
-	if (event.key.key == SDLK_KP_8)
-		m_obj.transform.Move(vec3(0.0f, 0.0f, speed * dt));
-	if (event.key.key == SDLK_KP_5)
-		m_obj.transform.Move(vec3(0.0f, 0.0f, -speed * dt));
-	if (event.key.key == SDLK_KP_4)
-		m_obj.transform.Move(vec3(-speed * dt, 0.0f, 0.0f));
-	if (event.key.key == SDLK_KP_6)
-		m_obj.transform.Move(vec3(speed * dt, 0.0f, 0.0f));
-	
 }
 
 void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 {
-	AABB objWorld  = TransformAABB(m_objBounds,  m_obj.transform.GetWorldMatrix());
-	AABB cubeWorld = TransformAABB(m_cubeBounds, m_cube.transform.GetWorldMatrix());
-	m_shadowCasters[0].bounds = objWorld;
-	m_shadowCasters[1].bounds = cubeWorld;
-	
-	Uniforms uniforms;
-	uniforms.mvp     = m_camera.GetVPMatrix();
-	uniforms.ambient = 0.2f;
-	m_shadow.ApplyTo(uniforms);
-
-	// Passe 1
-	{
-		m_shadow.Update(m_pipeline, m_shadowCasters);
-	}
-
-	// Passe 2
-	{
-		frameBufferOut.clear(0x000000);
-		m_pipeline.BindFrameBuffer(&frameBufferOut);
-		m_pipeline.ClearDepth();
-		m_pipeline.SetCullMode(CullMode::Back);
-
-		Frustum frustum = Frustum::FromMatrix(m_camera.GetVPMatrix());
-
-		
-		if (frustum.Intersects(cubeWorld))
-		{
-			m_pipeline.BindShader(ShadowLambertShader);
-			m_pipeline.BindVertexBuffer(&m_cube);
-			m_pipeline.BindUniforms(uniforms);
-			m_pipeline.Draw(m_cube.transform.GetWorldMatrix());
-		}
-
-		if (frustum.Intersects(objWorld))
-		{
-			Uniforms objUniforms = uniforms;
-			if (m_texture.IsValid())
-				objUniforms.texture = &m_texture;
-
-			m_pipeline.BindShader(ShadowLambertShader);
-			m_pipeline.BindVertexBuffer(&m_obj);
-			m_pipeline.BindUniforms(objUniforms);
-			m_pipeline.Draw(m_obj.transform.GetWorldMatrix());
-		}
-
-		if (frustum.Intersects(m_groundBounds))
-		{
-			m_pipeline.SetCullMode(CullMode::None);
-			m_pipeline.BindShader(ShadowLambertShader);
-			m_pipeline.BindVertexBuffer(&m_ground);
-			m_pipeline.BindUniforms(uniforms);
-			m_pipeline.Draw(m_ground.transform.GetWorldMatrix());
-			m_pipeline.SetCullMode(CullMode::Back);
-		}
-	}
-	
-	m_shadow.DrawDebug(frameBufferOut, 64);
+	m_renderer.Render(m_scene, frameBufferOut);
 }
 
 void Engine::destroy()
 {
-	delete m_emitter;
 	printf("Killing engine \n");
 }
-
-#endif

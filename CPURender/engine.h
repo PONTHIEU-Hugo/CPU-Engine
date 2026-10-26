@@ -1,17 +1,16 @@
 #ifndef ENGINE_H_INCLUDED
 #define ENGINE_H_INCLUDED
 
-#include "core.h"
-#include "Camera.h"
-#include "ParticleSystem.h"
 #include "main.h"
+#include "Scene.h"
+#include "Renderer.h"
 #include "Texture.h"
-#include "Frustum.h"
-#include "ShadowMap.h"
+#include "ParticleSystem.h"
 
 union SDL_Event;
 
-struct Engine 
+// Ne s'occupe plus du rendu, se contente de l'appeler
+struct Engine
 {
 	void init();
 
@@ -22,28 +21,22 @@ struct Engine
 	void destroy();
 
 private:
-	Emitter* m_emitter = nullptr;
-	Pipeline m_pipeline;
-	
-	Geometry m_triangle;
-	Geometry m_cube;
-	Geometry m_obj;
-	Geometry m_ground;
-	Geometry m_particleVertices;
-	
-	AABB m_triangleBounds;
-	AABB m_cubeBounds;
-	AABB m_objBounds;
-	AABB m_groundBounds;
-	AABB m_sceneBounds;
-	
-	Texture m_texture;
+	// Ressources : possedees ici, referencees (par pointeur) par la scene.
+	Mesh     m_cubeMesh;
+	Mesh     m_carMesh;
+	Mesh     m_groundMesh;
+	Texture  m_carTexture;
 
-	Camera m_camera;
+	Material m_defaultMaterial;
+	Material m_carMaterial;
+	Material m_groundMaterial;
 
-	// Ombres
-	ShadowMap m_shadow;
-	std::vector<ShadowCaster> m_shadowCasters;
+	Scene    m_scene;
+	Renderer m_renderer;
+
+	ObjectId m_car = 0;
+
+	Emitter  m_emitter{ glm::vec3(0.0f), 1000 };
 };
 
 #endif
