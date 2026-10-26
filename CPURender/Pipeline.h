@@ -18,6 +18,7 @@ struct Varyings
 	glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
 	glm::vec3 color = { 255.0f, 0.0f, 255.0f };
 	glm::vec2 uv = { 0.0f, 0.0f };
+	glm::vec3 worldPos = { 0.0f, 0.0f, 0.0f };   // position du point en espace monde (specular)
 	glm::vec3 lightPos = { 0.0f, 0.0f, 0.0f };
 };
 
@@ -25,8 +26,14 @@ struct Uniforms
 {
 	glm::mat4 mvp{ 1.0f };
 	const Texture* texture = nullptr;
+	glm::vec3 baseColor = { 255.0f, 255.0f, 255.0f };   // teinte du materiau (blanc = aucune)
 	glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f };
 	float ambient = 0.2f;
+
+	// Reflet speculaire (Phong)
+	glm::vec3 cameraPos = { 0.0f, 0.0f, 0.0f };
+	float specularStrength = 0.0f;   // 0 = pas de reflet
+	float shininess = 32.0f;         // exposant de Phong, derive de la roughness du materiau
 
 	// Ombres
 	glm::mat4 lightVP{ 1.0f };

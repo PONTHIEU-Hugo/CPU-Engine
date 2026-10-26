@@ -126,6 +126,7 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
+			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
 			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
 
 			glm::vec3 pixelColor = m_pixelShader(fragment, m_uniforms);

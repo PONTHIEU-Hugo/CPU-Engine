@@ -33,33 +33,39 @@ void Engine::init()
 	printf("Init engine \n");
 
 	// Ressources
-	m_cubeMesh = GeometryFactory::BuildCube();
+	m_cubeMesh = GeometryFactory::BuildUVSphere(32, 16, 1.0f);
 
 	// m_carMesh = GeometryFactory::BuildIcosphere(3);
 	// m_carMesh = GeometryFactory::BuildUVSphere(64, 32, 2.0f);
 	// m_carMesh = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
-	m_carMesh = GeometryFactory::LoadGeometry("Assets/tuture.obj");
-	m_carTexture.Load("Assets/vivien.png");
+	//m_carMesh = GeometryFactory::LoadGeometry("Assets/tuture.obj");
+	//m_carTexture.Load("Assets/vivien.png");
 
-	const AABB& carBounds = m_carMesh.localBounds;
-	float carRadius = glm::length(carBounds.max - carBounds.min) * 0.5f;
-	m_groundMesh = BuildGround(carBounds.min.y, carRadius * 5.0f);
+	//const AABB& carBounds = m_carMesh.localBounds;
+	//float carRadius = glm::length(carBounds.max - carBounds.min) * 0.5f;
+	//m_groundMesh = BuildGround(carBounds.min.y, carRadius * 5.0f);
 
 	// Materiaux
 	m_defaultMaterial.shader = &ShadowLambertShader;
 
-	m_carMaterial = m_defaultMaterial;
-	if (m_carTexture.IsValid()) 
-		m_carMaterial.albedo = &m_carTexture;
+	//m_carMaterial = m_defaultMaterial;
+	//if (m_carTexture.IsValid()) 
+	//	m_carMaterial.albedo = &m_carTexture;
 
-	m_groundMaterial      = m_defaultMaterial;
-	m_groundMaterial.cull = CullMode::None;
+	//m_groundMaterial      = m_defaultMaterial;
+	//m_groundMaterial.cull = CullMode::None;
+
+	// Reflets (Phong) : le sol reste mat (specular = 0 par defaut), copie faite avant ces reglages.
+	m_defaultMaterial.specular  = 0.8f;   // cube
+	m_defaultMaterial.roughness = 0.3f;
+	//m_carMaterial.specular      = 0.5f;
+	//m_carMaterial.roughness     = 0.4f;
 
 	// Scene 
 	ObjectId cube = m_scene.Add(m_cubeMesh, m_defaultMaterial);
 	m_scene.Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
 
-	m_car = m_scene.Add(m_carMesh, m_carMaterial);
+	//m_car = m_scene.Add(m_carMesh, m_carMaterial);
 
 	m_scene.Add(m_groundMesh, m_groundMaterial, /*castShadow*/ false);
 

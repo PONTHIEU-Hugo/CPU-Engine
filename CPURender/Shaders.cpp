@@ -7,11 +7,34 @@
 // Basic / Texture / Lambert
 // ---------------------------------------------------------------------------
 
+static glm::vec3 SurfaceColor(const Varyings& in, const Uniforms& u)
+{
+	glm::vec3 color = u.texture ? u.texture->Sample(in.uv) : in.color;
+	return color * (u.baseColor / 255.0f);
+}
+
+static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
+{
+	if (u.specularStrength <= 0.0f)
+		return 0.0f;
+
+	glm::vec3 toCamera = u.cameraPos - in.worldPos;
+	float toCameraLength2 = glm::dot(toCamera, toCamera);
+	if (toCameraLength2 < 1e-12f)
+		return 0.0f;
+
+	toCamera /= std::sqrt(toCameraLength2);
+
+	glm::vec3 reflected = glm::reflect(glm::normalize(u.lightDirection), normal);
+	return u.specularStrength * std::pow(glm::max(glm::dot(reflected, toCamera), 0.0f), u.shininess);
+}
+
 static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
 	// v.position et v.normal sont deja en espace monde (Pipeline::Draw applique la matrice modele).
 	out.position = u.mvp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
 	out.normal = v.normal;
 	out.color = v.color;
 	out.uv = v.uv;
@@ -21,36 +44,36 @@ static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 
 static glm::vec3 BasicPS(const Varyings& in, const Uniforms& u)
 {
-	return in.color;
+	return in.color * (u.baseColor / 255.0f);
 }
 
 const Shader BasicShader = { BasicVS, BasicPS };
 
 static glm::vec3 TexturePS(const Varyings& in, const Uniforms& u)
 {
-	if (!u.texture)
-		return in.color;
-
-	return u.texture->Sample(in.uv);
+	return SurfaceColor(in, u);
 }
 
 const Shader TextureShader = { BasicVS, TexturePS };
 
 static glm::vec3 LambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec3 baseColor = u.texture ? u.texture->Sample(in.uv) : in.color;
+	glm::vec3 baseColor = SurfaceColor(in, u);
 
 	float normalLength2 = glm::dot(in.normal, in.normal);
 	float diffuse = 1.0f;
+	float specular = 0.0f;
 
 	if (normalLength2 > 1e-8f)
 	{
 		glm::vec3 normal = in.normal / std::sqrt(normalLength2);
 		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
+		if (diffuse > 0.0f)
+			specular = PhongSpecular(in, u, normal);
 	}
 
 	float lighting = u.ambient + (1.0f - u.ambient) * diffuse;
-	return baseColor * lighting;
+	return baseColor * lighting + glm::vec3(255.0f) * specular;   // reflet blanc
 }
 
 const Shader LambertShader = { BasicVS, LambertPS };
@@ -106,6 +129,7 @@ static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
 	out.position = u.mvp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
 	out.normal = v.normal;
 	out.color  = v.color;
 	out.uv     = v.uv;
@@ -115,22 +139,26 @@ static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 
 static glm::vec3 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec3 baseColor = u.texture ? u.texture->Sample(in.uv) : in.color;
+	glm::vec3 baseColor = SurfaceColor(in, u);
 
 	float normalLength2 = glm::dot(in.normal, in.normal);
 	float diffuse = 1.0f;
 	float visibility = 1.0f;
+	float specular = 0.0f;
 
 	if (normalLength2 > 1e-8f)
 	{
 		glm::vec3 normal = in.normal / std::sqrt(normalLength2);
 		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
 		if (diffuse > 0.0f)
+		{
 			visibility = ShadowVisibility(in, u, diffuse);
+			specular = PhongSpecular(in, u, normal);
+		}
 	}
 
 	float lighting = u.ambient + (1.0f - u.ambient) * diffuse * visibility;
-	return baseColor * lighting;
+	return baseColor * lighting + glm::vec3(255.0f) * (specular * visibility);   // reflet blanc, masque par l'ombre
 }
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };

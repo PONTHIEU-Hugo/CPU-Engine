@@ -96,6 +96,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	Uniforms base;
 	base.mvp     = viewProj;
 	base.ambient = scene.sun.ambient;
+	base.cameraPos = scene.camera.GetCameraPos();
 	m_shadow.ApplyTo(base);
 
 	Frustum frustum = Frustum::FromMatrix(viewProj);
@@ -118,6 +119,9 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 
 	Uniforms uniforms = base;
 	uniforms.texture  = material.albedo;
+	uniforms.baseColor = material.baseColor;
+	uniforms.specularStrength = material.specular;
+	uniforms.shininess = ShininessFromRoughness(material.roughness);
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);
