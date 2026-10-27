@@ -1,5 +1,6 @@
 #pragma once
-#include "core.h"
+#include "Mesh.h"
+#include "Material.h"
 #include "ProceduralGeneration.h"
 
 enum class HeighMapType : uint8_t
@@ -13,6 +14,8 @@ constexpr float HeighmapValueSpace = 1.f;
 class TerrainGenerator
 {
 private:
+	Mesh m_Mesh;
+	Material* m_Material = nullptr;
 	std::vector<Vertex> m_Vertices;
 	Generation* m_Generation = nullptr;
 
@@ -20,7 +23,9 @@ public:
 	TerrainGenerator() = default;
 	~TerrainGenerator();
 
-	std::vector<Vertex>* GetVertices() { return &m_Vertices; }
+	Mesh& GetMesh() { return m_Mesh; }
+	Material& GetMaterial() { return *m_Material; }
+	void SetMaterial(Material* rMat) { m_Material = rMat; }
 
 	void GenerateHeighmap(size_t size, HeighMapType type, int scale = 1) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
 	void GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale = 1);

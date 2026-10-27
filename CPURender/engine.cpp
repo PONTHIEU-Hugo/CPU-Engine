@@ -81,8 +81,9 @@ void Engine::init()
 	m_renderer.showShadowDebug = false;
 	m_emitter.Init();
 
-	m_Terrain = new TerrainGenerator();
-	m_Terrain->GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
+	m_Terrain.SetMaterial(&m_defaultMaterial);
+	m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 }
 
 void Engine::Update()
@@ -130,6 +131,5 @@ void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
 
 void Engine::destroy()
 {
-	delete m_Terrain;
 	printf("Killing engine \n");
 }

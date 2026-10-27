@@ -9,7 +9,7 @@ TerrainGenerator::~TerrainGenerator()
 void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale)
 {
 	if (m_Generation != nullptr) delete m_Generation;
-	m_Vertices.clear();
+
 	double heighmapValueFactor = 1.0;
 	switch (type)
 	{
@@ -29,7 +29,7 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 	std::vector<std::vector<double>>& rHeight = m_Generation->height;
 
 	glm::vec3 rSize = m_Generation->size;
-	m_Vertices.clear();
+	m_Mesh.vertices.clear();
 
 	for (int y = 0; y < rHeight.size(); y++)
 	{
@@ -37,7 +37,9 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 		{
 			Vertex current{
 				glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y][x] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
-				ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
+				glm::vec3(0, 0, 0),
+				ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+				glm::vec2(0.f, 0.f)
 			};
 
 			for (int i = -1; i < 2; i++)
@@ -51,19 +53,20 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 				};
 
-				m_Vertices.push_back(current);
-				m_Vertices.push_back(corner);
-				m_Vertices.push_back(Vertex{
+				m_Mesh.vertices.push_back(current);
+				m_Mesh.vertices.push_back(corner);
+				m_Mesh.vertices.push_back(Vertex{
 					glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y + 1][x] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 					});
-				m_Vertices.push_back(current);
-				m_Vertices.push_back(Vertex{
+				m_Mesh.vertices.push_back(current);
+				m_Mesh.vertices.push_back(Vertex{
 					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y][x + i] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 					});
-				m_Vertices.push_back(corner);
+				m_Mesh.vertices.push_back(corner);
 			}
 		}
 	}
+	m_Mesh.ComputeBounds();
 }
