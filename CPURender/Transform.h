@@ -1,9 +1,11 @@
-﻿#ifndef TRANSFORM_H_INCLUDED
+#ifndef TRANSFORM_H_INCLUDED
 #define TRANSFORM_H_INCLUDED
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+// Position / rotation / echelle d'un objet. Ne depend d'aucun systeme de rendu :
+// ceux qui ont besoin de savoir si l'objet a bouge comparent Version().
 struct Transform
 {
 public:
@@ -38,8 +40,6 @@ public:
     void SetScale(glm::vec3 _scale);
     void SetRotation(glm::quat _rotation);
 
-    // _ypr.x = yaw (axe Y monde), _ypr.y = pitch (axe X local), _ypr.z = roll (axe Z local)
-    // Même convention que AddYPR.
     void SetYawPitchRoll(glm::vec3 _ypr);
     void SetParent(Transform* _parent);
 
@@ -48,7 +48,6 @@ public:
     void AddScale(const float& _scale);
     void Move(glm::vec3 _dir);
 
-    // _target est exprimé en coordonnées monde.
     void LookAt(glm::vec3 _target);
     void OrbitAroundAxis(glm::vec3 _axis, float _angle, float _radius);
 

@@ -14,8 +14,8 @@ class Camera
 public:
     Camera(vec3 const& pos, Transform* parent = nullptr);
     void HandleEvent(float _dt);
-    void SetOrthographic(float32 viewWidth, float32 viewHeight, float32 nearZ, float32 farZ);
-    void SetPerspective(float32 fovAngleY, float32 aspectRatio, float32 nearZ, float32 farZ);
+    void SetOrthographic(glm::float32 viewWidth, glm::float32 viewHeight, glm::float32 nearZ, glm::float32 farZ);
+    void SetPerspective(glm::float32 fovAngleY, glm::float32 aspectRatio, glm::float32 nearZ, glm::float32 farZ);
 
     mat4 const& GetMatrix()     const { return transform.GetWorldMatrix(); }
     mat4 const& GetViewMatrix() const { return m_view; }

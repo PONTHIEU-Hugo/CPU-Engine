@@ -3,9 +3,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "ShadowMap.h"
+#include <glm/gtc/matrix_transform.hpp>
 
-void Transform::UpdateMatrix() const
+const glm::mat4& Transform::GetWorldMatrix() const
 {
     bool changed = isDirty;
 
@@ -40,13 +40,13 @@ glm::quat Transform::GetWorldRotation() const
 void Transform::SetPosition(glm::vec3 _position)
 {
     position = _position;
-    isDirty = true;
+    MarkDirty();
 }
 
 void Transform::SetScale(glm::vec3 _scale)
 {
     scale = _scale;
-    isDirty = true;
+    MarkDirty();
 }
 
 void Transform::SetRotation(glm::quat _rotation)
@@ -111,7 +111,7 @@ void Transform::AddScale(const float& _scale)
 void Transform::Move(glm::vec3 _dir)
 {
     position += _dir;
-    isDirty = true;
+    MarkDirty();
 }
 
 void Transform::LookAt(glm::vec3 _target)

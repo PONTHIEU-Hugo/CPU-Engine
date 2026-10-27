@@ -1,21 +1,5 @@
 #include "Frustum.h"
 
-AABB ComputeAABB(const Geometry& geo)
-{
-	AABB box;
-	if (geo.vertices.empty())
-		return box;
-
-	box.min = box.max = geo.vertices[0].position;
-	for (const Vertex& v : geo.vertices)
-	{
-		box.min = glm::min(box.min, v.position);
-		box.max = glm::max(box.max, v.position);
-	}
-
-	return box;
-}
-
 Frustum Frustum::FromMatrix(const glm::mat4& m)
 {
 	auto row = [&](int i) { return glm::vec4(m[0][i], m[1][i], m[2][i], m[3][i]); };

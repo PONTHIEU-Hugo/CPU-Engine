@@ -1,5 +1,6 @@
 #include "Pipeline.h"
 #include "Clipping.h"
+#include "Mesh.h"
 
 Pipeline::Pipeline() : m_screen(WIDTH, HEIGHT)
 {
@@ -13,15 +14,16 @@ void Pipeline::ClearDepth()
 
 void Pipeline::Draw(glm::mat4 const& mat)
 {
-	if (!m_geometry || !m_target || !m_vertexShader) return;
+	if (!m_mesh || !m_target || !m_vertexShader) return;
 	if (m_target->color && !m_pixelShader) return;
 
 	const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mat)));
 
-	std::vector<Varyings> varyings;
-	varyings.reserve(m_geometry->vertices.size());
+	std::vector<Varyings>& varyings = m_varyings;
+	varyings.clear();
+	varyings.reserve(m_mesh->vertices.size());
 
-	for (const Vertex& src : m_geometry->vertices)
+	for (const Vertex& src : m_mesh->vertices)
 	{
 		Vertex v = src;
 		v.position = glm::vec3(mat * glm::vec4(src.position, 1.0f));
@@ -124,6 +126,7 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
+			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
 			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
 
 			glm::vec3 pixelColor = m_pixelShader(fragment, m_uniforms);
