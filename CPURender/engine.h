@@ -6,6 +6,7 @@
 #include "Renderer.h"
 #include "Texture.h"
 #include "ParticleSystem.h"
+#include "TerrainGenerator.h"
 
 union SDL_Event;
 
@@ -37,6 +38,8 @@ private:
 	ObjectId m_car = 0;
 
 	Emitter  m_emitter{ glm::vec3(0.0f), 1000 };
+
+	TerrainGenerator m_Terrain;
 };
 
 #endif

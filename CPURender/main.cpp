@@ -6,7 +6,7 @@
 #include <iostream>
 #include "Chrono.h"
 //Students cannot change anything in this file
-
+#include "ProceduralGeneration.h"
 
 /* Main function */
 int main(void) {
@@ -102,7 +102,6 @@ int main(void) {
         SDL_RenderPresent(renderer);
 
         CHRONO->Update();
-        // std::cout << CHRONO->ShowFPS() << std::endl;
     }
 
     engine.destroy();

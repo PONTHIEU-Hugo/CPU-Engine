@@ -146,7 +146,9 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />
+    <ClCompile Include="ProceduralGeneration.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="TerrainGenerator.cpp" />
     <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Clipping.cpp" />
@@ -163,6 +165,7 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Pipeline.h" />
+    <ClInclude Include="ProceduralGeneration.h" />
     <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Shaders.h" />
@@ -172,6 +175,7 @@
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="core.h" />
+    <ClInclude Include="TerrainGenerator.h" />
     <ClInclude Include="Transform.h" />
     <ClInclude Include="GeometryFactory.hpp" />
     <ClInclude Include="Vertex.h" />

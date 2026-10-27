@@ -81,6 +81,10 @@ void Engine::init()
 	m_renderer.Init(512);
 	m_renderer.showShadowDebug = false;
 	m_emitter.Init();
+
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
+	m_Terrain.SetMaterial(&m_defaultMaterial);
+	m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 }
 
 void Engine::Update()
