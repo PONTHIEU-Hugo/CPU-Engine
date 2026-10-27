@@ -17,19 +17,20 @@ public:
     void SetOrthographic(float32 viewWidth, float32 viewHeight, float32 nearZ, float32 farZ);
     void SetPerspective(float32 fovAngleY, float32 aspectRatio, float32 nearZ, float32 farZ);
 
-    mat4 const& GetMatrix()     const { return m_transform.GetWorldMatrix(); }
+    mat4 const& GetMatrix()     const { return transform.GetWorldMatrix(); }
     mat4 const& GetViewMatrix() const { return m_view; }
     mat4 const& GetProjMatrix() const { return m_proj; }
     mat4 const& GetVPMatrix()   const { return m_viewProj; }
-    vec3 const& GetPosition()   const { return m_transform.GetPosition(); }
+    vec3 const& GetPosition()   const { return transform.GetWorldPosition(); }
+    glm::quat const& GetRotation()   const { return transform.GetWorldRotation(); }
     
     CameraType GetType() const { return m_type; }
 
+    Transform transform;
 private:
     void UpdateViewMatrix();
     void UpdateViewProj() { m_viewProj = m_proj * m_view; }
 
-    Transform m_transform;
     mat4 m_view     = mat4(1.0f);
     mat4 m_proj     = mat4(1.0f);
     mat4 m_viewProj = mat4(1.0f);

@@ -76,13 +76,6 @@ void Engine::init()
 	m_wheelAr.transform.SetPosition({0.0f, 1.1f, 5.0f});
 	m_wheelAr.transform.SetParent(&m_car.transform);
 	
-	m_geo.push_back(&m_car);
-	m_geo.push_back(&m_wheelAv);
-	m_geo.push_back(&m_wheelAr);
-	m_geo.push_back(&m_cube);
-	m_geo.push_back(&m_triangle);
-	m_geo.push_back(&m_ground);
-	
 	m_texture.Load("Assets/vivien.png");
 
 	m_triangleBounds = ComputeAABB(m_triangle);
@@ -118,6 +111,14 @@ void Engine::init()
 	
 	m_emitter = new Emitter({0.0f, 0.0f, 0.0f}, 1000);
 	m_emitter->Init();
+	
+	m_transforms.push_back(&m_car.transform);
+	m_transforms.push_back(&m_wheelAv.transform);
+	m_transforms.push_back(&m_wheelAr.transform);
+	m_transforms.push_back(&m_cube.transform);
+	m_transforms.push_back(&m_triangle.transform);
+	m_transforms.push_back(&m_ground.transform);
+	m_transforms.push_back(&m_camera->transform);
 }
 
 void Engine::Update()
@@ -126,6 +127,10 @@ void Engine::Update()
 	m_camera->HandleEvent(dt);
 	if (m_emitter != nullptr)
 		m_emitter->Update();
+	
+	for (Transform* obj : m_transforms)
+		obj->Update();
+	
 	
 	vec3 cam = m_camera->GetPosition();
 	m_shadow.Follow(vec3(cam.x, m_groundBounds.min.y, cam.z));

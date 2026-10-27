@@ -75,6 +75,7 @@ int main(void) {
     FinalFrameBuffer frameBuffer;
     CHRONO->SetFPSCap(60);
 
+    bool isDebug = false;
     /* Frame loop */
     while (isRunning) {
         /* Poll events */
@@ -82,6 +83,8 @@ int main(void) {
             if (event.type == SDL_EVENT_QUIT) {
                 isRunning = false;
             }
+            if (event.type == SDL_SCANCODE_GRAVE)
+                isDebug = !isDebug;
         }
         engine.handleEvent();
         engine.Update();
@@ -102,7 +105,8 @@ int main(void) {
         SDL_RenderPresent(renderer);
 
         CHRONO->Update();
-        std::cout << CHRONO->ShowFPS() << std::endl;
+        if ( isDebug )
+            std::cout << CHRONO->ShowFPS() << std::endl;
     }
 
     engine.destroy();

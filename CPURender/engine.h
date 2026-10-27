@@ -33,7 +33,7 @@ private:
 	Geometry m_ground;
 	Geometry m_particleVertices;
 	
-	std::vector<Geometry*> m_geo;
+	std::vector<Transform*> m_transforms;
 	
 	AABB m_triangleBounds;
 	AABB m_cubeBounds;
