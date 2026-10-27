@@ -6,7 +6,6 @@
 #include <iostream>
 #include "Chrono.h"
 //Students cannot change anything in this file
-#include "ProceduralGeneration.h"
 
 /* Main function */
 int main(void) {
@@ -24,8 +23,8 @@ int main(void) {
 
     window = SDL_CreateWindow(
         "Framebuffer",
-        WIDTH * 4,
-        HEIGHT * 4,
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
         0
     );
 
@@ -75,6 +74,7 @@ int main(void) {
     FinalFrameBuffer frameBuffer;
     CHRONO->SetFPSCap(60);
 
+    bool isDebug = false;
     /* Frame loop */
     while (isRunning) {
         /* Poll events */
@@ -82,8 +82,10 @@ int main(void) {
             if (event.type == SDL_EVENT_QUIT) {
                 isRunning = false;
             }
-            engine.handleEvent(event);
+            if (event.type == SDL_SCANCODE_GRAVE)
+                isDebug = !isDebug;
         }
+        engine.handleEvent();
         engine.Update();
         
         engine.renderFrame(frameBuffer);
@@ -102,6 +104,8 @@ int main(void) {
         SDL_RenderPresent(renderer);
 
         CHRONO->Update();
+        if ( isDebug )
+            std::cout << CHRONO->ShowFPS() << std::endl;
     }
 
     engine.destroy();

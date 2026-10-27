@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <array>
 #include <glm/glm.hpp>
 
 struct Texture

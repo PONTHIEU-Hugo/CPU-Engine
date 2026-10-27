@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chrono.cpp" />
+    <ClCompile Include="CubeMap.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
@@ -159,12 +160,14 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Chrono.h" />
+    <ClInclude Include="CubeMap.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="ProceduralGeneration.h" />
     <ClInclude Include="RenderTarget.h" />
+    <ClInclude Include="resource.h" />
     <ClInclude Include="Shaders.h" />
     <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="Texture.h" />

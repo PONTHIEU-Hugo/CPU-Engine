@@ -41,7 +41,7 @@ glm::vec3 Texture::Sample(glm::vec2 uv) const
 	float u = uv.x - std::floor(uv.x);
 	float v = uv.y - std::floor(uv.y);
 
-	int x = (int)(u * width);
+	int x = (int)(u * width); 
 	int y = (int)(v * height);
 
 	if (x >= width)

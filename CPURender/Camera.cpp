@@ -5,8 +5,15 @@
 
 void Camera::UpdateViewMatrix()
 {
-    m_view = inverse(m_world);
+    m_view = inverse(transform.GetWorldMatrix());
     UpdateViewProj();
+}
+
+Camera::Camera(glm::vec3 const& pos, Transform* parent)
+{
+    transform = Transform(pos, { 1.0f, 0.0f, 0.0f, 0.0f}, glm::vec3(1.0f, 1.0f, 1.0f));
+    if ( parent )
+        transform.SetParent(parent);
 }
 
 void Camera::HandleEvent(float _dt)
@@ -16,27 +23,37 @@ void Camera::HandleEvent(float _dt)
     const float speed = 3.0f;
     const float turn  = 1.5f;
 
-    if (keys[SDL_SCANCODE_LEFT])  m_camYaw   += turn * _dt;
-    if (keys[SDL_SCANCODE_RIGHT]) m_camYaw   -= turn * _dt;
-    if (keys[SDL_SCANCODE_UP])    m_camPitch += turn * _dt;
-    if (keys[SDL_SCANCODE_DOWN])  m_camPitch -= turn * _dt;
+    if (keys[SDL_SCANCODE_LEFT])  
+        transform.AddYPR({turn * _dt, 0.0f, 0.0f});
+    if (keys[SDL_SCANCODE_RIGHT]) 
+        transform.AddYPR({-turn * _dt, 0.0f, 0.0f});
+    if (keys[SDL_SCANCODE_UP])    
+        transform.AddYPR({0.0f, turn * _dt, 0.0f});
+    if (keys[SDL_SCANCODE_DOWN])  
+        transform.AddYPR({0.0f, -turn * _dt, 0.0f});
+    
 
-    glm::mat4 rot = glm::rotate(glm::mat4(1.0f), m_camYaw, glm::vec3(0, 1, 0))
-             * glm::rotate(glm::mat4(1.0f), m_camPitch, glm::vec3(1, 0, 0));
-
-    glm::vec3 right   = glm::vec3(rot[0]);
-    glm::vec3 forward = -glm::vec3(rot[2]);
-    glm::vec3 up      = glm::vec3(rot[1]);
-
-    if (keys[SDL_SCANCODE_W])     m_camPos += forward * speed * _dt;
-    if (keys[SDL_SCANCODE_S])     m_camPos -= forward * speed * _dt;
-    if (keys[SDL_SCANCODE_D])     m_camPos += right   * speed * _dt;
-    if (keys[SDL_SCANCODE_A])     m_camPos -= right   * speed * _dt;
-    if (keys[SDL_SCANCODE_SPACE]) m_camPos += up      * speed * _dt;
-    if (keys[SDL_SCANCODE_LCTRL]) m_camPos -= up      * speed * _dt;
-
-    glm::mat4 world = glm::translate(glm::mat4(1.0f), m_camPos) * rot;
-    SetMatrix(world);
+    if (keys[SDL_SCANCODE_W]) 
+        transform.Move(transform.GetForward() * speed * _dt);
+    if (keys[SDL_SCANCODE_S])
+        transform.Move(transform.GetForward() * -speed * _dt);
+    if (keys[SDL_SCANCODE_D]) 
+        transform.Move(transform.GetRight() * speed * _dt);
+    if (keys[SDL_SCANCODE_A]) 
+        transform.Move(transform.GetRight() * -speed * _dt);
+	if (keys[SDL_SCANCODE_SPACE]) 
+	    transform.Move(transform.GetUp() * speed * _dt);
+	if (keys[SDL_SCANCODE_LCTRL]) 
+	    transform.Move(transform.GetUp() * -speed * _dt);
+    
+    if (keys[SDL_SCANCODE_1])
+        transform.SetPosition({5.0f, 1.0f, 3.0f});
+    if (keys[SDL_SCANCODE_2])
+        transform.SetPosition({0.0f, 4.5f, 3.0f});
+    if (keys[SDL_SCANCODE_3])
+        transform.SetPosition({0.0f, 6.5f, 18.0f});
+    
+    UpdateViewMatrix();
 }
 
 void Camera::SetOrthographic(glm::float32 w, glm::float32 h, glm::float32 nearZ, glm::float32 farZ)

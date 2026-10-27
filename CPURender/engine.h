@@ -16,7 +16,7 @@ struct Engine
 	void init();
 
 	void Update();
-	void handleEvent(const SDL_Event& event);
+	void handleEvent();
 	void renderFrame(FinalFrameBuffer& frameBufferOut);
 
 	void destroy();
@@ -25,12 +25,16 @@ private:
 	// Ressources : possedees ici, referencees (par pointeur) par la scene.
 	Mesh     m_cubeMesh;
 	Mesh     m_carMesh;
+	Mesh     m_wheelAvMesh;
+	Mesh     m_wheelArMesh;
 	Mesh     m_groundMesh;
 	Texture  m_carTexture;
 
 	Material m_defaultMaterial;
 	Material m_carMaterial;
 	Material m_groundMaterial;
+
+	std::vector<Transform*> m_transforms;
 
 	Scene    m_scene;
 	Renderer m_renderer;
