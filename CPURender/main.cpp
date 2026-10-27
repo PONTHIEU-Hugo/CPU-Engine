@@ -6,7 +6,6 @@
 #include <iostream>
 #include "Chrono.h"
 //Students cannot change anything in this file
-#include "ProceduralGeneration.h"
 
 /* Main function */
 int main(void) {
