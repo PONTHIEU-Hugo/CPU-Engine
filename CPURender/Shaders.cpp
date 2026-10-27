@@ -33,7 +33,7 @@ static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
 	// v.position et v.normal sont deja en espace monde (Pipeline::Draw applique la matrice modele).
-	out.position = u.mvp * glm::vec4(v.position, 1.0f);
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
 	out.worldPos = v.position;
 	out.normal = v.normal;
 	out.color = v.color;
@@ -85,7 +85,7 @@ const Shader LambertShader = { BasicVS, LambertPS };
 static Varyings DepthVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
-	out.position = u.mvp * glm::vec4(v.position, 1.0f);
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
 	return out;
 }
 
@@ -128,7 +128,7 @@ static float ShadowVisibility(const Varyings& in, const Uniforms& u, float cosTh
 static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
-	out.position = u.mvp * glm::vec4(v.position, 1.0f);
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
 	out.worldPos = v.position;
 	out.normal = v.normal;
 	out.color  = v.color;

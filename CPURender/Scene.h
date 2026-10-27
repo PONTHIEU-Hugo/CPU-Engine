@@ -9,6 +9,7 @@
 #include "Material.h"
 #include "Transform.h"
 #include "Camera.h"
+#include "CubeMap.h"
 
 // Une instance dans la scene : quel mesh, avec quel materiau, ou.
 struct RenderObject
@@ -40,6 +41,7 @@ struct Scene
 {
 	Camera*       camera = nullptr;
 	DirectionalLight sun;
+	CubeMap skybox;
 	std::vector<RenderObject> objects;
 
 	// Le mesh et le materiau doivent survivre a la scene (ils sont references, pas copies).
@@ -52,6 +54,16 @@ struct Scene
 		object.castShadow = castShadow;
 		objects.push_back(object);
 		return objects.size() - 1;
+	}
+
+	void LoadSkybox()
+	{
+		skybox.faces[0].Load("Assets/right.png");
+		skybox.faces[1].Load("Assets/left.png");
+		skybox.faces[2].Load("Assets/top.png");
+		skybox.faces[3].Load("Assets/bottom.png");
+		skybox.faces[4].Load("Assets/front.png");
+		skybox.faces[5].Load("Assets/back.png");
 	}
 
 	RenderObject& Get(ObjectId id) { return objects[id]; }

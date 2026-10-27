@@ -93,7 +93,7 @@ bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& cast
 		return false;
 
 	Uniforms lightUniforms;
-	lightUniforms.mvp = m_lightVP;
+	lightUniforms.vp = m_lightVP;
 
 	pipeline.BindTarget(&m_target);
 	pipeline.ClearDepth();

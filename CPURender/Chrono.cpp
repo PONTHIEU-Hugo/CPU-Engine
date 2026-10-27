@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include <SDL3/SDL_timer.h>
+#include <iostream>
 
 Chrono* Chrono::s_pInstance = nullptr;
 
@@ -53,6 +54,7 @@ void Chrono::Update()
 		m_FPS = m_Frame / elapsed;
 		m_Frame = 0;
 		m_BeginFPS = now;
+		std::cout << ShowFPS() << std::endl;
 	}
 
 	if (m_DeltaTime < m_CapFPS && m_CapFPS > 0.f)
