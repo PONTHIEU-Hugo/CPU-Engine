@@ -38,16 +38,17 @@ using ObjectId = std::size_t;
 
 struct Scene
 {
-	Camera           camera;
+	Camera*       camera = nullptr;
 	DirectionalLight sun;
 	std::vector<RenderObject> objects;
 
 	// Le mesh et le materiau doivent survivre a la scene (ils sont references, pas copies).
-	ObjectId Add(const Mesh& mesh, const Material& material, bool castShadow = true)
+	ObjectId Add(const Mesh& mesh, const Material& material, bool castShadow = true, const Transform& transform = Transform())
 	{
 		RenderObject object;
 		object.mesh = &mesh;
 		object.material = &material;
+		object.transform = transform;
 		object.castShadow = castShadow;
 		objects.push_back(object);
 		return objects.size() - 1;

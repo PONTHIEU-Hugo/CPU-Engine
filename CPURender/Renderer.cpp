@@ -88,12 +88,12 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	m_pipeline.BindFrameBuffer(&out);
 	m_pipeline.ClearDepth();
 
-	const glm::mat4& viewProj = scene.camera.GetVPMatrix();
+	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
 
 	Uniforms base;
 	base.mvp     = viewProj;
 	base.ambient = scene.sun.ambient;
-	base.cameraPos = scene.camera.GetCameraPos();
+	base.cameraPos = scene.camera->GetPosition();
 	m_shadow.ApplyTo(base);
 
 	Frustum frustum = Frustum::FromMatrix(viewProj);

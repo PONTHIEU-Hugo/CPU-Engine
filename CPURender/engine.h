@@ -24,6 +24,8 @@ private:
 	// Ressources : possedees ici, referencees (par pointeur) par la scene.
 	Mesh     m_cubeMesh;
 	Mesh     m_carMesh;
+	Mesh     m_wheelAvMesh;
+	Mesh     m_wheelArMesh;
 	Mesh     m_groundMesh;
 	Texture  m_carTexture;
 

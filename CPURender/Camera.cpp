@@ -9,9 +9,9 @@ void Camera::UpdateViewMatrix()
     UpdateViewProj();
 }
 
-Camera::Camera(vec3 const& pos, Transform* parent)
+Camera::Camera(glm::vec3 const& pos, Transform* parent)
 {
-    transform = Transform(pos, { 1.0f, 0.0f, 0.0f, 0.0f}, vec3(1.0f, 1.0f, 1.0f));
+    transform = Transform(pos, { 1.0f, 0.0f, 0.0f, 0.0f}, glm::vec3(1.0f, 1.0f, 1.0f));
     if ( parent )
         transform.SetParent(parent);
 }
