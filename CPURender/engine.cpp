@@ -102,7 +102,8 @@ void Engine::init()
 	m_emitter->Init();
 
 	m_Terrain = new TerrainGenerator();
-	m_Terrain->GenerateHeighmap(33);
+	m_Terrain->GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
+	
 }
 
 void Engine::Update()

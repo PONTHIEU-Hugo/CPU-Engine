@@ -6,13 +6,27 @@ TerrainGenerator::~TerrainGenerator()
 	if (m_Generation != nullptr) delete m_Generation;
 }
 
-void TerrainGenerator::GenerateHeighmap(size_t size, HeighMapType type)
+void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale)
 {
 	if (m_Generation != nullptr) delete m_Generation;
 	m_Vertices.clear();
-	m_Generation = Generation_Algorithm::DiamondSquare_HeighMap(size);
+	double heighmapValueFactor = 1.0;
+	switch (type)
+	{
+	case HeighMapType::_DIAMOND_SQUARE:
+		m_Generation = Generation_Algorithm::DiamondSquare_HeighMap(size.x);
+		heighmapValueFactor = 0.025;
+		break;
+	case HeighMapType::_PERLIN_2D:
+		m_Generation = Generation_Algorithm::Perlin(size, 0.1f);
+		heighmapValueFactor = 5.0;
+		break;
+	default:
+		break;
+	}
 
-	std::vector<std::vector<int>>& rHeight = m_Generation->height;
+	if (m_Generation == nullptr) exit(-1);
+	std::vector<std::vector<double>>& rHeight = m_Generation->height;
 
 	glm::vec3 rSize = m_Generation->size;
 	m_Vertices.clear();
@@ -22,7 +36,7 @@ void TerrainGenerator::GenerateHeighmap(size_t size, HeighMapType type)
 		for (int x = 0; x < rHeight[y].size(); x++)
 		{
 			Vertex current{
-				glm::vec3{x * HeighmapValueSpace, -rHeight[y][x] * HeighmapValueFactor, y * HeighmapValueSpace},
+				glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y][x] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
 				ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 			};
 
@@ -33,19 +47,19 @@ void TerrainGenerator::GenerateHeighmap(size_t size, HeighMapType type)
 				if (y + 1 >= rHeight.size()) continue;
 
 				Vertex corner{
-					glm::vec3{(x + i) * HeighmapValueSpace, -rHeight[y + 1][x + i] * HeighmapValueFactor, (y + 1) * HeighmapValueSpace},
+					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y + 1][x + i] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 				};
 
 				m_Vertices.push_back(current);
 				m_Vertices.push_back(corner);
 				m_Vertices.push_back(Vertex{
-					glm::vec3{x * HeighmapValueSpace, -rHeight[y + 1][x] * HeighmapValueFactor, (y + 1) * HeighmapValueSpace},
+					glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y + 1][x] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 					});
 				m_Vertices.push_back(current);
 				m_Vertices.push_back(Vertex{
-					glm::vec3{(x + i) * HeighmapValueSpace, -rHeight[y][x + i] * HeighmapValueFactor, y * HeighmapValueSpace},
+					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y][x + i] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
 					});
 				m_Vertices.push_back(corner);

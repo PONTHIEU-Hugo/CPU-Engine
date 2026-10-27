@@ -4,11 +4,11 @@
 
 enum class HeighMapType : uint8_t
 {
-	_DIAMOND_SQUARE
+	_DIAMOND_SQUARE,
+	_PERLIN_2D
 };
 
-constexpr float HeighmapValueSpace = 2.5f;
-constexpr float HeighmapValueFactor = 0.025f;
+constexpr float HeighmapValueSpace = 1.f;
 
 class TerrainGenerator
 {
@@ -22,5 +22,6 @@ public:
 
 	std::vector<Vertex>* GetVertices() { return &m_Vertices; }
 
-	void GenerateHeighmap(size_t size, HeighMapType type = HeighMapType::_DIAMOND_SQUARE);
+	void GenerateHeighmap(size_t size, HeighMapType type, int scale = 1) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
+	void GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale = 1);
 };
