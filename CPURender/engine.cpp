@@ -62,9 +62,9 @@ void Engine::init()
 	//ObjectId cube = m_scene.Add(m_cubeMesh, m_defaultMaterial);
 	//m_scene.Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
 
-	m_car = m_scene.Add(m_carMesh, m_carMaterial);
+	//m_car = m_scene.Add(m_carMesh, m_carMaterial);
 
-	m_scene.Add(m_groundMesh, m_groundMaterial, false);
+	//m_scene.Add(m_groundMesh, m_groundMaterial, false);
 
 	float aspect = float(WIDTH) / float(HEIGHT);
 	// m_scene.camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
@@ -76,15 +76,15 @@ void Engine::init()
 	m_scene.sun.shadowCasterExtra = 30.0f;
 	m_scene.sun.shadowFocus       = m_scene.camera.GetCameraPos();
 
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
+	m_Terrain.SetMaterial(&m_defaultMaterial);
+	m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+
 	// Systèmes
 	m_scene.LoadSkybox();
 	m_renderer.Init(512);
 	m_renderer.showShadowDebug = false;
 	m_emitter.Init();
-
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
-	m_Terrain.SetMaterial(&m_defaultMaterial);
-	m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 }
 
 void Engine::Update()
