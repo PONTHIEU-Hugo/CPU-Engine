@@ -24,7 +24,7 @@ struct Varyings
 
 struct Uniforms
 {
-	glm::mat4 mvp{ 1.0f };
+	glm::mat4 vp{ 1.0f };
 	const Texture* texture = nullptr;
 	glm::vec3 baseColor = { 255.0f, 255.0f, 255.0f };   // teinte du materiau (blanc = aucune)
 	glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f };

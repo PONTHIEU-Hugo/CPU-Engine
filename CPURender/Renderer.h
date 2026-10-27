@@ -10,6 +10,7 @@
 
 struct Scene;
 struct RenderObject;
+struct CubeMap;
 
 class Renderer
 {
@@ -26,6 +27,7 @@ private:
 	void ShadowPass(const Scene& scene);
 	void MainPass(const Scene& scene, FinalFrameBuffer& out);
 	void DrawObject(const RenderObject& object, const Uniforms& base);
+	void DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out);
 
 	Pipeline  m_pipeline;
 	ShadowMap m_shadow;

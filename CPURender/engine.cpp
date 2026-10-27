@@ -77,6 +77,7 @@ void Engine::init()
 	m_scene.sun.shadowFocus       = m_scene.camera.GetCameraPos();
 
 	// Systèmes
+	m_scene.LoadSkybox();
 	m_renderer.Init(512);
 	m_renderer.showShadowDebug = false;
 	m_emitter.Init();

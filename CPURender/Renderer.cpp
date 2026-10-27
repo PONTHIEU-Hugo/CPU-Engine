@@ -88,10 +88,15 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	m_pipeline.BindFrameBuffer(&out);
 	m_pipeline.ClearDepth();
 
+	const glm::mat4& view = scene.camera.GetViewMatrix();
+	const glm::mat4& proj = scene.camera.GetProjMatrix();
+
+	DrawSkybox(scene.skybox, view, proj, out);
+
 	const glm::mat4& viewProj = scene.camera.GetVPMatrix();
 
 	Uniforms base;
-	base.mvp     = viewProj;
+	base.vp     = viewProj;
 	base.ambient = scene.sun.ambient;
 	base.cameraPos = scene.camera.GetCameraPos();
 	m_shadow.ApplyTo(base);
@@ -125,4 +130,24 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 	m_pipeline.BindVertexBuffer(object.mesh);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw(object.transform.GetWorldMatrix());
+}
+
+void Renderer::DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out)
+{
+	glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
+	glm::mat4 invVP = glm::inverse(proj * viewNoTranslation);
+
+	for (int y = 0; y < HEIGHT; ++y) {
+		for (int x = 0; x < WIDTH; ++x) {
+			// Centre du pixel en NDC (y vers le haut)
+			float ndcX = ((x + 0.5f) / WIDTH) * 2.0f - 1.0f;
+			float ndcY = 1.0f - ((y + 0.5f) / HEIGHT) * 2.0f;
+
+			glm::vec4 p = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
+			glm::vec3 dir = glm::vec3(p) / p.w;
+
+			glm::vec3 color = skybox.Sample(dir);
+			out.put_pixel(x, y, (int)color.r << 16 | (int)color.g << 8 | (int)color.b);
+		}
+	}
 }
