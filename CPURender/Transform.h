@@ -23,13 +23,12 @@ public:
     const glm::vec3& GetScale()    const { return scale; }
     const glm::quat& GetRotation() const { return rotation; }
 
-    // Monde (retournés par valeur : ce sont des valeurs calculées)
     glm::vec3 GetWorldPosition() const { UpdateMatrix(); return glm::vec3(world[3]); }
     glm::quat GetWorldRotation() const;
 
-    glm::vec3 GetForward() const { UpdateMatrix(); return -glm::normalize(glm::vec3(world[2])); }
-    glm::vec3 GetRight()   const { UpdateMatrix(); return  glm::normalize(glm::vec3(world[0])); }
-    glm::vec3 GetUp()      const { UpdateMatrix(); return  glm::normalize(glm::vec3(world[1])); }
+    glm::vec3 GetForward() const { UpdateMatrix(); return -glm::normalize(glm::vec3(local[2])); }
+    glm::vec3 GetRight()   const { UpdateMatrix(); return  glm::normalize(glm::vec3(local[0])); }
+    glm::vec3 GetUp()      const { UpdateMatrix(); return  glm::normalize(glm::vec3(local[1])); }
 
     const glm::mat4& GetWorldMatrix() const { UpdateMatrix(); return world; }
     const glm::mat4& GetLocalMatrix() const { UpdateMatrix(); return local; }
@@ -39,7 +38,6 @@ public:
     void SetRotation(glm::quat _rotation);
 
     // _ypr.x = yaw (axe Y monde), _ypr.y = pitch (axe X local), _ypr.z = roll (axe Z local)
-    // Même convention que AddYPR.
     void SetYawPitchRoll(glm::vec3 _ypr);
     void SetParent(Transform* _parent);
 
@@ -48,7 +46,6 @@ public:
     void AddScale(const float& _scale);
     void Move(glm::vec3 _dir);
 
-    // _target est exprimé en coordonnées monde.
     void LookAt(glm::vec3 _target);
     void OrbitAroundAxis(glm::vec3 _axis, float _angle, float _radius);
 

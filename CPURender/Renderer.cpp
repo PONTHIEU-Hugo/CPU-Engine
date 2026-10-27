@@ -88,12 +88,12 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	m_pipeline.BindFrameBuffer(&out);
 	m_pipeline.ClearDepth();
 
-	const glm::mat4& view = scene.camera.GetViewMatrix();
-	const glm::mat4& proj = scene.camera.GetProjMatrix();
+	const glm::mat4& view = scene.camera->GetViewMatrix();
+	const glm::mat4& proj = scene.camera->GetProjMatrix();
 
 	DrawSkybox(scene.skybox, view, proj, out);
 
-	const glm::mat4& viewProj = scene.camera.GetVPMatrix();
+	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
 
 	Uniforms base;
 	base.vp     = viewProj;
