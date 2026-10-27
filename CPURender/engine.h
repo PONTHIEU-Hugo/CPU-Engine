@@ -1,21 +1,17 @@
-#pragma once
+#ifndef ENGINE_H_INCLUDED
+#define ENGINE_H_INCLUDED
 
-#include <vector>
-
-#include "Camera.h"
-#include "ParticleSystem.h"
 #include "main.h"
-#include "core.h"
-#include "TerrainGenerator.h"
-//Students can change whetever they want in this file
+#include "Scene.h"
+#include "Renderer.h"
 #include "Texture.h"
-#include "Frustum.h"
+#include "ParticleSystem.h"
 
 union SDL_Event;
 
-struct Engine 
+// Ne s'occupe plus du rendu, se contente de l'appeler
+struct Engine
 {
-
 	void init();
 
 	void Update();
@@ -25,17 +21,22 @@ struct Engine
 	void destroy();
 
 private:
-	Emitter* m_emitter = nullptr;
-	TerrainGenerator* m_Terrain = nullptr;
+	// Ressources : possedees ici, referencees (par pointeur) par la scene.
+	Mesh     m_cubeMesh;
+	Mesh     m_carMesh;
+	Mesh     m_groundMesh;
+	Texture  m_carTexture;
 
-	Pipeline m_pipeline;
-	std::vector<Vertex> m_triangle;
-	std::vector<Vertex> m_cube;
-	std::vector<Vertex> m_obj;
-	std::vector<Vertex> m_particleVertices;
-	Texture m_texture;
-	AABB m_triangleBounds;
-	AABB m_cubeBounds;
+	Material m_defaultMaterial;
+	Material m_carMaterial;
+	Material m_groundMaterial;
 
-	Camera m_camera;
+	Scene    m_scene;
+	Renderer m_renderer;
+
+	ObjectId m_car = 0;
+
+	Emitter  m_emitter{ glm::vec3(0.0f), 1000 };
 };
+
+#endif

@@ -1,7 +1,8 @@
 #ifndef GEOMETRY_FACTORY_HPP_INCLUDED
 #define GEOMETRY_FACTORY_HPP_INCLUDED
 
-#include "core.h" // uint32, RANDOM::GetRandomInt32_t ...
+#include "core.h" // uint32, vec3, RANDOM ...
+#include "Mesh.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -19,31 +20,32 @@ namespace GeometryFactory
 {
 	namespace detail
 	{
-		inline vec3 White() { return vec3(255.0f); }
+		inline glm::vec3 White() { return glm::vec3(255.0f); }
 
-		inline Vertex MakeVertex(const vec3& _pos, const vec2& _uv)
+		inline Vertex MakeVertex(const glm::vec3& _pos, const glm::vec2& _uv)
 		{
 			Vertex v;
 			v.position = _pos;
+			v.normal   = { 0.0f, 0.0f, 1.0f };
 			v.color    = White();
 			v.uv       = _uv;
 			return v;
 		}
 
-		inline vec3 SafeNormalize(const vec3& _v, const vec3& _fallback)
+		inline glm::vec3 SafeNormalize(const glm::vec3& _v, const glm::vec3& _fallback)
 		{
 			float len2 = dot(_v, _v);
 			return len2 > 1e-12f ? _v * (1.0f / std::sqrt(len2)) : _fallback;
 		}
 
-		inline vec3 OrthogonalizeTangent(const vec3& _t, const vec3& _n)
+		inline glm::vec3 OrthogonalizeTangent(const glm::vec3& _t, const glm::vec3& _n)
 		{
-			vec3 t = _t - dot(_t, _n) * _n;
-			if (dot(t, t) > 1e-12f)
+			glm::vec3 t = _t - dot(_t, _n) * _n;
+			if (glm::dot(t, t) > 1e-12f)
 				return normalize(t);
 
-			vec3 helper = std::abs(_n.y) < 0.99f ? vec3(0, 1, 0) : vec3(1, 0, 0);
-			return normalize(cross(helper, _n));
+			glm::vec3 helper = std::abs(_n.y) < 0.99f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+			return glm::normalize(cross(helper, _n));
 		}
 
 		inline void PushTriangle(std::vector<Vertex>& _out, const Vertex& a, const Vertex& b, const Vertex& c)
@@ -55,7 +57,7 @@ namespace GeometryFactory
 
 		// Triangle simple (p0, p1, p2 en CCW)
 		inline void AddTriangle(std::vector<Vertex>& _out,
-		                        const vec3& p0, const vec3& p1, const vec3& p2)
+		                        const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2)
 		{
 			PushTriangle(_out,
 				MakeVertex(p0, { 0.0f, 1.0f }),
@@ -65,8 +67,8 @@ namespace GeometryFactory
 
 		// Quad = 2 triangles (p0..p3 en CCW)
 		inline void AddQuad(std::vector<Vertex>& _out,
-		                    const vec3& p0, const vec3& p1,
-		                    const vec3& p2, const vec3& p3)
+		                    const glm::vec3& p0, const glm::vec3& p1,
+		                    const glm::vec3& p2, const glm::vec3& p3)
 		{
 			Vertex v0 = MakeVertex(p0, { 0.0f, 1.0f });
 			Vertex v1 = MakeVertex(p1, { 1.0f, 1.0f });
@@ -82,33 +84,21 @@ namespace GeometryFactory
 	//// NORMALES / TANGENTES
 	////////////////////////////////////////////
 
-	// Flat : une normale / tangente par triangle (les vertices sont deja dupliques).
-	inline void CalculateNormalsAndTangents(std::vector<Vertex>& _vertices)
+	inline void CalculateNormals(std::vector<Vertex>& _vertices)
 	{
-		/*for (size_t i = 0; i + 2 < _vertices.size(); i += 3)
+		for (size_t i = 0; i + 2 < _vertices.size(); i += 3)
 		{
 			Vertex& v0 = _vertices[i];
 			Vertex& v1 = _vertices[i + 1];
 			Vertex& v2 = _vertices[i + 2];
 
-			vec3 e1 = v1.position - v0.position;
-			vec3 e2 = v2.position - v0.position;
+			glm::vec3 e1 = v1.position - v0.position;
+			glm::vec3 e2 = v2.position - v0.position;
 
-			vec3 N = detail::SafeNormalize(cross(e1, e2), vec3(0, 1, 0));
-
-			vec2 d1 = v1.uv - v0.uv;
-			vec2 d2 = v2.uv - v0.uv;
-			float denom = d1.x * d2.y - d2.x * d1.y;
-
-			vec3 T(0.0f);
-			if (std::abs(denom) > 1e-8f)
-				T = (e1 * d2.y - e2 * d1.y) / denom;
-
-			T = detail::OrthogonalizeTangent(T, N);
+			glm::vec3 N = detail::SafeNormalize(cross(e1, e2), glm::vec3(0, 1, 0));
 
 			v0.normal = v1.normal = v2.normal = N;
-			v0.tangent = v1.tangent = v2.tangent = T;
-		}*/
+		}
 	}
 
 	inline void CalculateNormalsAndTangentsSeamless(std::vector<Vertex>& _vertices)
@@ -131,19 +121,19 @@ namespace GeometryFactory
 			}
 		};
 
-		std::unordered_map<PosKey, uint32, PosKeyHash> slots;
-		std::vector<uint32> slotOf(_vertices.size());
+		std::unordered_map<PosKey, uint32_t, PosKeyHash> slots;
+		std::vector<uint32_t> slotOf(_vertices.size());
 		for (size_t i = 0; i < _vertices.size(); ++i)
 		{
-			const vec3& p = _vertices[i].position;
+			const glm::vec3& p = _vertices[i].position;
 			PosKey key{ (int)std::lround(p.x / MERGE_EPSILON),
 			            (int)std::lround(p.y / MERGE_EPSILON),
 			            (int)std::lround(p.z / MERGE_EPSILON) };
-			slotOf[i] = slots.emplace(key, (uint32)slots.size()).first->second;
+			slotOf[i] = slots.emplace(key, (uint32_t)slots.size()).first->second;
 		}
 
-		std::vector<vec3> nAcc(slots.size(), vec3(0.0f));
-		std::vector<vec3> tAcc(slots.size(), vec3(0.0f));
+		std::vector<glm::vec3> nAcc(slots.size(), glm::vec3(0.0f));
+		std::vector<glm::vec3> tAcc(slots.size(), glm::vec3(0.0f));
 
 		for (size_t i = 0; i + 2 < _vertices.size(); i += 3)
 		{
@@ -151,15 +141,15 @@ namespace GeometryFactory
 			const Vertex& v1 = _vertices[i + 1];
 			const Vertex& v2 = _vertices[i + 2];
 
-			vec3 e1 = v1.position - v0.position;
-			vec3 e2 = v2.position - v0.position;
-			vec3 faceNormal = cross(e1, e2);
+			glm::vec3 e1 = v1.position - v0.position;
+			glm::vec3 e2 = v2.position - v0.position;
+			glm::vec3 faceNormal = cross(e1, e2);
 
-			vec2 d1 = v1.uv - v0.uv;
-			vec2 d2 = v2.uv - v0.uv;
+			glm::vec2 d1 = v1.uv - v0.uv;
+			glm::vec2 d2 = v2.uv - v0.uv;
 			float denom = d1.x * d2.y - d2.x * d1.y;
 
-			vec3 faceTangent(0.0f);
+			glm::vec3 faceTangent(0.0f);
 			if (std::abs(denom) >= 1e-6f)
 				faceTangent = (e1 * d2.y - e2 * d1.y) / denom;
 
@@ -175,32 +165,42 @@ namespace GeometryFactory
 	//// TRIANGLE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildTriangle()
+	inline Mesh BuildTriangle()
 	{
 		std::vector<Vertex> vertices;
 
-		// Vu depuis +Z : bas-gauche -> bas-droite -> haut = CCW
-		detail::AddTriangle(vertices, { -0.5f, -0.5f, 0.0f },
-		                              {  0.5f, -0.5f, 0.0f },
-		                              {  0.0f,  0.5f, 0.0f });
+		// Memes sommets (et memes uv) pour les deux faces : seul le sens d'enroulement change.
+		Vertex bottomLeft  = detail::MakeVertex({ -0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f });
+		Vertex bottomRight = detail::MakeVertex({  0.5f, -0.5f, 0.0f }, { 1.0f, 1.0f });
+		Vertex top         = detail::MakeVertex({  0.0f,  0.5f, 0.0f }, { 0.5f, 0.0f });
 
-		CalculateNormalsAndTangents(vertices);
-		return vertices;
+		// Face avant : vue depuis +Z, bas-gauche -> bas-droite -> haut = CCW
+		detail::PushTriangle(vertices, bottomLeft, bottomRight, top);
+
+		// Face arriere : vue depuis -Z, ordre inverse = CCW
+		detail::PushTriangle(vertices, bottomLeft, top, bottomRight);
+
+		CalculateNormals(vertices);
+		
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// PYRAMID
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildPyramid()
+	inline Mesh BuildPyramid()
 	{
 		std::vector<Vertex> vertices;
 
-		const vec3 A(-0.5f, -0.5f, -0.5f);
-		const vec3 B( 0.5f, -0.5f, -0.5f);
-		const vec3 C( 0.5f, -0.5f,  0.5f);
-		const vec3 D(-0.5f, -0.5f,  0.5f);
-		const vec3 T( 0.0f,  0.5f,  0.0f);
+		const glm::vec3 A(-0.5f, -0.5f, -0.5f);
+		const glm::vec3 B( 0.5f, -0.5f, -0.5f);
+		const glm::vec3 C( 0.5f, -0.5f,  0.5f);
+		const glm::vec3 D(-0.5f, -0.5f,  0.5f);
+		const glm::vec3 T( 0.0f,  0.5f,  0.0f);
 
 		detail::AddTriangle(vertices, B, A, T); // avant  (-Z)
 		detail::AddTriangle(vertices, C, B, T); // droite (+X)
@@ -208,15 +208,19 @@ namespace GeometryFactory
 		detail::AddTriangle(vertices, A, D, T); // gauche (-X)
 		detail::AddQuad(vertices, A, B, C, D);  // base   (-Y)
 
-		CalculateNormalsAndTangents(vertices);
-		return vertices;
+		CalculateNormals(vertices);
+		
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// CUBE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildCube()
+	inline Mesh BuildCube()
 	{
 		std::vector<Vertex> vertices;
 
@@ -227,23 +231,27 @@ namespace GeometryFactory
 		detail::AddQuad(vertices, {-0.5f,-0.5f, 0.5f}, { 0.5f,-0.5f, 0.5f}, { 0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}); // +Z
 		detail::AddQuad(vertices, { 0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,-0.5f}, {-0.5f, 0.5f,-0.5f}, { 0.5f, 0.5f,-0.5f}); // -Z
 
-		CalculateNormalsAndTangents(vertices);
-		return vertices;
+		CalculateNormals(vertices);
+		
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// ICOSPHERE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildIcosphere(int _subdivisions, float _radius = 0.5f)
+	inline Mesh BuildIcosphere(int _subdivisions, float _radius = 0.5f)
 	{
-		_subdivisions = clamp(_subdivisions, 0, 6);
+		_subdivisions = glm::clamp(_subdivisions, 0, 6);
 
-		using Tri = std::array<vec3, 3>;
+		using Tri = std::array<glm::vec3, 3>;
 
 		const float t = (1.0f + std::sqrt(5.0f)) * 0.5f;
 
-		std::vector<vec3> p = {
+		std::vector<glm::vec3> p = {
 			{-1,  t,  0}, { 1,  t,  0}, {-1, -t,  0}, { 1, -t,  0},
 			{ 0, -1,  t}, { 0,  1,  t}, { 0, -1, -t}, { 0,  1, -t},
 			{ t,  0, -1}, { t,  0,  1}, {-t,  0, -1}, {-t,  0,  1},
@@ -271,9 +279,9 @@ namespace GeometryFactory
 
 			for (const Tri& tri : tris)
 			{
-				vec3 m0 = normalize((tri[0] + tri[1]) * 0.5f);
-				vec3 m1 = normalize((tri[1] + tri[2]) * 0.5f);
-				vec3 m2 = normalize((tri[2] + tri[0]) * 0.5f);
+				glm::vec3 m0 = normalize((tri[0] + tri[1]) * 0.5f);
+				glm::vec3 m1 = normalize((tri[1] + tri[2]) * 0.5f);
+				glm::vec3 m2 = normalize((tri[2] + tri[0]) * 0.5f);
 
 				next.push_back({ tri[0], m0, m2 });
 				next.push_back({ tri[1], m1, m0 });
@@ -293,9 +301,9 @@ namespace GeometryFactory
 
 			for (int k = 0; k < 3; ++k)
 			{
-				const vec3& n = tri[k];
-				u[k] = 0.5f + std::atan2(n.z, n.x) / (2.0f * pi<float>());
-				v[k] = 0.5f - std::asin(clamp(n.y, -1.0f, 1.0f)) / pi<float>();
+				const glm::vec3& n = tri[k];
+				u[k] = 0.5f + std::atan2(n.z, n.x) / (2.0f * glm::pi<float>());
+				v[k] = 0.5f - std::asin(glm::clamp(n.y, -1.0f, 1.0f)) / glm::pi<float>();
 				isPole[k] = std::abs(n.y) > 0.9999f;
 			}
 
@@ -317,45 +325,56 @@ namespace GeometryFactory
 
 			for (int k = 0; k < 3; ++k)
 			{
-				const vec3& n = tri[k];
-				vertices.push_back(detail::MakeVertex(n * _radius, { u[k], v[k] }));
+				const glm::vec3& n = tri[k];
+				Vertex vertex = detail::MakeVertex(
+						n * _radius,
+						{ u[k], v[k] }
+					);
+
+				vertex.normal = n;
+				vertices.push_back(vertex);
 			}
 		}
 
-		return vertices;
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// UV SPHERE
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildUVSphere(uint32 _sliceCount, uint32 _stackCount, float _radius = 0.5f)
+	inline Mesh BuildUVSphere(uint32_t _sliceCount, uint32_t _stackCount, float _radius = 0.5f)
 	{
-		_sliceCount = std::max<uint32>(_sliceCount, 3);
-		_stackCount = std::max<uint32>(_stackCount, 2);
+		_sliceCount = std::max<uint32_t>(_sliceCount, 3);
+		_stackCount = std::max<uint32_t>(_stackCount, 2);
 
-		const float phiStep   = pi<float>() / (float)_stackCount;
-		const float thetaStep = 2.0f * pi<float>() / (float)_sliceCount;
+		const float phiStep   = glm::pi<float>() / (float)_stackCount;
+		const float thetaStep = 2.0f * glm::pi<float>() / (float)_sliceCount;
 
-		auto sphereVertex = [&](uint32 i, uint32 j) -> Vertex
+		auto sphereVertex = [&](uint32_t i, uint32_t j) -> Vertex
 		{
 			float phi   = (float)i * phiStep;
 			float theta = (float)j * thetaStep;
 
-			vec3 n(std::sin(phi) * std::cos(theta),
+			glm::vec3 n(std::sin(phi) * std::cos(theta),
 			            std::cos(phi),
 			            std::sin(phi) * std::sin(theta));
-			vec3 tangent(-std::sin(theta), 0.0f, std::cos(theta));
-			vec2 uv((float)j / (float)_sliceCount, (float)i / (float)_stackCount);
+			glm::vec3 tangent(-std::sin(theta), 0.0f, std::cos(theta));
+			glm::vec2 uv((float)j / (float)_sliceCount, (float)i / (float)_stackCount);
 
-			return detail::MakeVertex(n * _radius, uv);
+			Vertex vertex = detail::MakeVertex(n * _radius, uv);
+			vertex.normal = n;
+			return vertex;
 		};
 
 		std::vector<Vertex> vertices;
 
-		for (uint32 i = 0; i < _stackCount; ++i)
+		for (uint32_t i = 0; i < _stackCount; ++i)
 		{
-			for (uint32 j = 0; j < _sliceCount; ++j)
+			for (uint32_t j = 0; j < _sliceCount; ++j)
 			{
 				Vertex a = sphereVertex(i,     j);
 				Vertex b = sphereVertex(i,     j + 1);
@@ -383,28 +402,42 @@ namespace GeometryFactory
 				}
 			}
 		}
-
-		return vertices;
+ 
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// CIRCLE (disque)
 	////////////////////////////////////////////
 
-	// Ajoute un disque a _vertices. Top = normale +Y, sinon -Y. CCW vu de l'exterieur.
 	inline void AddCircle(std::vector<Vertex>& _vertices, int _stackCount, float _posY, bool _isTop)
 	{
 
-		const float angle = 2.0f * pi<float>() / (float)_stackCount;
+		const float angle = 2.0f * glm::pi<float>() / (float)_stackCount;
 
 		Vertex center = detail::MakeVertex({ 0.0f, _posY, 0.0f }, { 0.5f, 0.5f });
 
+		center.normal = _isTop
+				? glm::vec3(0.0f, 1.0f, 0.0f)
+				: glm::vec3(0.0f, -1.0f, 0.0f);
 		auto ringVertex = [&](int i) -> Vertex
 		{
 			float c = std::cos(angle * (float)i);
 			float s = std::sin(angle * (float)i);
-			return detail::MakeVertex({ c * 0.5f, _posY, s * 0.5f },
-			                          { 0.5f + c * 0.5f, 0.5f + s * 0.5f });
+			
+			Vertex vertex = detail::MakeVertex(
+					{ c * 0.5f, _posY, s * 0.5f },
+					{ 0.5f + c * 0.5f, 0.5f + s * 0.5f }
+				);
+
+			vertex.normal = _isTop
+				? glm::vec3(0.0f, 1.0f, 0.0f)
+				: glm::vec3(0.0f, -1.0f, 0.0f);
+
+			return vertex;
 		};
 
 		for (int i = 0; i < _stackCount; ++i)
@@ -417,18 +450,23 @@ namespace GeometryFactory
 		}
 	}
 
-	inline std::vector<Vertex> BuildCircle(int _stackCount, float _posY, bool _isTop)
+	inline Mesh BuildCircle(int _stackCount, float _posY, bool _isTop)
 	{
 		std::vector<Vertex> vertices;
 		AddCircle(vertices, std::max(_stackCount, 3), _posY, _isTop);
-		return vertices;
+		CalculateNormals(vertices);
+		
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// CYLINDER
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildCylinder(int _stackCount)
+	inline Mesh BuildCylinder(int _stackCount)
 	{
 		_stackCount = std::max(_stackCount, 3);
 
@@ -436,15 +474,24 @@ namespace GeometryFactory
 		AddCircle(vertices, _stackCount, -0.5f, false);
 		AddCircle(vertices, _stackCount,  0.5f, true);
 
-		const float angle = 2.0f * pi<float>() / (float)_stackCount;
+		const float angle = 2.0f * glm::pi<float>() / (float)_stackCount;
 
 		auto sideVertex = [&](int i, float y) -> Vertex
 		{
 			float u = (float)i / (float)_stackCount;
-			float c = std::cos(angle * (float)i);
-			float s = std::sin(angle * (float)i);
-			return detail::MakeVertex({ c * 0.5f, y, s * 0.5f },
-			                          { u, y < 0.0f ? 1.0f : 0.0f });
+			float angle = 2.0f * glm::pi<float>() * u;
+
+			float c = std::cos(angle);
+			float s = std::sin(angle);
+
+			Vertex vertex = detail::MakeVertex(
+				{ c * 0.5f, y, s * 0.5f },
+				{ u, y < 0.0f ? 1.0f : 0.0f }
+			);
+
+			vertex.normal = glm::vec3(c, 0.0f, s);
+
+			return vertex;
 		};
 
 		for (int i = 0; i < _stackCount; ++i)
@@ -458,147 +505,139 @@ namespace GeometryFactory
 			detail::PushTriangle(vertices, top0,    top1,    bottom1);
 		}
 
-		return vertices;
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// DONUT (tore)
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> BuildDonut(float _majorRadius, float _minorRadius, uint32 _majorSlices, uint32 _minorSlices)
+	inline Mesh BuildDonut(float _majorRadius, float _minorRadius, uint32_t _majorSlices, uint32_t _minorSlices)
 	{
-		_majorSlices = std::max<uint32>(_majorSlices, 3);
-		_minorSlices = std::max<uint32>(_minorSlices, 3);
-
-		const float twoPi = 2.0f * pi<float>();
-
-		auto donutVertex = [&](uint32 i, uint32 j) -> Vertex
-		{
-			float u     = (float)i / (float)_majorSlices;
-			float v     = (float)j / (float)_minorSlices;
-			float theta = u * twoPi;
-			float phi   = v * twoPi;
-
-			float ring = _majorRadius + _minorRadius * std::cos(phi);
-
-			vec3 p(ring * std::cos(theta),
-			            _minorRadius * std::sin(phi),
-			            ring * std::sin(theta));
-			vec3 n(std::cos(phi) * std::cos(theta),
-			            std::sin(phi),
-			            std::cos(phi) * std::sin(theta));
-			vec3 t(-std::sin(theta), 0.0f, std::cos(theta));
-
-			return detail::MakeVertex(p, { u, v });
-		};
-
 		std::vector<Vertex> vertices;
 
-		for (uint32 i = 0; i < _majorSlices; ++i)
+		for (uint32_t i = 0; i <= _majorSlices; ++i)
 		{
-			for (uint32 j = 0; j < _minorSlices; ++j)
+			float u = (float)i / (float)_majorSlices;
+			float theta = u * 2.0f * glm::pi<float>();
+    		
+			for (uint32_t j = 0; j <= _minorSlices; ++j)
 			{
-				Vertex a = donutVertex(i,     j);
-				Vertex b = donutVertex(i + 1, j);
-				Vertex c = donutVertex(i,     j + 1);
-				Vertex d = donutVertex(i + 1, j + 1);
+				float v = (float)j / (float)_minorSlices;
+				float phi = v * 2.0f * glm::pi<float>();
 
-				detail::PushTriangle(vertices, a, c, b);
-				detail::PushTriangle(vertices, b, c, d);
+				float x = (_majorRadius + _minorRadius * cos(phi)) * cos(theta);
+				float y = _minorRadius * sin(phi);
+				float z = (_majorRadius + _minorRadius * cos(phi)) * sin(theta);
+
+				Vertex vertex;
+				vertex.position = glm::vec3(x, y, z);
+				vertex.uv = glm::vec2(u, v);
+
+				float nx = cos(phi) * cos(theta);
+				float ny = sin(phi);
+				float nz = cos(phi) * sin(theta);
+
+				vertex.normal = glm::normalize(glm::vec3(nx, ny, nz));
+				
+				vertices.push_back(vertex);
 			}
 		}
 
-		return vertices;
+		Mesh geometry;
+		geometry.vertices = std::move(vertices);
+		geometry.ComputeBounds();
+		return geometry;
 	}
 
 	////////////////////////////////////////////
 	//// OBJ LOADER
 	////////////////////////////////////////////
 
-	inline std::vector<Vertex> LoadGeometry(const std::string& _path)
-	{
-		std::ifstream file(_path);
-		if (!file.is_open())
-			return {};
+	inline Mesh LoadGeometry(std::string _path)
+    {
+		std::vector<Vertex> vertices;
+    	
+    	std::vector<glm::vec3> rawPositions;
+    	std::vector<glm::vec2> rawUVs;
+		std::vector<glm::vec3> rawNormals;
 
-		std::vector<vec3> rawPositions;
-		std::vector<vec2> rawUVs;
-		std::vector<Vertex>    vertices;
+    	FILE* file = nullptr;
+    	errno_t err = fopen_s(&file, _path.c_str(), "r");
+    	if (err != 0 || file == nullptr)
+    	{
+    		return {};
+    	}
 
-		auto resolve = [](int _i, size_t _count) -> int
-		{
-			if (_i > 0) return _i - 1;
-			if (_i < 0) return (int)_count + _i;
-			return -1;
-		};
+    	while (1)
+    	{
+    		char lineHeader[128];
+    		int res = fscanf_s(file, "%s", lineHeader, (unsigned)_countof(lineHeader));
+    		if (res == EOF)
+    			break;
 
-		std::string line;
-		while (std::getline(file, line))
-		{
-			std::istringstream ss(line);
-			std::string header;
-			ss >> header;
+    		if (strcmp(lineHeader, "v") == 0)
+    		{
+				glm::vec3 pos;
+    			fscanf_s(file, "%f %f %f\n", &pos.x, &pos.y, &pos.z);
+    			pos.z = -pos.z;
+    			rawPositions.push_back(pos);
+    		}
+    		else if (strcmp(lineHeader, "vn") == 0)
+    		{
+				glm::vec3 normal;
+    			fscanf_s(file, "%f %f %f",
+					&normal.x, &normal.y, &normal.z);
 
-			if (header == "v")
-			{
-				vec3 p;
-				ss >> p.x >> p.y >> p.z;
-				rawPositions.push_back(p);
-			}
-			else if (header == "vt")
-			{
-				vec2 uv;
-				ss >> uv.x >> uv.y;
-				uv.y = 1.0f - uv.y;
-				rawUVs.push_back(uv);
-			}
-			else if (header == "f")
-			{
-				struct Ref { int v = -1; int vt = -1; };
-				std::vector<Ref> face;
+    			normal.z = -normal.z;
 
-				std::string token;
-				while (ss >> token)
-				{
-					Ref r;
-					size_t s1 = token.find('/');
-					r.v = resolve(std::stoi(token.substr(0, s1)), rawPositions.size());
+    			rawNormals.push_back(normal);
+    		}
+    		else if (strcmp(lineHeader, "vt") == 0)
+    		{
+				glm::vec2 uv;
+    			fscanf_s(file, "%f %f\n", &uv.x, &uv.y);
+    			uv.y = 1 - uv.y;
+    			rawUVs.push_back(uv);
+    		}
+    		else if (strcmp(lineHeader, "f") == 0)
+    		{
+    			int posIdx[3], uvIdx[3], normalIdx[3];
+    			int matches = fscanf_s(file, "%d/%d/%d %d/%d/%d %d/%d/%d\n",
+					&posIdx[0], &uvIdx[0], &normalIdx[0],
+					&posIdx[1], &uvIdx[1], &normalIdx[1],
+					&posIdx[2], &uvIdx[2], &normalIdx[2]);
 
-					if (s1 != std::string::npos)
-					{
-						size_t s2 = token.find('/', s1 + 1);
-						std::string vt = token.substr(s1 + 1, s2 == std::string::npos ? std::string::npos : s2 - s1 - 1);
-						if (!vt.empty())
-							r.vt = resolve(std::stoi(vt), rawUVs.size());
-					}
-					face.push_back(r);
-				}
+    			if (matches != 9)
+    			{
+    				printf("File can't be read by our simple parser\n");
+    				fclose(file);
+    				return {};
+    			}
 
-				if (face.size() < 3)
-					continue;
+    			int order[3] = {0, 2, 1};
+    			for (int k = 0; k < 3; ++k)
+    			{
+    				int idx = order[k];
+    				Vertex v;
+    				v.position = rawPositions[posIdx[idx] - 1];
+    				v.uv       = rawUVs.empty() ? glm::vec2() : rawUVs[uvIdx[idx] - 1];
+    				v.normal = rawNormals[normalIdx[idx] - 1];
+    				v.color = glm::vec3 (255, 255, 255);
+    				vertices.push_back(v);
+    			}
+    		}
+    	}
 
-				bool valid = true;
-				for (const Ref& r : face)
-					if (r.v < 0 || r.v >= (int)rawPositions.size()) valid = false;
-				if (!valid)
-					continue;
+    	fclose(file);
 
-				for (size_t k = 1; k + 1 < face.size(); ++k)
-				{
-					for (const Ref* r : { &face[0], &face[k], &face[k + 1] })
-					{
-						Vertex v;
-						v.position = rawPositions[r->v];
-						v.uv       = (r->vt >= 0 && r->vt < (int)rawUVs.size()) ? rawUVs[r->vt] : vec2(0.0f);
-						v.color    = vec3((float)RANDOM::GetRandomInt32_t(0, 255));
-						vertices.push_back(v);
-					}
-				}
-			}
-		}
-
-		CalculateNormalsAndTangents(vertices);
-		return vertices;
+		Mesh geometry;
+		geometry.vertices = std::move(vertices);
+		geometry.ComputeBounds();
+		return geometry;
 	}
 }
 

@@ -1,17 +1,8 @@
 #ifndef FRUSTRUM_H_INCLUDED
 #define FRUSTRUM_H_INCLUDED
 
-#include <vector>
 #include <glm/glm.hpp>
-#include "Pipeline.h"
-
-struct AABB
-{
-	glm::vec3 min{ 0.0f };
-	glm::vec3 max{ 0.0f };
-};
-
-AABB ComputeAABB(const std::vector<Vertex>& vertices);
+#include "AABB.h"
 
 struct Frustum
 {

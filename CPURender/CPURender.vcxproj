@@ -112,7 +112,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/openmp:llvm %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/openmp:llvm /arch:AVX %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -128,7 +128,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalOptions>/openmp:llvm %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/openmp:llvm /arch:AVX %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -142,16 +142,19 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chrono.cpp" />
     <ClCompile Include="engine.cpp" />
-    <ClCompile Include="GeometryFactory.hpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="ProceduralGeneration.cpp" />
     <ClCompile Include="Shaders.cpp" />
     <ClCompile Include="TerrainGenerator.cpp" />
+    <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Clipping.cpp" />
     <ClCompile Include="Frustum.cpp" />
+    <ClCompile Include="Transform.cpp" />
+    <ClCompile Include="AABB.cpp" />
+    <ClCompile Include="Renderer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Camera.h" />
@@ -161,13 +164,23 @@
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="ProceduralGeneration.h" />
+    <ClInclude Include="RenderTarget.h" />
     <ClInclude Include="Shaders.h" />
+    <ClInclude Include="ShadowMap.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Clipping.h" />
     <ClInclude Include="Frustum.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="core.h" />
     <ClInclude Include="TerrainGenerator.h" />
+    <ClInclude Include="Transform.h" />
+    <ClInclude Include="GeometryFactory.hpp" />
+    <ClInclude Include="Vertex.h" />
+    <ClInclude Include="AABB.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="Material.h" />
+    <ClInclude Include="Scene.h" />
+    <ClInclude Include="Renderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
