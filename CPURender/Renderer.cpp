@@ -35,9 +35,6 @@ void Renderer::UpdateLight(const Scene& scene)
 	m_shadow.Follow(sun.shadowFocus);
 }
 
-// La shadow map n'est a refaire que si un objet qui projette une ombre a bouge,
-// ou si la liste de ces objets a change. C'est le renderer qui le decide :
-// Transform ne connait plus la ShadowMap.
 bool Renderer::ShadowCastersChanged(const Scene& scene)
 {
 	uint64_t hash = 1469598103934665603ull;   // FNV-1a
@@ -50,7 +47,7 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 	for (size_t i = 0; i < scene.objects.size(); ++i)
 	{
 		const RenderObject& object = scene.objects[i];
-		if (!object.castShadow || !object.mesh)
+		if (object.castShadow == false || !object.mesh)
 			continue;
 
 		mix(i);
@@ -66,13 +63,13 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 void Renderer::ShadowPass(const Scene& scene)
 {
 	bool castersChanged = ShadowCastersChanged(scene);
-	if (!castersChanged && !m_shadow.IsDirty())
+	if (castersChanged == false && m_shadow.IsDirty() == false)
 		return;
 
 	m_casters.clear();
 	for (const RenderObject& object : scene.objects)
 	{
-		if (!object.castShadow || !object.mesh)
+		if (object.castShadow == false || !object.mesh)
 			continue;
 
 		ShadowCaster caster;
@@ -82,7 +79,7 @@ void Renderer::ShadowPass(const Scene& scene)
 		m_casters.push_back(caster);
 	}
 
-	m_shadow.Update(m_pipeline, m_casters, /*force*/ true);
+	m_shadow.Update(m_pipeline, m_casters, true);
 }
 
 void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
@@ -106,7 +103,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 		if (!object.visible || !object.mesh || !object.material || !object.material->shader)
 			continue;
 
-		if (!frustum.Intersects(object.WorldBounds()))
+		if (frustum.Intersects(object.WorldBounds()) == false)
 			continue;
 
 		DrawObject(object, base);
@@ -118,7 +115,7 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 	const Material& material = *object.material;
 
 	Uniforms uniforms = base;
-	uniforms.texture  = material.albedo;
+	uniforms.texture  = material.texture;
 	uniforms.baseColor = material.baseColor;
 	uniforms.specularStrength = material.specular;
 	uniforms.shininess = ShininessFromRoughness(material.roughness);

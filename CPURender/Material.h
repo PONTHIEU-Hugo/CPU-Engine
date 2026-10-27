@@ -9,7 +9,7 @@ struct Texture;
 struct Material
 {
 	const Shader* shader = nullptr;
-	const Texture* albedo = nullptr;   // nullptr = couleur des sommets
+	const Texture* texture = nullptr;   // nullptr = couleur des sommets
 	glm::vec3      baseColor = { 255.0f, 255.0f, 255.0f };   // teinte multipliee a la couleur (0-255), blanc = aucune
 	CullMode       cull = CullMode::Back;
 
