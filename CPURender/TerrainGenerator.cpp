@@ -37,7 +37,7 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 		{
 			Vertex current{
 				glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y][x] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
-				glm::vec3(0, 0, 0),
+				NormalOf({x, y}, heighmapValueFactor, scale),
 				ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
 				glm::vec2(0.f, 0.f)
 			};
@@ -45,28 +45,64 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 			for (int i = -1; i < 2; i++)
 			{
 				if (i == 0) continue;
-				if (x + i < 0 || x + i >= rHeight.size()) continue;
+				if (x + i < 0 || x + i >= rHeight[0].size()) continue;
 				if (y + 1 >= rHeight.size()) continue;
 
 				Vertex corner{
 					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y + 1][x + i] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
-					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
+					NormalOf({x + i, y + 1}, heighmapValueFactor, scale),
+					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+					glm::vec2(0.f, 0.f)
 				};
 
 				m_Mesh.vertices.push_back(current);
 				m_Mesh.vertices.push_back(corner);
 				m_Mesh.vertices.push_back(Vertex{
 					glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y + 1][x] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
-					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
+					NormalOf({x, y + 1}, heighmapValueFactor, scale),
+					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+				glm::vec2(0.f, 0.f)
 					});
 				m_Mesh.vertices.push_back(current);
 				m_Mesh.vertices.push_back(Vertex{
 					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y][x + i] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
-					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF))
+					NormalOf({x + i, y}, heighmapValueFactor, scale),
+					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+					glm::vec2(0.f, 0.f)
 					});
 				m_Mesh.vertices.push_back(corner);
 			}
 		}
 	}
 	m_Mesh.ComputeBounds();
+}
+
+glm::dvec3 TerrainGenerator::NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, int scale)
+{
+	std::vector<std::vector<double>>& rHeight = m_Generation->height;
+
+	glm::dvec3 xDiff = { 0, 0, 0 };
+	if (heighmapID.x - 1 >= 0) // x - 1
+		xDiff = glm::dvec3{ (heighmapID.x - 1) * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x - 1] * heighmapValueFactor * scale };
+	else
+		xDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+	if (heighmapID.x + 1 < rHeight[0].size()) // x + 1
+		xDiff -= glm::dvec3{(heighmapID.x + 1)* HeighmapValueSpace* scale, heighmapID.y* HeighmapValueSpace* scale, -rHeight[heighmapID.y][heighmapID.x + 1] * heighmapValueFactor * scale };
+	else
+		xDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+
+	glm::dvec3 zDiff = { 0, 0, 0 };
+	if (heighmapID.y - 1 >= 0) // z - 1
+		zDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, (heighmapID.y - 1) * HeighmapValueSpace * scale, -rHeight[heighmapID.y - 1][heighmapID.x] * heighmapValueFactor * scale };
+	else
+		zDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+	if (heighmapID.y + 1 < rHeight.size()) // z + 1
+		zDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, (heighmapID.y + 1) * HeighmapValueSpace * scale, -rHeight[heighmapID.y + 1][heighmapID.x] * heighmapValueFactor * scale };
+	else
+		zDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+	
+	glm::dvec3 cross = glm::cross(xDiff, zDiff);
+	glm::dvec3 norm = glm::normalize(cross);
+
+	return norm;
 }

@@ -29,4 +29,7 @@ public:
 
 	void GenerateHeighmap(size_t size, HeighMapType type, int scale = 1) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
 	void GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale = 1);
+
+private:
+	glm::dvec3 NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, int scale);
 };
