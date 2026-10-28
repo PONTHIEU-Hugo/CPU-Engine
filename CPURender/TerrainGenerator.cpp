@@ -6,7 +6,7 @@ TerrainGenerator::~TerrainGenerator()
 	if (m_Generation != nullptr) delete m_Generation;
 }
 
-void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale)
+void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, double scale)
 {
 	if (m_Generation != nullptr) delete m_Generation;
 
@@ -18,11 +18,11 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 		heighmapValueFactor = 0.025;
 		break;
 	case HeighMapType::_PERLIN_2D:
-		m_Generation = Generation_Algorithm::Perlin(size, scale);
+		m_Generation = Generation_Algorithm::Perlin(size, 0.1);
 		heighmapValueFactor = 5.0;
 		break;
 	case HeighMapType::_OCTAVE_PERLIN_2D:
-		m_Generation = Generation_Algorithm::PerlinOctave(size, scale, 10, 0.4);
+		m_Generation = Generation_Algorithm::PerlinOctave(size, 0.1, 10, 0.4);
 		heighmapValueFactor = 5.0;
 		break;
 	default:

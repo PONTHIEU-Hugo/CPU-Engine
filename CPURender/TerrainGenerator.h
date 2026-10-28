@@ -27,8 +27,8 @@ public:
 	Material& GetMaterial() { return *m_Material; }
 	void SetMaterial(Material* rMat) { m_Material = rMat; }
 
-	void GenerateHeighmap(size_t size, HeighMapType type, int scale = 1) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
-	void GenerateHeighmap(glm::vec2 size, HeighMapType type, int scale = 1);
+	void GenerateHeighmap(size_t size, HeighMapType type, double scale = 1.0) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
+	void GenerateHeighmap(glm::vec2 size, HeighMapType type, double scale = 1.0);
 
 private:
 	glm::dvec3 NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, int scale);

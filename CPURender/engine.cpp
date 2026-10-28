@@ -102,7 +102,7 @@ void Engine::init()
 	m_scene.sun.shadowFocus       = m_scene.camera->GetPosition();
 
 	// Terrain
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.1f);
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
 	m_Terrain.SetMaterial(&m_defaultMaterial);
 	ObjectId terrainID = m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 	m_scene.Get(terrainID).transform.SetPosition(glm::vec3{ 0, 3, 0 });
