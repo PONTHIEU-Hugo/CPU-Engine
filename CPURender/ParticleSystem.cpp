@@ -28,7 +28,7 @@ void Particle::Update(float _dt)
 void Emitter::Init()
 {
     const float size = 0.1f;
-    const glm::vec3 white = ToColor(0xFFFFFF);
+    const glm::vec4 white = ToColor(0xFFFFFF);
 
     auto make = [&](float x, float y)
     {
@@ -72,7 +72,7 @@ void Emitter::Render(std::vector<Vertex>& _out)
             float t = element.lifeSpan * element.lifeSpanMaxInv;
             int index = (int)(t * (FIRE_PALETTE_SIZE - 1));
             index = glm::clamp(index, 0, FIRE_PALETTE_SIZE - 1);
-            glm::vec3 color = ToColor(fire_palette[index]);
+            glm::vec4 color = ToColor(fire_palette[index]);
 
             for (const Vertex& base : m_geo.vertices)
             {

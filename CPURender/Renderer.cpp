@@ -13,6 +13,7 @@ void Renderer::Render(const Scene& scene, FinalFrameBuffer& out)
 	UpdateLight(scene);
 	ShadowPass(scene);
 	MainPass(scene, out);
+	TransparencyPass(scene, out);
 
 	if (showShadowDebug)
 		m_shadow.DrawDebug(out, shadowDebugSize);
@@ -96,16 +97,15 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
 
 	Uniforms base;
-	base.vp     = viewProj;
-	base.ambient = scene.sun.ambient;
-	base.cameraPos = scene.camera->GetPosition();
-	m_shadow.ApplyTo(base);
+	BuildBaseUniforms(scene, base);
 
 	Frustum frustum = Frustum::FromMatrix(viewProj);
 
+	m_pipeline.SetAlphaCutoff(0.0f);
+	
 	for (const RenderObject& object : scene.objects)
 	{
-		if (!object.visible || !object.mesh || !object.material || !object.material->shader)
+		if (!object.visible || !object.mesh || !object.material || !object.material->shader || object.material->transparent)
 			continue;
 
 		if (frustum.Intersects(object.WorldBounds()) == false)
@@ -113,6 +113,53 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 
 		DrawObject(object, base);
 	}
+}
+
+void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
+{
+	base.vp        = scene.camera->GetVPMatrix();
+	base.ambient   = scene.sun.ambient;
+	base.cameraPos = scene.camera->GetPosition();
+	m_shadow.ApplyTo(base);
+}
+
+void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
+{
+	m_pipeline.BindFrameBuffer(&out);
+	
+
+	Uniforms base;
+	BuildBaseUniforms(scene, base);
+
+	Frustum frustum = Frustum::FromMatrix(base.vp);
+	const glm::vec3 camPos = scene.camera->GetPosition();
+
+	m_transparents.clear();
+	for (const RenderObject& object : scene.objects)
+	{
+		if (!object.visible || !object.mesh || !object.material || !object.material->shader || !object.material->transparent)
+			continue;
+
+		AABB bounds = object.WorldBounds();
+		if (frustum.Intersects(bounds) == false)
+			continue;
+
+		glm::vec3 centre = (bounds.min + bounds.max) * 0.5f;
+		glm::vec3 d = centre - camPos;
+		m_transparents.push_back({ &object, glm::dot(d, d) });
+	}
+	
+	std::sort(m_transparents.begin(), m_transparents.end(),
+	[](const TransparentEntry& a, const TransparentEntry& b) { return a.dist2 > b.dist2; });
+	
+	m_pipeline.SetBlend(true);
+	m_pipeline.SetDepthWrite(false);
+	
+	for (const TransparentEntry& entry : m_transparents)
+		DrawObject(*entry.object, base);
+
+	m_pipeline.SetBlend(false);
+	m_pipeline.SetDepthWrite(true);
 }
 
 void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
@@ -139,7 +186,6 @@ void Renderer::DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const gl
 
 	for (int y = 0; y < HEIGHT; ++y) {
 		for (int x = 0; x < WIDTH; ++x) {
-			// Centre du pixel en NDC (y vers le haut)
 			float ndcX = ((x + 0.5f) / WIDTH) * 2.0f - 1.0f;
 			float ndcY = 1.0f - ((y + 0.5f) / HEIGHT) * 2.0f;
 

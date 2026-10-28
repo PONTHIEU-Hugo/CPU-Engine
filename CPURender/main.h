@@ -30,6 +30,13 @@ struct FinalFrameBuffer {
         }
         colorData[y * WIDTH + x] = color;
     }
+    
+    uint32_t get_pixel(uint32_t x, uint32_t y) {
+        if (x < 0 || x >= WIDTH || y < 0 || y >= HEIGHT) {
+            return 0xFFFFFF;
+        }
+        return colorData[y * WIDTH + x];
+    }
 
     /* Clear the entire framebuffer with a unique color */
     void clear(uint32_t color) {

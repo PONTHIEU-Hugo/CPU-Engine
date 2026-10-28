@@ -7,9 +7,9 @@
 // Basic / Texture / Lambert
 // ---------------------------------------------------------------------------
 
-static glm::vec3 SurfaceColor(const Varyings& in, const Uniforms& u)
+static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 {
-	glm::vec3 color = u.texture ? u.texture->Sample(in.uv) : in.color;
+	glm::vec4 color = u.texture ? u.texture->Sample(in.uv) : in.color;
 	return color * (u.baseColor / 255.0f);
 }
 
@@ -42,22 +42,23 @@ static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 	return out;
 }
 
-static glm::vec3 BasicPS(const Varyings& in, const Uniforms& u)
+static glm::vec4 BasicPS(const Varyings& in, const Uniforms& u)
 {
 	return in.color * (u.baseColor / 255.0f);
 }
 
 const Shader BasicShader = { BasicVS, BasicPS };
 
-static glm::vec3 TexturePS(const Varyings& in, const Uniforms& u)
+static glm::vec4 TexturePS(const Varyings& in, const Uniforms& u)
 {
 	return SurfaceColor(in, u);
 }
 
 const Shader TextureShader = { BasicVS, TexturePS };
 
-static glm::vec3 LambertPS(const Varyings& in, const Uniforms& u)
+static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 {
+	glm::vec4 surface   = SurfaceColor(in, u);
 	glm::vec3 baseColor = SurfaceColor(in, u);
 
 	float normalLength2 = glm::dot(in.normal, in.normal);
@@ -73,13 +74,14 @@ static glm::vec3 LambertPS(const Varyings& in, const Uniforms& u)
 	}
 
 	float lighting = u.ambient + (1.0f - u.ambient) * diffuse;
-	return baseColor * lighting + glm::vec3(255.0f) * specular;   // reflet blanc
+	glm::vec3 rgb = baseColor * lighting + glm::vec3(255.0f) * specular;
+	return glm::vec4(rgb, surface.a);
 }
 
 const Shader LambertShader = { BasicVS, LambertPS };
 
 // ---------------------------------------------------------------------------
-// Ombres (deplaces depuis ShadowMap.cpp : ShadowMap ne gere plus que la depth map)
+// Ombres 
 // ---------------------------------------------------------------------------
 
 static Varyings DepthVS(const Vertex& v, const Uniforms& u)
@@ -137,9 +139,9 @@ static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 	return out;
 }
 
-static glm::vec3 ShadowLambertPS(const Varyings& in, const Uniforms& u)
+static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec3 baseColor = SurfaceColor(in, u);
+	glm::vec4 baseColor = SurfaceColor(in, u);
 
 	float normalLength2 = glm::dot(in.normal, in.normal);
 	float diffuse = 1.0f;
@@ -158,7 +160,8 @@ static glm::vec3 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 	}
 
 	float lighting = u.ambient + (1.0f - u.ambient) * diffuse * visibility;
-	return baseColor * lighting + glm::vec3(255.0f) * (specular * visibility);   // reflet blanc, masque par l'ombre
+	glm::vec3 rgb = glm::vec3(baseColor.x, baseColor.y, baseColor.z)  * lighting + 255 * specular * visibility;
+	return glm::vec4(rgb, baseColor.a);
 }
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };

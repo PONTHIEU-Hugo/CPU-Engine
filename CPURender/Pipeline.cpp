@@ -1,5 +1,6 @@
 #include "Pipeline.h"
 #include "Clipping.h"
+#include "core.h"
 #include "Mesh.h"
 
 Pipeline::Pipeline() : m_screen(WIDTH, HEIGHT)
@@ -105,10 +106,12 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 			if (depth >= m_target->depth[index])
 				continue;
 
-			m_target->depth[index] = depth;
-
 			if (!m_pixelShader)
+			{
+				if (m_depthWrite)
+					m_target->depth[index] = depth;
 				continue;
+			}
 			
 			// Interpolation et correction perspective
 			float perspectiveA = weightA / vertexA.position.w;
@@ -129,13 +132,30 @@ void Pipeline::DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, co
 			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
 			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
 
-			glm::vec3 pixelColor = m_pixelShader(fragment, m_uniforms);
-			pixelColor.x = static_cast<float>(glm::clamp((int)pixelColor.x, 0, 255));
-			pixelColor.y = static_cast<float>(glm::clamp((int)pixelColor.y, 0, 255));
-			pixelColor.z = static_cast<float>(glm::clamp((int)pixelColor.z, 0, 255));
+			glm::vec4 shaded = m_pixelShader(fragment, m_uniforms);
 
-			if (m_target->color)
-				m_target->color->put_pixel(x, y, (int)pixelColor.r << 16 | (int)pixelColor.g << 8 | (int)pixelColor.b);
+			if (!m_target->color)
+				continue;
+
+			glm::vec3 src = glm::clamp(glm::vec3(shaded), 0.0f, 255.0f);
+
+			if (m_blend)
+			{
+				float a = glm::clamp(shaded.a / 255.0f, 0.0f, 1.0f);
+				glm::vec3 dst = glm::vec3(ToColor(m_target->color->get_pixel(x, y)));
+				glm::vec3 out = src * a + dst * (1.0f - a);
+
+				m_target->color->put_pixel(x, y, (int)out.r << 16 | (int)out.g << 8 | (int)out.b);
+			}
+			else
+			{
+				if (shaded.a < m_alphaCutoff)
+					continue;              
+				m_target->color->put_pixel(x, y, (int)src.r << 16 | (int)src.g << 8 | (int)src.b);
+			}
+
+			if (m_depthWrite)
+				m_target->depth[index] = depth;
 		}
 	}
 }

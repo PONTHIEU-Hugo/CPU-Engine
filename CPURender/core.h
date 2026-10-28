@@ -37,13 +37,13 @@ namespace RANDOM
 }
 
 // 0xRRGGBB -> vec3 (0-255)
-inline glm::vec3 ToColor(uint32_t _color)
+inline glm::vec4 ToColor(uint32_t _color)
 {
     uint8_t r = (_color >> 16) & 0xFF;
     uint8_t g = (_color >> 8) & 0xFF;
     uint8_t b = (_color >> 0) & 0xFF;
-
-    return glm::vec3(r, g, b);
+    uint8_t a = (_color >> 24) & 0xFF;
+    return glm::vec4(r, g, b, a);
 }
 
 #endif

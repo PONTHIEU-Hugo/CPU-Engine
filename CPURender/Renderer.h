@@ -22,10 +22,14 @@ public:
 	int  shadowDebugSize = 64;
 
 private:
+	struct TransparentEntry { const RenderObject* object; float dist2; };
+	
 	void UpdateLight(const Scene& scene);
 	bool ShadowCastersChanged(const Scene& scene);
 	void ShadowPass(const Scene& scene);
 	void MainPass(const Scene& scene, FinalFrameBuffer& out);
+	void BuildBaseUniforms(const Scene& scene, Uniforms& base);
+	void TransparencyPass(const Scene& scene, FinalFrameBuffer& out);
 	void DrawObject(const RenderObject& object, const Uniforms& base);
 	void DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out);
 
@@ -40,6 +44,7 @@ private:
 	// Signature (mesh + version du Transform) des objets qui projettent une ombre.
 	uint64_t  m_casterSignature = 0;
 
+	std::vector<TransparentEntry> m_transparents;
 	std::vector<ShadowCaster> m_casters;   // reutilise d'une frame a l'autre
 };
 

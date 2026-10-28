@@ -20,7 +20,7 @@ namespace GeometryFactory
 {
 	namespace detail
 	{
-		inline glm::vec3 White() { return glm::vec3(255.0f); }
+		inline glm::vec4 White() { return glm::vec4(255.0f); }
 
 		inline Vertex MakeVertex(const glm::vec3& _pos, const glm::vec2& _uv)
 		{
@@ -536,6 +536,7 @@ namespace GeometryFactory
 				Vertex vertex;
 				vertex.position = glm::vec3(x, y, z);
 				vertex.uv = glm::vec2(u, v);
+				vertex.color = detail::White();
 
 				float nx = cos(phi) * cos(theta);
 				float ny = sin(phi);
@@ -626,7 +627,7 @@ namespace GeometryFactory
     				v.position = rawPositions[posIdx[idx] - 1];
     				v.uv       = rawUVs.empty() ? glm::vec2() : rawUVs[uvIdx[idx] - 1];
     				v.normal = rawNormals[normalIdx[idx] - 1];
-    				v.color = glm::vec3 (255, 255, 255);
+    				v.color = detail::White();
     				vertices.push_back(v);
     			}
     		}
