@@ -57,6 +57,11 @@ struct Shader
 class Pipeline
 {
 public:
+	// Clusters 
+	static constexpr int TILES_X = 4;
+	static constexpr int TILES_Y = 4;
+	static constexpr int TILE_COUNT = TILES_X * TILES_Y;
+
 	Pipeline();
 	Pipeline(const Pipeline&) = delete;
 	Pipeline& operator=(const Pipeline&) = delete;
@@ -75,7 +80,24 @@ public:
 	void Draw(glm::mat4 const& model);
 
 private:
-	void DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, const Varyings& vertexC);
+
+	struct ScreenTriangle
+	{
+		Varyings  varyings[3];        
+		glm::vec3 screenPos[3] = { glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
+		float     invArea = 1;     
+		int       minX, maxX, minY, maxY = 0;  
+	};
+
+	struct ThreadBins
+	{
+		std::vector<ScreenTriangle> triangles;
+		std::vector<int>            bins[TILE_COUNT];  
+	};
+
+	bool SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const;
+	void BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& local) const;
+	void RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1);
 
 	const Mesh* m_mesh = nullptr;
 
@@ -89,7 +111,8 @@ private:
 
 	CullMode      m_cull = CullMode::Back;
 
-	std::vector<Varyings> m_varyings;   // reutilise d'un Draw a l'autre (pas d'allocation par draw)
+	std::vector<Varyings>   m_varyings;     // reutilise d'un Draw a l'autre
+	std::vector<ThreadBins> m_threadBins;   // reutilise d'un Draw a l'autre
 };
 
 #endif // !PIPELINE_H_INCLUDED
