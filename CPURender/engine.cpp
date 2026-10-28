@@ -45,7 +45,7 @@ void Engine::init()
 	
 	// Ressources
 	m_cubeMesh = GeometryFactory::BuildCube();
-	m_carMesh = GeometryFactory::LoadGeometry("Assets/car.obj");
+	m_carMesh = GeometryFactory::LoadGeometry("Assets/bugatti.obj");
 	m_wheelArMesh = GeometryFactory::LoadGeometry("Assets/wheelAr.obj");
 	m_wheelAvMesh = GeometryFactory::LoadGeometry("Assets/wheelAv.obj");
 	
@@ -67,6 +67,7 @@ void Engine::init()
 
 	m_carMaterial = m_defaultMaterial;
 	m_carMaterial.baseColor.a = 255 / 2;
+	m_carMaterial.transparent = true;
 	if (m_carTexture.IsValid()) 
 		m_carMaterial.texture = &m_carTexture;
 
@@ -85,17 +86,17 @@ void Engine::init()
 
 	m_car = m_scene.Add(m_carMesh, m_carMaterial, true,
 		Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	ObjectId wheelAr = m_scene.Add(m_wheelArMesh, m_carMaterial, true,
-			Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	ObjectId wheelAv = m_scene.Add(m_wheelAvMesh, m_carMaterial, true,
-			Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_scene.Add(m_cubeMesh, m_cubeMaterial, true,
-			Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_scene.Add(m_groundMesh, m_groundMaterial, false);
-
-	Transform& carT = m_scene.Get(m_car).transform;
-	m_scene.Get(wheelAr).transform.SetParent(&carT);
-	m_scene.Get(wheelAv).transform.SetParent(&carT);
+	// ObjectId wheelAr = m_scene.Add(m_wheelArMesh, m_carMaterial, true,
+	// 		Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// ObjectId wheelAv = m_scene.Add(m_wheelAvMesh, m_carMaterial, true,
+	// 		Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// m_scene.Add(m_cubeMesh, m_cubeMaterial, true,
+	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// m_scene.Add(m_groundMesh, m_groundMaterial, false);
+	//
+	// Transform& carT = m_scene.Get(m_car).transform;
+	// m_scene.Get(wheelAr).transform.SetParent(&carT);
+	// m_scene.Get(wheelAv).transform.SetParent(&carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	m_scene.camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
