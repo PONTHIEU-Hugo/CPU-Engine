@@ -6,7 +6,8 @@
 enum class HeighMapType : uint8_t
 {
 	_DIAMOND_SQUARE,
-	_PERLIN_2D
+	_PERLIN_2D,
+	_OCTAVE_PERLIN_2D
 };
 
 constexpr float HeighmapValueSpace = 1.f;
@@ -16,7 +17,6 @@ class TerrainGenerator
 private:
 	Mesh m_Mesh;
 	Material* m_Material = nullptr;
-	std::vector<Vertex> m_Vertices;
 	Generation* m_Generation = nullptr;
 
 public:

@@ -18,7 +18,11 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 		heighmapValueFactor = 0.025;
 		break;
 	case HeighMapType::_PERLIN_2D:
-		m_Generation = Generation_Algorithm::Perlin(size, 0.1f);
+		m_Generation = Generation_Algorithm::Perlin(size, scale);
+		heighmapValueFactor = 5.0;
+		break;
+	case HeighMapType::_OCTAVE_PERLIN_2D:
+		m_Generation = Generation_Algorithm::PerlinOctave(size, scale, 10, 0.4);
 		heighmapValueFactor = 5.0;
 		break;
 	default:
@@ -36,7 +40,7 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 		for (int x = 0; x < rHeight[y].size(); x++)
 		{
 			Vertex current{
-				glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y][x] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
+				glm::vec3{x * HeighmapValueSpace * scale, static_cast<float>(-rHeight[y][x] * heighmapValueFactor * scale), y * HeighmapValueSpace * scale},
 				NormalOf({x, y}, heighmapValueFactor, scale),
 				ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
 				glm::vec2(0.f, 0.f)
@@ -49,7 +53,7 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 				if (y + 1 >= rHeight.size()) continue;
 
 				Vertex corner{
-					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y + 1][x + i] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
+					glm::vec3{(x + i) * HeighmapValueSpace * scale, static_cast<float>(-rHeight[y + 1][x + i] * heighmapValueFactor * scale), (y + 1) * HeighmapValueSpace * scale},
 					NormalOf({x + i, y + 1}, heighmapValueFactor, scale),
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
 					glm::vec2(0.f, 0.f)
@@ -58,14 +62,14 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 				m_Mesh.vertices.push_back(current);
 				m_Mesh.vertices.push_back(corner);
 				m_Mesh.vertices.push_back(Vertex{
-					glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y + 1][x] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
+					glm::vec3{x * HeighmapValueSpace * scale, static_cast<float>(-rHeight[y + 1][x] * heighmapValueFactor * scale), (y + 1) * HeighmapValueSpace * scale},
 					NormalOf({x, y + 1}, heighmapValueFactor, scale),
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
 				glm::vec2(0.f, 0.f)
 					});
 				m_Mesh.vertices.push_back(current);
 				m_Mesh.vertices.push_back(Vertex{
-					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y][x + i] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
+					glm::vec3{(x + i) * HeighmapValueSpace * scale, static_cast<float>(-rHeight[y][x + i] * heighmapValueFactor * scale), y * HeighmapValueSpace * scale},
 					NormalOf({x + i, y}, heighmapValueFactor, scale),
 					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
 					glm::vec2(0.f, 0.f)

@@ -101,9 +101,11 @@ void Engine::init()
 	m_scene.sun.shadowCasterExtra = 30.0f;
 	m_scene.sun.shadowFocus       = m_scene.camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
+	// Terrain
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.1f);
 	m_Terrain.SetMaterial(&m_defaultMaterial);
-	m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	ObjectId terrainID = m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	m_scene.Get(terrainID).transform.SetPosition(glm::vec3{ 0, 3, 0 });
 
 	// Systèmes
 	m_scene.LoadSkybox();
