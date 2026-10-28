@@ -197,8 +197,7 @@ double Generation_Algorithm::PerlinNoise::PerlinFor(std::vector<int>& doublePerm
 		Grad(hash[7], posD - glm::dvec3{ 1.0, 1.0, 1.0 }),
 		fadePos.x);
 	y2 = Lerp(x1, x2, fadePos.y);
-	double result = Lerp(y1, y2, fadePos.z);
-	return result;
+	return (Lerp(y1, y2, fadePos.z));
 }
 
 Generation* Generation_Algorithm::Perlin(glm::ivec2 size, double scale)
@@ -250,7 +249,7 @@ Generation* Generation_Algorithm::PerlinOctave(glm::ivec2 size, double scale, in
 				frequency *= 2.0;
 			}
 			
-			pGeneration->height[i][j] = total / maxValue;
+			pGeneration->height[i][j] = ((total / maxValue) + 1) * 0.5;
 		}
 	}
 	pGeneration->size = glm::vec3(size.x, size.y, 1.f);

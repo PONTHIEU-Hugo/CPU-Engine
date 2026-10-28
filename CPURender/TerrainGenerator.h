@@ -31,5 +31,6 @@ public:
 	void GenerateHeighmap(glm::vec2 size, HeighMapType type, double scale = 1.0);
 
 private:
-	glm::dvec3 NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, int scale);
+	glm::dvec3 NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
+	glm::vec3 ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
 };
