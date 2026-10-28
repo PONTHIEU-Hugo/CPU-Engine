@@ -58,12 +58,12 @@ struct Scene
 
 	void LoadSkybox()
 	{
-		skybox.faces[0].Load("Assets/right.png");
-		skybox.faces[1].Load("Assets/left.png");
-		skybox.faces[2].Load("Assets/top.png");
-		skybox.faces[3].Load("Assets/bottom.png");
-		skybox.faces[4].Load("Assets/front.png");
-		skybox.faces[5].Load("Assets/back.png");
+		skybox.faces[0].Load("Assets/right.jpg");
+		skybox.faces[1].Load("Assets/left.jpg");
+		skybox.faces[2].Load("Assets/top.jpg");
+		skybox.faces[3].Load("Assets/bottom.jpg");
+		skybox.faces[4].Load("Assets/front.jpg");
+		skybox.faces[5].Load("Assets/back.jpg");
 	}
 
 	RenderObject& Get(ObjectId id) { return objects[id]; }
