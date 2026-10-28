@@ -57,9 +57,14 @@ struct Shader
 class Pipeline
 {
 public:
-    Pipeline();
-    Pipeline(const Pipeline&) = delete;
-    Pipeline& operator=(const Pipeline&) = delete;
+	// Clusters 
+	static constexpr int TILES_X = 4;
+	static constexpr int TILES_Y = 4;
+	static constexpr int TILE_COUNT = TILES_X * TILES_Y;
+
+	Pipeline();
+	Pipeline(const Pipeline&) = delete;
+	Pipeline& operator=(const Pipeline&) = delete;
 
     void BindVertexBuffer(const Mesh* mesh) { m_mesh = mesh; }
     void BindVertexShader(VertexShader vs) { m_vertexShader = std::move(vs); }
@@ -91,7 +96,24 @@ public:
     void Draw(glm::mat4 const& model);
 
 private:
-    void DrawTriangle(const Varyings& vertexA, const Varyings& vertexB, const Varyings& vertexC);
+
+	struct ScreenTriangle
+	{
+		Varyings  varyings[3];        
+		glm::vec3 screenPos[3] = { glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
+		float     invArea = 1;     
+		int       minX, maxX, minY, maxY = 0;  
+	};
+
+	struct ThreadBins
+	{
+		std::vector<ScreenTriangle> triangles;
+		std::vector<int>            bins[TILE_COUNT];  
+	};
+
+	bool SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const;
+	void BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& local) const;
+	void RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1);
 
     const Mesh* m_mesh = nullptr;
 
@@ -110,6 +132,8 @@ private:
     float         m_alphaCutoff = 50.0f;
 
     std::vector<Varyings> m_varyings;
+	
+	std::vector<ThreadBins> m_threadBins;   // reutilise d'un Draw a l'autre
 };
 
 #endif

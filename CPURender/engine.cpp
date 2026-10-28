@@ -111,7 +111,7 @@ void Engine::init()
 
 	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
 	m_Terrain.SetMaterial(&m_defaultMaterial);
-	m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	//m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 
 	// Systèmes
 	m_scene.LoadSkybox();
