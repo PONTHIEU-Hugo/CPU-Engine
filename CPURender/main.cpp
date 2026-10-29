@@ -71,7 +71,7 @@ int main(void) {
     Engine engine;
     engine.init();
     bool isRunning = true;
-    FinalFrameBuffer frameBuffer;
+    static FinalFrameBuffer frameBuffer;
     CHRONO->SetFPSCap(60);
 
     bool isDebug = false;

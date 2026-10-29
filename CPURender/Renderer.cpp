@@ -92,7 +92,8 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	const glm::mat4& view = scene.camera->GetViewMatrix();
 	const glm::mat4& proj = scene.camera->GetProjMatrix();
 
-	DrawSkybox(scene.skybox, view, proj, out);
+	if ( !scene.skybox.faces.empty() )
+		DrawSkybox(scene.skybox, view, proj, out);
 
 	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
 

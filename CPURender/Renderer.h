@@ -8,9 +8,10 @@
 #include "Pipeline.h"
 #include "ShadowMap.h"
 
-struct Scene;
 struct RenderObject;
 struct CubeMap;
+
+class Scene;
 
 class Renderer
 {
