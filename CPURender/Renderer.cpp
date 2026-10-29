@@ -2,6 +2,7 @@
 
 #include "Scene.h"
 #include "Frustum.h"
+#include "Shaders.h"
 
 void Renderer::Init(int shadowResolution)
 {
@@ -114,6 +115,39 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 
 		DrawObject(object, base);
 	}
+
+	ParticlePass(scene, base);
+}
+
+void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
+{
+	const glm::mat4& view = scene.camera->GetViewMatrix();
+
+	Uniforms uniforms = base;
+	uniforms.texture = nullptr;
+	uniforms.baseColor = glm::vec4(255.0f);
+	uniforms.specularStrength = 0.0f;
+
+	// Particules opaques : ecrivent la profondeur, sans melange ni test d'alpha.
+	m_pipeline.SetBlend(false);
+	m_pipeline.SetDepthWrite(true);
+	m_pipeline.SetAlphaCutoff(0.0f);
+	m_pipeline.SetCullMode(CullMode::None);
+	m_pipeline.BindShader(BasicShader);
+	m_pipeline.BindUniforms(uniforms);
+
+	for (Emitter* emitter : scene.emitters)
+	{
+		if (emitter == nullptr)
+			continue;
+
+		emitter->BuildQuads(view);
+		if (emitter->GetMesh().vertices.empty())
+			continue;
+
+		m_pipeline.BindVertexBuffer(&emitter->GetMesh());
+		m_pipeline.Draw(glm::mat4(1.0f));
+	}
 }
 
 void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
@@ -185,8 +219,11 @@ void Renderer::DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const gl
 	glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
 	glm::mat4 invVP = glm::inverse(proj * viewNoTranslation);
 
-	for (int y = 0; y < HEIGHT; ++y) {
-		for (int x = 0; x < WIDTH; ++x) {
+	for (int y = 0; y < HEIGHT; ++y) 
+	{
+		for (int x = 0; x < WIDTH; ++x) 
+		{
+			// Centre du pixel en NDC (y vers le haut)
 			float ndcX = ((x + 0.5f) / WIDTH) * 2.0f - 1.0f;
 			float ndcY = 1.0f - ((y + 0.5f) / HEIGHT) * 2.0f;
 

@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "CubeMap.h"
 #include "Renderer.h"
+#include "ParticleSystem.h"
 
 // Une instance dans la scene : quel mesh, avec quel materiau, ou.
 struct RenderObject
@@ -45,6 +46,10 @@ public:
 	DirectionalLight sun;
 	CubeMap skybox;
 	std::vector<RenderObject> objects;
+	std::vector<Emitter*>     emitters;   // dessines apres les objets (voir Renderer::ParticlePass)
+
+	// L'emetteur doit survivre a la scene (il est reference, pas copie).
+	void AddEmitter(Emitter& emitter) { emitters.push_back(&emitter); }
 
 	ObjectId Add(const Mesh& mesh, const Material& material, bool castShadow = true, Transform* transform = new Transform())
 	{

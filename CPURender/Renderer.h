@@ -32,6 +32,7 @@ private:
 	void BuildBaseUniforms(const Scene& scene, Uniforms& base);
 	void TransparencyPass(const Scene& scene, FinalFrameBuffer& out);
 	void DrawObject(const RenderObject& object, const Uniforms& base);
+	void ParticlePass(const Scene& scene, const Uniforms& base);
 	void DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out);
 
 	Pipeline  m_pipeline;

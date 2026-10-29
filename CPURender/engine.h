@@ -20,6 +20,8 @@ struct Engine
 private:
 	Scene* m_scene = nullptr;
 	
+	Emitter  m_emitter{ 1000 };   // feu a l'echappement de la voiture (touche P : emission on/off)
+	bool     m_pWasDown = false;  // front montant de la touche P (l'etat clavier est interroge en continu)
 };
 
 #endif
