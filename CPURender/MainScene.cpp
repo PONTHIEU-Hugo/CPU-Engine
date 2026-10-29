@@ -103,7 +103,19 @@ void MainScene::Init()
 	LoadSkybox();
 	m_renderer.Init(2048);
 	m_renderer.showShadowDebug = false;
+	
+	m_emitter.settings.emissionRate = 250.0f;
+	m_emitter.settings.lifeMin      = 0.6f;
+	m_emitter.settings.lifeMax      = 1.2f;
+	m_emitter.settings.speedMin     = 2.0f;
+	m_emitter.settings.speedMax     = 5.0f;
+	m_emitter.settings.coneAngle    = 25.0f;
+	m_emitter.settings.acceleration = glm::vec3(0.0f, 6.0f, 0.0f);
+	m_emitter.settings.sizeStart    = 0.35f;
+	m_emitter.settings.sizeEnd      = 0.05f;
 	m_emitter.Init();
+	
+	AddEmitter(m_emitter);
 }
 
 void MainScene::Update(float _dt)
@@ -111,6 +123,9 @@ void MainScene::Update(float _dt)
 	camera->HandleEvent(_dt);
 	HandleEvent(_dt);
 
+	const glm::vec3 exhaustLocalOffset(1.7f, 1.3f, 9.2f);
+	const glm::mat4& carWorld = Get(m_car).transform.GetWorldMatrix();
+	m_emitter.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
 	m_emitter.Update(_dt);
 
 	glm::vec3 cam = camera->GetPosition();
@@ -131,6 +146,11 @@ void MainScene::LoadSkybox()
 void MainScene::HandleEvent(float _dt)
 {
 	const bool* keys = SDL_GetKeyboardState(nullptr);
+	
+	bool pDown = keys[SDL_SCANCODE_P];
+	if (pDown && m_pWasDown == false)
+		m_emitter.SetActive(m_emitter.IsActive() == false);
+	m_pWasDown = pDown;
 	
 	if (keys[SDL_SCANCODE_R])
 	{
