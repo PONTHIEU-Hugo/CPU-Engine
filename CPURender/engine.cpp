@@ -109,7 +109,19 @@ void Engine::init()
 	m_scene.LoadSkybox();
 	m_renderer.Init(512);
 	m_renderer.showShadowDebug = false;
+
+	// Feu : monte avec une legere dispersion, de blanc a rouge puis sombre (palette du feu).
+	m_emitter.settings.emissionRate = 250.0f;
+	m_emitter.settings.lifeMin      = 0.6f;
+	m_emitter.settings.lifeMax      = 1.2f;
+	m_emitter.settings.speedMin     = 2.0f;
+	m_emitter.settings.speedMax     = 5.0f;
+	m_emitter.settings.coneAngle    = 25.0f;
+	m_emitter.settings.acceleration = glm::vec3(0.0f, 6.0f, 0.0f);
+	m_emitter.settings.sizeStart    = 0.35f;
+	m_emitter.settings.sizeEnd      = 0.05f;
 	m_emitter.Init();
+	m_scene.AddEmitter(m_emitter);
 }
 
 void Engine::Update()
@@ -121,6 +133,10 @@ void Engine::Update()
 	for (Transform* obj : m_transforms)
 		obj->Update();
 
+	// L'emetteur suit l'echappement de la voiture (decalage local, a ajuster selon le modele).
+	const glm::vec3 exhaustLocalOffset(1.7f, 1.3f, 9.2f);
+	const glm::mat4& carWorld = m_scene.Get(m_car).transform.GetWorldMatrix();
+	m_emitter.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
 	m_emitter.Update(dt);
 
 	glm::vec3 cam = m_scene.camera->GetPosition();
@@ -130,7 +146,13 @@ void Engine::Update()
 void Engine::handleEvent()
 {
 	const bool* keys = SDL_GetKeyboardState(nullptr);
-	
+
+	// P : active / desactive l'emission (une seule bascule par appui)
+	bool pDown = keys[SDL_SCANCODE_P];
+	if (pDown && m_pWasDown == false)
+		m_emitter.SetActive(m_emitter.IsActive() == false);
+	m_pWasDown = pDown;
+
 	if (keys[SDL_SCANCODE_R])
 	{
 		glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0, 1, 0));

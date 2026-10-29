@@ -41,7 +41,8 @@ private:
 
 	ObjectId m_car = 0;
 
-	Emitter  m_emitter{ glm::vec3(0.0f), 1000 };
+	Emitter  m_emitter{ 1000 };   // feu a l'echappement de la voiture (touche P : emission on/off)
+	bool     m_pWasDown = false;  // front montant de la touche P (l'etat clavier est interroge en continu)
 
 	TerrainGenerator m_Terrain;
 };
