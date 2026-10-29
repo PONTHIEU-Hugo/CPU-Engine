@@ -29,8 +29,10 @@ private:
 	Mesh     m_wheelArMesh;
 	Mesh     m_groundMesh;
 	Texture  m_carTexture;
+	Texture  m_cubeTexture;
 
 	Material m_defaultMaterial;
+	Material m_cubeMaterial;
 	Material m_carMaterial;
 	Material m_groundMaterial;
 

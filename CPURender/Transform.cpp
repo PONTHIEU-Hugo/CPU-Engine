@@ -39,19 +39,19 @@ glm::quat Transform::GetWorldRotation() const
 void Transform::SetPosition(glm::vec3 _position)
 {
     position = _position;
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::SetScale(glm::vec3 _scale)
 {
     scale = _scale;
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::SetRotation(glm::quat _rotation)
 {
     rotation = glm::normalize(_rotation);
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::SetParent(Transform* _parent)
@@ -59,7 +59,7 @@ void Transform::SetParent(Transform* _parent)
     if (_parent == this) return;
 
     parent = _parent;
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::SetYawPitchRoll(glm::vec3 _ypr)
@@ -72,7 +72,7 @@ void Transform::SetYawPitchRoll(glm::vec3 _ypr)
              * glm::angleAxis(_ypr.y, axisX)
              * glm::angleAxis(_ypr.z, axisZ);
     rotation = glm::normalize(rotation);
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::AddYPR(const glm::vec3& ypr)
@@ -92,25 +92,25 @@ void Transform::AddYPR(const glm::vec3& ypr)
         rotation = rotation * glm::angleAxis(ypr.z, axisZ);
 
     rotation = glm::normalize(rotation);
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::AddScale(const glm::vec3& _scale)
 {
     scale += _scale;
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::AddScale(const float& _scale)
 {
     scale += _scale;
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::Move(glm::vec3 _dir)
 {
     position += _dir;
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::LookAt(glm::vec3 _target)
@@ -131,7 +131,7 @@ void Transform::LookAt(glm::vec3 _target)
     else
         rotation = glm::normalize(worldRot);
 
-    isDirty = true;
+    MakeDirty();
 }
 
 void Transform::OrbitAroundAxis(glm::vec3 _axis, float _angle, float _radius)

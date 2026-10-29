@@ -51,6 +51,7 @@ public:
 
 private:
     void UpdateMatrix() const;
+    void MakeDirty() { m_version++; isDirty = true;}
 
     glm::vec3 position{0.0f};
     glm::vec3 scale{1.0f};

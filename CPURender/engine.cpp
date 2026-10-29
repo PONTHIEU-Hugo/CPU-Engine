@@ -16,7 +16,7 @@ static Mesh BuildGround(float y, float half)
 		Vertex v;
 		v.position = { x, y, z };
 		v.normal   = { 0.0f, 1.0f, 0.0f };
-		v.color    = { 180.0f, 180.0f, 180.0f };
+		v.color    = { 180.0f, 180.0f, 180.0f, 255.0f };
 		return v;
 	};
 	Vertex p0 = make(-half, half), p1 = make(half, half), p2 = make(half, -half), p3 = make(-half, -half);
@@ -44,12 +44,13 @@ void Engine::init()
 	 // m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
 	
 	// Ressources
-	m_cubeMesh = GeometryFactory::BuildUVSphere(32, 16, 1.0f);
-	m_carMesh = GeometryFactory::LoadGeometry("Assets/car.obj");
+	m_cubeMesh = GeometryFactory::BuildCube();
+	m_carMesh = GeometryFactory::LoadGeometry("Assets/bugatti.obj");
 	m_wheelArMesh = GeometryFactory::LoadGeometry("Assets/wheelAr.obj");
 	m_wheelAvMesh = GeometryFactory::LoadGeometry("Assets/wheelAv.obj");
 	
 	m_carTexture.Load("Assets/vivien.png");
+	m_cubeTexture.Load("Assets/max.png");
 
 	const AABB& carBounds = m_carMesh.localBounds;
 	float carRadius = glm::length(carBounds.max - carBounds.min) * 0.5f;
@@ -57,8 +58,16 @@ void Engine::init()
 
 	// Materiaux
 	m_defaultMaterial.shader = &ShadowLambertShader;
+	
+	m_cubeMaterial = m_defaultMaterial;
+	m_cubeMaterial.baseColor.a = 255;
+	m_cubeMaterial.transparent = true;
+	if (m_cubeTexture.IsValid())
+		m_cubeMaterial.texture = &m_cubeTexture;
 
 	m_carMaterial = m_defaultMaterial;
+	m_carMaterial.baseColor.a = 255 / 2;
+	m_carMaterial.transparent = true;
 	if (m_carTexture.IsValid()) 
 		m_carMaterial.texture = &m_carTexture;
 
@@ -77,20 +86,20 @@ void Engine::init()
 
 	m_car = m_scene.Add(m_carMesh, m_carMaterial, true,
 		Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	ObjectId wheelAr = m_scene.Add(m_wheelArMesh, m_carMaterial, true,
-			Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	ObjectId wheelAv = m_scene.Add(m_wheelAvMesh, m_carMaterial, true,
-			Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_scene.Add(m_cubeMesh, m_defaultMaterial, true,
-			Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_scene.Add(m_groundMesh, m_groundMaterial, false);
-
-	Transform& carT = m_scene.Get(m_car).transform;
-	m_scene.Get(wheelAr).transform.SetParent(&carT);
-	m_scene.Get(wheelAv).transform.SetParent(&carT);
+	// ObjectId wheelAr = m_scene.Add(m_wheelArMesh, m_carMaterial, true,
+	// 		Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// ObjectId wheelAv = m_scene.Add(m_wheelAvMesh, m_carMaterial, true,
+	// 		Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// m_scene.Add(m_cubeMesh, m_cubeMaterial, true,
+	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// m_scene.Add(m_groundMesh, m_groundMaterial, false);
+	//
+	// Transform& carT = m_scene.Get(m_car).transform;
+	// m_scene.Get(wheelAr).transform.SetParent(&carT);
+	// m_scene.Get(wheelAv).transform.SetParent(&carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
-	m_scene.camera = new Camera({0.0f, 4.5f, 3.0f}, &carT);
+	m_scene.camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
 	// m_scene.camera.SetOrthographic(10.0f * aspect, 10.0f, 0.1f, 100.0f);
 	m_scene.camera->SetPerspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
 	m_transforms.push_back(&m_scene.camera->transform);
@@ -169,14 +178,14 @@ void Engine::handleEvent()
 	if (keys[SDL_SCANCODE_KP_8])
 	{
 		m_scene.Get(currentObj).transform.Move(m_scene.Get(currentObj).transform.GetForward() * (speed * dt));
+		m_scene.Get(1).transform.AddYPR({0.0f, -speedRot * dt, 0.0f});
 		m_scene.Get(2).transform.AddYPR({0.0f, -speedRot * dt, 0.0f});
-		m_scene.Get(3).transform.AddYPR({0.0f, -speedRot * dt, 0.0f});
 	}
 	if (keys[SDL_SCANCODE_KP_5])
 	{
 		m_scene.Get(currentObj).transform.Move(m_scene.Get(currentObj).transform.GetForward() * (-speed * dt));
-		m_scene.Get(2).transform.AddYPR({0.0f, speedRot * 0.5 * dt, 0.0f});
-		m_scene.Get(3).transform.AddYPR({0.0f, speedRot * 0.5* dt, 0.0f});
+		m_scene.Get(1).transform.AddYPR({0.0f, speedRot * 0.5 * dt, 0.0f});
+		m_scene.Get(2).transform.AddYPR({0.0f, speedRot * 0.5* dt, 0.0f});
 	}
 	if (keys[SDL_SCANCODE_KP_1])
 		m_scene.Get(currentObj).transform.Move(m_scene.Get(currentObj).transform.GetUp() * (-speed * dt));

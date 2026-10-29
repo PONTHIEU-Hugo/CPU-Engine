@@ -35,10 +35,12 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 	{
 		for (int x = 0; x < rHeight[y].size(); x++)
 		{
+			glm::vec4 color = ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF));
+			color.a = 255.0f;
 			Vertex current{
 				glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y][x] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
 				NormalOf({x, y}, heighmapValueFactor, scale),
-				ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+				color,
 				glm::vec2(0.f, 0.f)
 			};
 
@@ -48,26 +50,33 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, int s
 				if (x + i < 0 || x + i >= rHeight[0].size()) continue;
 				if (y + 1 >= rHeight.size()) continue;
 
+				color = ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF));
+				color.a = 255.0f;
 				Vertex corner{
 					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y + 1][x + i] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
 					NormalOf({x + i, y + 1}, heighmapValueFactor, scale),
-					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+					color,
 					glm::vec2(0.f, 0.f)
 				};
 
+				color = ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF));
+				color.a = 255.0f;
 				m_Mesh.vertices.push_back(current);
 				m_Mesh.vertices.push_back(corner);
 				m_Mesh.vertices.push_back(Vertex{
 					glm::vec3{x * HeighmapValueSpace * scale, -rHeight[y + 1][x] * heighmapValueFactor * scale, (y + 1) * HeighmapValueSpace * scale},
 					NormalOf({x, y + 1}, heighmapValueFactor, scale),
-					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+					color,
 				glm::vec2(0.f, 0.f)
 					});
+				
+				color = ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF));
+				color.a = 255.0f;
 				m_Mesh.vertices.push_back(current);
 				m_Mesh.vertices.push_back(Vertex{
 					glm::vec3{(x + i) * HeighmapValueSpace * scale, -rHeight[y][x + i] * heighmapValueFactor * scale, y * HeighmapValueSpace * scale},
 					NormalOf({x + i, y}, heighmapValueFactor, scale),
-					ToColor(RANDOM::GetRandomInt(0, 0xFFFFFF)),
+					color,
 					glm::vec2(0.f, 0.f)
 					});
 				m_Mesh.vertices.push_back(corner);
