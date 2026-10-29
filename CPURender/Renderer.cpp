@@ -124,9 +124,13 @@ void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 
 	Uniforms uniforms = base;
 	uniforms.texture = nullptr;
-	uniforms.baseColor = glm::vec3(255.0f);
+	uniforms.baseColor = glm::vec4(255.0f);
 	uniforms.specularStrength = 0.0f;
 
+	// Particules opaques : ecrivent la profondeur, sans melange ni test d'alpha.
+	m_pipeline.SetBlend(false);
+	m_pipeline.SetDepthWrite(true);
+	m_pipeline.SetAlphaCutoff(0.0f);
 	m_pipeline.SetCullMode(CullMode::None);
 	m_pipeline.BindShader(BasicShader);
 	m_pipeline.BindUniforms(uniforms);

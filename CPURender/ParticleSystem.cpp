@@ -130,7 +130,9 @@ void Emitter::BuildQuads(const glm::mat4& _view)
         float t = glm::clamp(particle.life * particle.lifeInv, 0.0f, 1.0f);   // 1 a la naissance, 0 a la mort
         int index = glm::clamp((int)(t * (FIRE_PALETTE_SIZE - 1)), 0, FIRE_PALETTE_SIZE - 1);
 
-        glm::vec3 color = ToColor(fire_palette[index]);
+        // ToColor lit l'alpha dans les bits 24-31 : la palette n'en a pas (0xRRGGBB), on force l'opacite.
+        glm::vec4 color = ToColor(fire_palette[index]);
+        color.a = 255.0f;
         float size = glm::mix(settings.sizeEnd, settings.sizeStart, t);
 
         Vertex quad[4];

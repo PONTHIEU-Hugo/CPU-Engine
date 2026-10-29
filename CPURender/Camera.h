@@ -21,8 +21,9 @@ public:
     glm::mat4 const& GetViewMatrix() const { return m_view; }
     glm::mat4 const& GetProjMatrix() const { return m_proj; }
     glm::mat4 const& GetVPMatrix()   const { return m_viewProj; }
-    glm::vec3 const& GetPosition()   const { return transform.GetWorldPosition(); }
-    glm::quat const& GetRotation()   const { return transform.GetWorldRotation(); }
+    // Par valeur : GetWorldPosition / GetWorldRotation renvoient un temporaire (une reference serait pendante).
+    glm::vec3 GetPosition()          const { return transform.GetWorldPosition(); }
+    glm::quat GetRotation()          const { return transform.GetWorldRotation(); }
     
     CameraType GetType() const { return m_type; }
 
