@@ -88,7 +88,7 @@ int main(void) {
         engine.handleEvent();
         engine.Update();
         
-        engine.renderFrame(frameBuffer);
+        engine.RenderFrame(frameBuffer);
 
         /* Copy contents of the framebuffer to our SDL texture */
         SDL_UpdateTexture(

@@ -13,12 +13,13 @@ struct Engine
 
 	void Update();
 	void handleEvent();
-	void renderFrame(FinalFrameBuffer& frameBufferOut);
+	void RenderFrame(FinalFrameBuffer& frameBufferOut);
 
 	void destroy();
 
 private:
 	Scene* m_scene = nullptr;
+	Renderer m_renderer;
 };
 
 #endif

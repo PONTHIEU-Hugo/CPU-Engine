@@ -32,9 +32,6 @@ void MaterialScene::Init()
     sun.shadowRadius      = 50.0f;
     sun.shadowCasterExtra = 30.0f;
     sun.shadowFocus       = camera->GetPosition();
-    
-    m_renderer.Init(2048);
-    m_renderer.showShadowDebug = false;
 }
 
 void MaterialScene::Update(float _dt)

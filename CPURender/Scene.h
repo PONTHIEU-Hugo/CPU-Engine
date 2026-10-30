@@ -68,16 +68,12 @@ public:
 	virtual void LoadSkybox() = 0;
     virtual void HandleEvent(float _dt) = 0;
 	
-	void renderFrame(FinalFrameBuffer& frameBufferOut) { m_renderer.Render(*this, frameBufferOut); }
-	
 	RenderObject& Get(ObjectId id) { return objects[id]; }
 	const RenderObject& Get(ObjectId id) const { return objects[id]; }
 	
 protected:
 	
 	std::vector<Transform*> m_transforms;
-    Renderer m_renderer;
-	
 };
 
 #endif // !SCENE_H_INCLUDED

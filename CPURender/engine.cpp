@@ -11,6 +11,7 @@
 void Engine::init()
 {
 	printf("Init engine \n");
+	m_renderer.Init(512);
 	m_scene = new MainScene();
 	m_scene->Init();
 
@@ -24,7 +25,7 @@ void Engine::init()
 	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, true);
 	// m_obj = GeometryFactory::BuildCircle(32, 0.0f, false);
 	// m_obj = GeometryFactory::BuildCylinder(32);
-	 // m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
+	// m_obj = GeometryFactory::BuildDonut(0.5f, 0.2f, 48, 24);
 	
 	// Ressources
 }
@@ -39,9 +40,9 @@ void Engine::handleEvent()
 {
 }
 
-void Engine::renderFrame(FinalFrameBuffer& frameBufferOut)
+void Engine::RenderFrame(FinalFrameBuffer& frameBufferOut)
 {
-	m_scene->renderFrame(frameBufferOut);
+	m_renderer.Render(*m_scene, frameBufferOut);
 }
 
 void Engine::destroy()

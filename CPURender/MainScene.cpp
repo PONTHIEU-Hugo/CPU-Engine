@@ -101,8 +101,6 @@ void MainScene::Init()
 
 	// Systèmes
 	LoadSkybox();
-	m_renderer.Init(2048);
-	m_renderer.showShadowDebug = false;
 	
 	m_emitter.settings.emissionRate = 250.0f;
 	m_emitter.settings.lifeMin      = 0.6f;
