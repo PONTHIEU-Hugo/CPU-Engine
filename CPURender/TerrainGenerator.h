@@ -31,5 +31,5 @@ public:
 
 private:
 	glm::dvec3 NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
-	glm::vec3 ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
+	glm::vec4 ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
 };

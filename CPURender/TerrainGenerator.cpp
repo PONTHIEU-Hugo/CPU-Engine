@@ -117,13 +117,18 @@ glm::dvec3 TerrainGenerator::NormalOf(glm::ivec2 heighmapID, double heighmapValu
 	return norm;
 }
 
-glm::vec3 TerrainGenerator::ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale)
+glm::vec4 TerrainGenerator::ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale)
 {
-	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.6)	// SNOW
-		return ToColor(0xFFFFFF);
-	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.55)// STONE
-		return ToColor(0x7F8386);
-	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.35)// GRASS
-		return ToColor(0x3F9B0B);
-	return ToColor(0xC2B280);									// SAND
+	glm::vec4 color;
+	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.6)			// SNOW
+		color = ToColor(0xFFFFFF);
+	else if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.55)	// STONE
+		color = ToColor(0x7F8386);
+	else if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.35)	// GRASS
+		color = ToColor(0x3F9B0B);
+	else																// SAND
+		color = ToColor(0xC2B280);
+
+	color.a = 255;
+	return color;
 }
