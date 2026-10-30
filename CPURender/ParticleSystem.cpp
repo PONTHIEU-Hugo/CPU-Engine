@@ -95,19 +95,47 @@ void Emitter::Update(float _dt)
 
 void Emitter::Spawn(Particle& _particle)
 {
-    // Direction uniforme dans un cone autour de +Y.
-    float cosMax = std::cos(glm::radians(settings.coneAngle));
-    float cosTheta = RANDOM::GetRandomFloat(cosMax, 1.0f);
-    float sinTheta = std::sqrt(glm::max(1.0f - cosTheta * cosTheta, 0.0f));
-    float phi = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
-    glm::vec3 dir(sinTheta * std::cos(phi), cosTheta, sinTheta * std::sin(phi));
+    glm::vec3 n = glm::normalize(settings.direction);
+    glm::vec3 t, b;
+    BuildBase(n, t, b);
 
-    _particle.pos = settings.origin;
-    _particle.vel = dir * RANDOM::GetRandomFloat(settings.speedMin, settings.speedMax);
+    glm::vec3 dir = n;
+
+    if (settings.coneAngle > 0.0f)
+    {
+        // Direction uniforme dans un cône autour de n.
+        float cosMax = std::cos(glm::radians(settings.coneAngle));
+        float cosTheta = RANDOM::GetRandomFloat(cosMax, 1.0f);
+        float sinTheta = std::sqrt(glm::max(1.0f - cosTheta * cosTheta, 0.0f));
+        float phi = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
+
+        dir = t * (sinTheta * std::cos(phi)) + n * cosTheta + b * (sinTheta * std::sin(phi));
+    }
+
+    glm::vec3 offset{ 0.0f };
+
+    if (settings.radius > 0.0f)
+    {
+        float r = settings.radius * std::sqrt(RANDOM::GetRandomFloat(0.0f, 1.0f));
+        float alpha = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
+        offset = t * (r * std::cos(alpha)) + b * (r * std::sin(alpha));
+    }
+
+    _particle.pos = settings.origin + offset;
+    _particle.vel = settings.velocity + dir * RANDOM::GetRandomFloat(settings.speedMin, settings.speedMax);
 
     _particle.life = RANDOM::GetRandomFloat(settings.lifeMin, settings.lifeMax);
     _particle.lifeInv = 1.0f / _particle.life;
     _particle.alive = true;
+}
+
+void Emitter::BuildBase(const glm::vec3& n, glm::vec3& t, glm::vec3& b)
+{
+    float sign = std::copysign(1.0f, n.z);
+    float a = -1.0f / (sign + n.z);
+    float c = n.x * n.y * a;
+    t = glm::vec3(1.0f + sign * n.x * n.x * a, sign * c, -sign * n.x);
+    b = glm::vec3(c, sign + n.y * n.y * a, -n.y);
 }
 
 void Emitter::BuildQuads(const glm::mat4& _view)

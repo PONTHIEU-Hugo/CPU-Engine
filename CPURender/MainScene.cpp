@@ -107,7 +107,10 @@ void MainScene::Init()
 	m_emitter.settings.lifeMax      = 1.2f;
 	m_emitter.settings.speedMin     = 2.0f;
 	m_emitter.settings.speedMax     = 5.0f;
-	m_emitter.settings.coneAngle    = 25.0f;
+	m_emitter.settings.coneAngle    = 20.0f;
+	m_emitter.settings.radius		= 1.0f;
+	m_emitter.settings.direction = glm::vec3(0.0f, 0.0f, 1.0f);
+	m_emitter.settings.velocity = glm::vec3(0.0f, 0.0f, 10.0f);
 	m_emitter.settings.acceleration = glm::vec3(0.0f, 6.0f, 0.0f);
 	m_emitter.settings.sizeStart    = 0.35f;
 	m_emitter.settings.sizeEnd      = 0.05f;

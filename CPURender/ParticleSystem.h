@@ -8,22 +8,25 @@
 struct EmitterSettings
 {
     glm::vec3 origin{ 0.0f };
-    float     emissionRate = 200.0f;           // particules creees par seconde
-    float     lifeMin = 0.6f;                  // duree de vie (secondes)
-    float     lifeMax = 1.2f;
-    float     speedMin = 2.0f;                 // vitesse initiale
-    float     speedMax = 5.0f;
-    float     coneAngle = 25.0f;               
+    float emissionRate = 200.0f;           // particules creees par seconde
+    float lifeMin = 0.6f;                  // duree de vie (secondes)
+    float lifeMax = 1.2f;
+    float speedMin = 2.0f;                 // vitesse initiale
+    float speedMax = 5.0f;
+    float coneAngle = 20.0f;   
+    float radius = 0.0f;
+    glm::vec3 direction{ 0.0f, 1.0f, 0.0f };
+    glm::vec3 velocity{ 0.0f, 1.0f, 0.0f };
     glm::vec3 acceleration{ 0.0f, 6.0f, 0.0f };   
-    float     sizeStart = 0.35f;               
-    float     sizeEnd = 0.05f;                 
+    float sizeStart = 0.35f;               
+    float sizeEnd = 0.05f;                 
 };
 
 struct Particle
 {
-    bool      alive = false;
-    float     life = 0.0f;                     // temps restant
-    float     lifeInv = 0.0f;                  // 1 / duree de vie totale
+    bool alive = false;
+    float life = 0.0f;                     // temps restant
+    float lifeInv = 0.0f;                  // 1 / duree de vie totale
     glm::vec3 pos{ 0.0f };
     glm::vec3 vel{ 0.0f };
 
@@ -52,14 +55,15 @@ public:
 
 private:
     void Spawn(Particle& _particle);
+    void BuildBase(const glm::vec3& n, glm::vec3& t, glm::vec3& b);
     Particle* FindDead();
 
-    int                   m_maxParticles;
-    bool                  m_active = true;
-    float                 m_emitAccumulator = 0.0f; // fraction de particule a emettre
-    int                   m_cursor = 0; // ou reprendre la recherche d'une particule morte
+    int m_maxParticles;
+    bool m_active = true;
+    float m_emitAccumulator = 0.0f; // fraction de particule a emettre
+    int m_cursor = 0; // ou reprendre la recherche d'une particule morte
     std::vector<Particle> m_particles;
-    Mesh                  m_mesh;                
+    Mesh m_mesh;                
 };
 
 #endif
