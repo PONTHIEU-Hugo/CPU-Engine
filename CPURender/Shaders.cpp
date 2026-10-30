@@ -11,7 +11,12 @@
 
 static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 {
-	glm::vec4 color = u.texture ? u.texture->Sample(in.uv) : in.color;
+	glm::vec4 color = in.color;
+	if (u.texture)
+	{
+		float lod = u.texture->ComputeLod(in.duvdx, in.duvdy);
+		color = u.texture->Sample(in.uv, lod);
+	}
 	return color * (u.baseColor / 255.0f);
 }
 

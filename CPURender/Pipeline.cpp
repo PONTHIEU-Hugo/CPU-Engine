@@ -221,6 +221,15 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const Varyings& vertexB = tri.varyings[1];
 	const Varyings& vertexC = tri.varyings[2];
 
+	auto uvAt = [&](const glm::vec2& p) -> glm::vec2
+	{
+		float a = EdgeFunction(sB, sC, p) * tri.invArea / vertexA.position.w;
+		float b = EdgeFunction(sC, sA, p) * tri.invArea / vertexB.position.w;
+		float c = EdgeFunction(sA, sB, p) * tri.invArea / vertexC.position.w;
+		const float inv = 1.0f / (a + b + c);
+		return (a * vertexA.uv + b * vertexB.uv + c * vertexC.uv) * inv;
+	};
+	
 	for (int y = minY; y <= maxY; ++y)
 	{
 		for (int x = minX; x <= maxX; ++x)
@@ -265,6 +274,11 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
+			if ( m_uniforms.texture)
+			{
+				fragment.duvdx = uvAt(pixelCenter + glm::vec2(1.0f, 0.0f)) - fragment.uv;
+				fragment.duvdy = uvAt(pixelCenter + glm::vec2(0.0f, 1.0f)) - fragment.uv;
+			}
 			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
 			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
 
@@ -296,8 +310,6 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			{
 				if (shaded.a < m_alphaCutoff)
 					continue;
-				if ( src.r < 230.0f )
-					int ki = 0;
 				m_target->color->put_pixel(x, y, (int)src.r << 16 | (int)src.g << 8 | (int)src.b);
 			}
 
