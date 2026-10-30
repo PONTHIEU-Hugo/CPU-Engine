@@ -71,17 +71,17 @@ void MainScene::Init()
 
 	m_car = Add(m_carMesh, m_carMaterial, true,
 		new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	/*m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
+	m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
 			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
-	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));*/
+	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
 	// Add(m_cubeMesh, m_cubeMaterial, true,
 	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	Add(m_groundMesh, m_groundMaterial, false);
 	//
-	// Transform& carT = Get(m_car).transform;
-	// Get(wheelAr).transform.SetParent(&carT);
-	// Get(wheelAv).transform.SetParent(&carT);
+	Transform& carT = Get(m_car).transform;
+	Get(m_wheelAr).transform.SetParent(&carT);
+	Get(m_wheelAv).transform.SetParent(&carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);

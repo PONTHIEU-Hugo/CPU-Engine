@@ -270,6 +270,15 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 
 			glm::vec4 shaded = m_pixelShader(fragment, m_uniforms);
 
+			if (!m_target->tint.empty())
+			{
+				glm::vec3 c = glm::clamp(glm::vec3(shaded), 0.0f, 255.0f);
+				m_target->tint[index] = (int)c.r << 16 | (int)c.g << 8 | (int)c.b;
+				if (m_depthWrite)
+					m_target->depth[index] = depth;
+				continue;
+			}
+			
 			if (!m_target->color)
 				continue;
 
@@ -286,7 +295,9 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			else
 			{
 				if (shaded.a < m_alphaCutoff)
-					continue;              
+					continue;
+				if ( src.r < 230.0f )
+					int ki = 0;
 				m_target->color->put_pixel(x, y, (int)src.r << 16 | (int)src.g << 8 | (int)src.b);
 			}
 

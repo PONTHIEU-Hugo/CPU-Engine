@@ -20,7 +20,7 @@ void Camera::HandleEvent(float _dt)
 {
     const bool* keys = SDL_GetKeyboardState(nullptr);
 
-    const float speed = 3.0f;
+    const float speed = 10.0f;
     const float turn  = 1.5f;
 
     if (keys[SDL_SCANCODE_LEFT])  

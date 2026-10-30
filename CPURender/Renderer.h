@@ -21,6 +21,9 @@ public:
 
 	bool showShadowDebug = true;
 	int  shadowDebugSize = 64;
+	
+	FinalFrameBuffer   m_sceneColor;
+	std::vector<float> m_sceneDepth;
 
 private:
 	struct TransparentEntry { const RenderObject* object; float dist2; };
@@ -47,7 +50,8 @@ private:
 	uint64_t  m_casterSignature = 0;
 
 	std::vector<TransparentEntry> m_transparents;
-	std::vector<ShadowCaster> m_casters;   // reutilise d'une frame a l'autre
+	std::vector<ShadowCaster> m_casters;
+	std::vector<ShadowCaster> m_tintCasters;
 };
 
 #endif // !RENDERER_H_INCLUDED
