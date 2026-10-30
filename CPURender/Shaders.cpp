@@ -1,6 +1,5 @@
 #include "Shaders.h"
 #include "Texture.h"
-
 #include <cmath>
 
 #include "core.h"

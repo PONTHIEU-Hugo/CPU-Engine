@@ -1,6 +1,8 @@
 ﻿*
 !*/
 !Libs/SDL3/lib/x64/*
+!Libs/assimp/
+!Libs/assimp/**
 !*.cpp
 !*.hpp
 !*.h
