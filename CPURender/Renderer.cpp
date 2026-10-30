@@ -12,6 +12,7 @@ void Renderer::Init(int shadowResolution)
 void Renderer::Render(const Scene& scene, FinalFrameBuffer& out)
 {
 	UpdateLight(scene);
+	SkinObjects(scene);
 	ShadowPass(scene);
 	MainPass(scene, out);
 	std::memcpy(m_sceneColor.colorData, out.colorData, sizeof(out.colorData));
@@ -66,6 +67,10 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 			mix((uint64_t)(object.material->baseColor.b * 4.0f));
 			mix((uint64_t)(object.material->baseColor.a * 4.0f));
 		}
+		
+		mix(object.transform.Version());
+		if (object.animator)
+			mix(object.animator->Version());
 	}
 
 	bool changed = hash != m_casterSignature;
@@ -88,7 +93,7 @@ void Renderer::ShadowPass(const Scene& scene)
 			continue;
 
 		ShadowCaster caster;
-		caster.mesh   = object.mesh;
+		caster.mesh   = GetMeshToDraw(object);
 		caster.world  = object.transform.GetWorldMatrix();
 		caster.bounds = object.WorldBounds();
 
@@ -103,6 +108,51 @@ void Renderer::ShadowPass(const Scene& scene)
 	}
 
 	m_shadow.Update(m_pipeline, m_casters, m_tintCasters, true);
+}
+
+void Renderer::SkinVertex(const Mesh& mesh, size_t i,
+					   const std::vector<glm::mat4>& bones,
+					   glm::vec3& outPos, glm::vec3& outNormal)
+{
+	const Vertex& v = mesh.vertices[i];
+	const VertexSkin& s = mesh.skin[i];
+
+	glm::mat4 skin(0.0f);
+	float total = 0.0f;
+	for (int k = 0; k < MAX_BONE_INFLUENCE; ++k)
+	{
+		if (s.boneIDs[k] < 0) continue;
+		skin += bones[s.boneIDs[k]] * s.weights[k];
+		total += s.weights[k];
+	}
+	if (total <= 0.0f) skin = glm::mat4(1.0f);
+
+	outPos    = glm::vec3(skin * glm::vec4(v.position, 1.0f));
+	outNormal = glm::normalize(glm::mat3(skin) * v.normal);
+}
+
+void Renderer::SkinObjects(const Scene& scene)
+{
+	for (const RenderObject& object : scene.objects)
+	{
+		if (!object.mesh || !object.animator || !object.mesh->IsSkinned())
+			continue;
+
+		const auto& bones = object.animator->GetFinalBoneMatrices();
+		Mesh& dst = m_skinnedMeshes[&object];
+		const Mesh& src = *object.mesh;
+
+		dst.vertices = src.vertices;
+		for (size_t i = 0; i < src.vertices.size(); ++i)
+			SkinVertex(src, i, bones, dst.vertices[i].position, dst.vertices[i].normal);
+		dst.ComputeBounds();
+	}
+}
+
+const Mesh* Renderer::GetMeshToDraw(const RenderObject& object) const
+{
+	auto it = m_skinnedMeshes.find(&object);
+	return it != m_skinnedMeshes.end() ? &it->second : object.mesh;
 }
 
 void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
@@ -126,6 +176,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 
 	m_pipeline.SetAlphaCutoff(0.0f);
 	
+	
 	for (const RenderObject& object : scene.objects)
 	{
 		if (!object.visible || !object.mesh || !object.material || !object.material->shader || object.material->transparent)
@@ -133,8 +184,20 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 
 		if (frustum.Intersects(object.WorldBounds()) == false)
 			continue;
+		
+		const bool skinned = object.mesh->IsSkinned() && object.animator;
+		const std::vector<glm::mat4>* bones = skinned ? &object.animator->GetFinalBoneMatrices() : nullptr;
 
-		DrawObject(object, base);
+		if (skinned)
+		{
+			const Mesh& src = *object.mesh;
+			m_skinnedMesh.vertices = src.vertices; 
+			for (size_t i = 0; i < src.vertices.size(); ++i)
+				SkinVertex(src, i, *bones,
+						   m_skinnedMesh.vertices[i].position,
+						   m_skinnedMesh.vertices[i].normal);
+		}
+		DrawObject(object, base, GetMeshToDraw(object));
 	}
 
 	ParticlePass(scene, base);
@@ -213,13 +276,13 @@ void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
 	m_pipeline.SetDepthWrite(false);
 	
 	for (const TransparentEntry& entry : m_transparents)
-		DrawObject(*entry.object, base);
+		DrawObject(*entry.object, base, GetMeshToDraw(*entry.object));
 
 	m_pipeline.SetBlend(false);
 	m_pipeline.SetDepthWrite(true);
 }
 
-void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
+void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, const Mesh* meshOverride)
 {
 	const Material& material = *object.material;
 
@@ -233,7 +296,7 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);
-	m_pipeline.BindVertexBuffer(object.mesh);
+	m_pipeline.BindVertexBuffer(meshOverride ? meshOverride : object.mesh);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw(object.transform.GetWorldMatrix());
 }

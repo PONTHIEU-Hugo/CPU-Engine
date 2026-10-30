@@ -226,6 +226,8 @@ const Shader RefractionShader = { ShadowVS, RefractionPS };
 
 static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
+	if (in.color.g < 10.0f)
+		int i = 0;
 	glm::vec4 baseColor = SurfaceColor(in, u);
 
 	float normalLength2 = glm::dot(in.normal, in.normal);

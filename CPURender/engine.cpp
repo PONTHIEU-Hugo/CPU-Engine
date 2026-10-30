@@ -5,6 +5,7 @@
 #include "Chrono.h"
 #include "MainScene.h"
 #include "Shaders.h"
+#include "Tests/AnimatorScene.h"
 #include "Tests/MaterialScene.h"
 
 
@@ -13,7 +14,7 @@ void Engine::init()
 	printf("Init engine \n");
 	m_renderer.Init(2048);
 	m_renderer.showShadowDebug = false;
-	m_scene = new MaterialScene();
+	m_scene = new AnimatorScene();
 	m_scene->Init();
 }
 

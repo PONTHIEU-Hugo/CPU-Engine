@@ -310,6 +310,8 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			{
 				if (shaded.a < m_alphaCutoff)
 					continue;
+				if (src.g < 10.0f)
+					int ki = 0;
 				m_target->color->put_pixel(x, y, (int)src.r << 16 | (int)src.g << 8 | (int)src.b);
 			}
 
