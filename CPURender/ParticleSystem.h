@@ -3,43 +3,63 @@
 
 #include <vector>
 #include "core.h"
-#include "Vertex.h"
+#include "Mesh.h"
 
-struct Triangle
+struct EmitterSettings
 {
-    std::vector<Vertex> vertices;
+    glm::vec3 origin{ 0.0f };
+    float     emissionRate = 200.0f;           // particules creees par seconde
+    float     lifeMin = 0.6f;                  // duree de vie (secondes)
+    float     lifeMax = 1.2f;
+    float     speedMin = 2.0f;                 // vitesse initiale
+    float     speedMax = 5.0f;
+    float     coneAngle = 25.0f;               
+    glm::vec3 acceleration{ 0.0f, 6.0f, 0.0f };   
+    float     sizeStart = 0.35f;               
+    float     sizeEnd = 0.05f;                 
 };
 
 struct Particle
 {
-    bool alive = false;
-    float lifeSpan = 0.0f;
-    float lifeSpanMaxInv = 0.0f;
+    bool      alive = false;
+    float     life = 0.0f;                     // temps restant
+    float     lifeInv = 0.0f;                  // 1 / duree de vie totale
     glm::vec3 pos{ 0.0f };
     glm::vec3 vel{ 0.0f };
-    void Update(float _dt);
+
+    void Update(float _dt, const glm::vec3& _acceleration);
 };
 
 class Emitter
 {
 public:
-    Emitter() : m_nbrParticles(100), m_origin(glm::vec3(0.0f, 0.0f, 0.0f)) { }
-    Emitter(glm::vec3 _pos, int _nbrParticles) : m_nbrParticles(_nbrParticles), m_origin(_pos) { }
-    ~Emitter() = default;
+    explicit Emitter(int _maxParticles = 1000) : m_maxParticles(_maxParticles) {}
 
-    void Init();
-    void Update(float _dt);
-    void Render(std::vector<Vertex>& _out);
+    EmitterSettings settings;
 
-    bool m_active = true;
+    void Init();                                       
+    void Update(float _dt);                            
+    void BuildQuads(const glm::mat4& _view); // remplit le mesh (un quad par particule vivante)
+
+    void SetActive(bool _active) { m_active = _active; }
+    bool IsActive() const { return m_active; }
+    void SetOrigin(const glm::vec3& _origin) { settings.origin = _origin; }
+    void Clear(); // tue toutes les particules
+
+    int  AliveCount() const;
+    int  MaxParticles() const { return m_maxParticles; }
+    const Mesh& GetMesh() const { return m_mesh; }
 
 private:
-    Triangle m_geo;
-    int32_t m_nbrParticles;
-    glm::vec3 m_origin;
-    std::vector<Particle> m_particles;
+    void Spawn(Particle& _particle);
+    Particle* FindDead();
 
-    void SpawnParticle(Particle& _particle);
+    int                   m_maxParticles;
+    bool                  m_active = true;
+    float                 m_emitAccumulator = 0.0f; // fraction de particule a emettre
+    int                   m_cursor = 0; // ou reprendre la recherche d'une particule morte
+    std::vector<Particle> m_particles;
+    Mesh                  m_mesh;                
 };
 
 #endif

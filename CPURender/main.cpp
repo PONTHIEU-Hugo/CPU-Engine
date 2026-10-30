@@ -71,7 +71,7 @@ int main(void) {
     Engine engine;
     engine.init();
     bool isRunning = true;
-    FinalFrameBuffer frameBuffer;
+    static FinalFrameBuffer frameBuffer;
     CHRONO->SetFPSCap(60);
 
     bool isDebug = false;
@@ -88,7 +88,7 @@ int main(void) {
         engine.handleEvent();
         engine.Update();
         
-        engine.renderFrame(frameBuffer);
+        engine.RenderFrame(frameBuffer);
 
         /* Copy contents of the framebuffer to our SDL texture */
         SDL_UpdateTexture(

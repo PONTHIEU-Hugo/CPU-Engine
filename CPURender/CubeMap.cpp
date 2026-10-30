@@ -64,5 +64,7 @@ glm::vec3 CubeMap::Sample(glm::vec3 dir) const
 
 	uv = glm::clamp(uv, glm::vec2(0.0f), glm::vec2(0.99999f));
 
+	if ( !faces[face].IsValid() )
+		return glm::vec3(0.0f);
 	return faces[face].Sample(uv);
 }

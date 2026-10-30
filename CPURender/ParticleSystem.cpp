@@ -1,5 +1,6 @@
 #include "ParticleSystem.h"
 
+#include <cmath>
 #include <glm/gtc/constants.hpp>
 
 static const int FIRE_PALETTE_SIZE = 37;
@@ -13,88 +14,143 @@ static const uint32_t fire_palette[FIRE_PALETTE_SIZE] = {
     0xEFEFC7, 0xFFFFFF
 };
 
-void Particle::Update(float _dt)
+// Un seul gros pas de temps (premiere frame, fenetre deplacee) ne doit pas creer une rafale de particules.
+static const float MAX_DT = 0.1f;
+
+void Particle::Update(float _dt, const glm::vec3& _acceleration)
 {
     if (alive == false)
         return;
 
+    vel += _acceleration * _dt;
     pos += vel * _dt;
 
-    lifeSpan -= _dt;
-    if (lifeSpan <= 0.0f)
+    life -= _dt;
+    if (life <= 0.0f)
         alive = false;
 }
 
 void Emitter::Init()
 {
-    const float size = 0.1f;
-    const glm::vec3 white = ToColor(0xFFFFFF);
+    m_particles.assign(m_maxParticles, Particle());
+    m_emitAccumulator = 0.0f;
+    m_cursor = 0;
+    m_mesh.vertices.clear();
+    m_mesh.vertices.reserve((size_t)m_maxParticles * 6);
+    m_mesh.ComputeBounds();
+}
 
-    auto make = [&](float x, float y)
+void Emitter::Clear()
+{
+    for (Particle& particle : m_particles)
+        particle.alive = false;
+    m_emitAccumulator = 0.0f;
+}
+
+int Emitter::AliveCount() const
+{
+    int count = 0;
+    for (const Particle& particle : m_particles)
+        count += particle.alive ? 1 : 0;
+    return count;
+}
+
+Particle* Emitter::FindDead()
+{
+    for (int i = 0; i < m_maxParticles; ++i)
     {
-        Vertex v;
-        v.position = { x, y, 0.0f };
-        v.color    = white;   // avant : l'init agregee {pos, couleur} remplissait la normale
-        return v;
-    };
-
-    m_geo.vertices = {
-        make(-size, size), make(0.0f, -size), make(size, size),
-        make(-size, size), make(size, size),  make(0.0f, -size),
-    };
-
-    m_particles.clear();
-    m_particles.reserve(m_nbrParticles);
-    for (int i = 0; i < m_nbrParticles; i++)
-    {
-        Particle particle;
-        SpawnParticle(particle);
-        m_particles.push_back(particle);
+        int index = (m_cursor + i) % m_maxParticles;
+        if (m_particles[index].alive == false)
+        {
+            m_cursor = (index + 1) % m_maxParticles;
+            return &m_particles[index];
+        }
     }
+    return nullptr;   // pool plein
 }
 
 void Emitter::Update(float _dt)
 {
-    for (auto& element : m_particles)
-    {
-        element.Update(_dt);
-        if (element.alive == false && m_active)
-            SpawnParticle(element);
-    }
-}
+    _dt = glm::min(_dt, MAX_DT);
 
-void Emitter::Render(std::vector<Vertex>& _out)
-{
-    for (auto& element : m_particles)
+    for (Particle& particle : m_particles)
+        particle.Update(_dt, settings.acceleration);
+
+    if (m_active == false || m_particles.empty())
+        return;
+
+    m_emitAccumulator += settings.emissionRate * _dt;
+    while (m_emitAccumulator >= 1.0f)
     {
-        if (element.alive)
+        Particle* particle = FindDead();
+        if (particle == nullptr)
         {
-            float t = element.lifeSpan * element.lifeSpanMaxInv;
-            int index = (int)(t * (FIRE_PALETTE_SIZE - 1));
-            index = glm::clamp(index, 0, FIRE_PALETTE_SIZE - 1);
-            glm::vec3 color = ToColor(fire_palette[index]);
-
-            for (const Vertex& base : m_geo.vertices)
-            {
-                Vertex v;
-                v.position = base.position + element.pos;
-                v.color = color;
-                _out.push_back(v);
-            }
+            m_emitAccumulator = 0.0f;
+            break;
         }
+        Spawn(*particle);
+        m_emitAccumulator -= 1.0f;
     }
 }
 
-void Emitter::SpawnParticle(Particle& _particle)
+void Emitter::Spawn(Particle& _particle)
 {
-    _particle.pos = m_origin;
+    // Direction uniforme dans un cone autour de +Y.
+    float cosMax = std::cos(glm::radians(settings.coneAngle));
+    float cosTheta = RANDOM::GetRandomFloat(cosMax, 1.0f);
+    float sinTheta = std::sqrt(glm::max(1.0f - cosTheta * cosTheta, 0.0f));
+    float phi = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
+    glm::vec3 dir(sinTheta * std::cos(phi), cosTheta, sinTheta * std::sin(phi));
 
-    float angle = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
-    glm::vec3 dir = glm::vec3(cosf(angle), sinf(angle), 0.0f);
-    float speed = RANDOM::GetRandomFloat(2.0f, 15.0f);
-    _particle.vel = dir * speed;
+    _particle.pos = settings.origin;
+    _particle.vel = dir * RANDOM::GetRandomFloat(settings.speedMin, settings.speedMax);
 
-    _particle.lifeSpan = RANDOM::GetRandomFloat(1.0f, 2.0f);
-    _particle.lifeSpanMaxInv = 1.0f / _particle.lifeSpan;
+    _particle.life = RANDOM::GetRandomFloat(settings.lifeMin, settings.lifeMax);
+    _particle.lifeInv = 1.0f / _particle.life;
     _particle.alive = true;
+}
+
+void Emitter::BuildQuads(const glm::mat4& _view)
+{
+    // Axes de la camera en espace monde = lignes de la partie rotation de la matrice de vue.
+    const glm::vec3 right(_view[0][0], _view[1][0], _view[2][0]);
+    const glm::vec3 up(_view[0][1], _view[1][1], _view[2][1]);
+    const glm::vec3 towardCamera(_view[0][2], _view[1][2], _view[2][2]);
+
+    static const glm::vec2 corners[4]    = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f }, { -1.0f, 1.0f } };
+    static const glm::vec2 corners_uv[4] = { { 0.0f, 1.0f },   { 1.0f, 1.0f },  { 1.0f, 0.0f }, { 0.0f, 0.0f } };
+
+    m_mesh.vertices.clear();
+
+    for (const Particle& particle : m_particles)
+    {
+        if (particle.alive == false)
+            continue;
+
+        float t = glm::clamp(particle.life * particle.lifeInv, 0.0f, 1.0f);   // 1 a la naissance, 0 a la mort
+        int index = glm::clamp((int)(t * (FIRE_PALETTE_SIZE - 1)), 0, FIRE_PALETTE_SIZE - 1);
+
+        // ToColor lit l'alpha dans les bits 24-31 : la palette n'en a pas (0xRRGGBB), on force l'opacite.
+        glm::vec4 color = ToColor(fire_palette[index]);
+        color.a = 255.0f;
+        float size = glm::mix(settings.sizeEnd, settings.sizeStart, t);
+
+        Vertex quad[4];
+        for (int i = 0; i < 4; ++i)
+        {
+            quad[i].position = particle.pos + right * (corners[i].x * size) + up * (corners[i].y * size);
+            quad[i].normal = towardCamera;
+            quad[i].color = color;
+            quad[i].uv = corners_uv[i];
+        }
+
+        m_mesh.vertices.push_back(quad[0]);
+        m_mesh.vertices.push_back(quad[1]);
+        m_mesh.vertices.push_back(quad[2]);
+        m_mesh.vertices.push_back(quad[0]);
+        m_mesh.vertices.push_back(quad[2]);
+        m_mesh.vertices.push_back(quad[3]);
+    }
+
+    m_mesh.ComputeBounds();
 }

@@ -20,7 +20,7 @@ namespace GeometryFactory
 {
 	namespace detail
 	{
-		inline glm::vec3 White() { return glm::vec3(255.0f); }
+		inline glm::vec4 White() { return glm::vec4(255.0f); }
 
 		inline Vertex MakeVertex(const glm::vec3& _pos, const glm::vec2& _uv)
 		{
@@ -160,7 +160,31 @@ namespace GeometryFactory
 			}
 		}
 	}
+	////////////////////////////////////////////
+	//// SQUARE
+	////////////////////////////////////////////
+	
+	inline Mesh BuildSquare()
+	{
+		std::vector<Vertex> vertices;
 
+		// Memes sommets (et memes uv) pour les deux faces : seul le sens d'enroulement change.
+		Vertex a = detail::MakeVertex({-0.5f, 0.0f, -0.5f}, {0.0f, 1.0f});
+		Vertex b = detail::MakeVertex({ 0.5f, 0.0f, -0.5f}, {1.0f, 1.0f});
+		Vertex c = detail::MakeVertex({ 0.5f, 0.0f,  0.5f}, {1.0f, 0.0f});
+		Vertex d = detail::MakeVertex({-0.5f, 0.0f,  0.5f}, {0.0f, 0.0f});
+
+		detail::PushTriangle(vertices, a, d, c);
+		detail::PushTriangle(vertices, a, c, b);
+
+		CalculateNormals(vertices);
+		
+		Mesh geometry;
+		geometry.vertices = std::move(vertices); 
+		geometry.ComputeBounds();
+		return geometry;
+	}
+	
 	////////////////////////////////////////////
 	//// TRIANGLE
 	////////////////////////////////////////////
@@ -515,35 +539,49 @@ namespace GeometryFactory
 	//// DONUT (tore)
 	////////////////////////////////////////////
 
-	inline Mesh BuildDonut(float _majorRadius, float _minorRadius, uint32_t _majorSlices, uint32_t _minorSlices)
+	inline Mesh BuildDonut(float _majorRadius = 0.35f, float _minorRadius = 0.15f,
+						   uint32_t _majorSlices = 32, uint32_t _minorSlices = 16)
 	{
-		std::vector<Vertex> vertices;
+		_majorSlices = std::max<uint32_t>(_majorSlices, 3);
+		_minorSlices = std::max<uint32_t>(_minorSlices, 3);
 
-		for (uint32_t i = 0; i <= _majorSlices; ++i)
+		const float twoPi = 2.0f * glm::pi<float>();
+
+		auto torusVertex = [&](uint32_t i, uint32_t j) -> Vertex
 		{
 			float u = (float)i / (float)_majorSlices;
-			float theta = u * 2.0f * glm::pi<float>();
-    		
-			for (uint32_t j = 0; j <= _minorSlices; ++j)
+			float v = (float)j / (float)_minorSlices;
+
+			float theta = u * twoPi; 
+			float phi   = v * twoPi;
+
+			float cosT = std::cos(theta), sinT = std::sin(theta);
+			float cosP = std::cos(phi),   sinP = std::sin(phi);
+
+			glm::vec3 n(cosP * cosT, sinP, cosP * sinT);
+			glm::vec3 pos((_majorRadius + _minorRadius * cosP) * cosT,
+						   _minorRadius * sinP,
+						  (_majorRadius + _minorRadius * cosP) * sinT);
+
+			Vertex vertex = detail::MakeVertex(pos, { u, v });
+			vertex.normal = n;
+			return vertex;
+		};
+
+		std::vector<Vertex> vertices;
+		vertices.reserve((size_t)_majorSlices * _minorSlices * 6);
+
+		for (uint32_t i = 0; i < _majorSlices; ++i)
+		{
+			for (uint32_t j = 0; j < _minorSlices; ++j)
 			{
-				float v = (float)j / (float)_minorSlices;
-				float phi = v * 2.0f * glm::pi<float>();
+				Vertex a = torusVertex(i,     j);
+				Vertex b = torusVertex(i,     j + 1);
+				Vertex c = torusVertex(i + 1, j);
+				Vertex d = torusVertex(i + 1, j + 1);
 
-				float x = (_majorRadius + _minorRadius * cos(phi)) * cos(theta);
-				float y = _minorRadius * sin(phi);
-				float z = (_majorRadius + _minorRadius * cos(phi)) * sin(theta);
-
-				Vertex vertex;
-				vertex.position = glm::vec3(x, y, z);
-				vertex.uv = glm::vec2(u, v);
-
-				float nx = cos(phi) * cos(theta);
-				float ny = sin(phi);
-				float nz = cos(phi) * sin(theta);
-
-				vertex.normal = glm::normalize(glm::vec3(nx, ny, nz));
-				
-				vertices.push_back(vertex);
+				detail::PushTriangle(vertices, a, b, c);
+				detail::PushTriangle(vertices, c, b, d);
 			}
 		}
 
@@ -626,7 +664,7 @@ namespace GeometryFactory
     				v.position = rawPositions[posIdx[idx] - 1];
     				v.uv       = rawUVs.empty() ? glm::vec2() : rawUVs[uvIdx[idx] - 1];
     				v.normal = rawNormals[normalIdx[idx] - 1];
-    				v.color = glm::vec3 (255, 255, 255);
+    				v.color = detail::White();
     				vertices.push_back(v);
     			}
     		}
