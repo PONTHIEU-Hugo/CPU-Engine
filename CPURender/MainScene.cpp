@@ -30,11 +30,11 @@ static Mesh BuildGround(float y, float half)
 void MainScene::Init()
 {
     m_cubeMesh = GeometryFactory::BuildCube();
-	m_carMesh = GeometryFactory::LoadGeometry("Assets/car.obj");
+	m_carMesh = GeometryFactory::LoadGeometry("Assets/fennec.obj");
 	m_wheelArMesh = GeometryFactory::LoadGeometry("Assets/wheelAr.obj");
 	m_wheelAvMesh = GeometryFactory::LoadGeometry("Assets/wheelAv.obj");
 	
-	m_carTexture.Load("Assets/vivien.png");
+	m_carTexture.Load("Assets/Chassis_Grain_D.png");
 	m_cubeTexture.Load("Assets/max.png");
 
 	const AABB& carBounds = m_carMesh.localBounds;
@@ -70,7 +70,7 @@ void MainScene::Init()
 	//Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
 
 	m_car = Add(m_carMesh, m_carMaterial, true,
-		new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+		new Transform({0.0f, 0.5f, 0.0f}, {1,0,0,0}, glm::vec3(3.0f)));
 	/*m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
 			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
@@ -102,18 +102,16 @@ void MainScene::Init()
 	// Systèmes
 	LoadSkybox();
 	
-	m_emitter.settings.emissionRate = 250.0f;
+	m_emitter.settings.emissionRate = 1000.0f;
 	m_emitter.settings.lifeMin      = 0.6f;
 	m_emitter.settings.lifeMax      = 1.2f;
 	m_emitter.settings.speedMin     = 2.0f;
 	m_emitter.settings.speedMax     = 5.0f;
 	m_emitter.settings.coneAngle    = 20.0f;
-	m_emitter.settings.radius		= 1.0f;
-	m_emitter.settings.direction = glm::vec3(0.0f, 0.0f, 1.0f);
-	m_emitter.settings.velocity = glm::vec3(0.0f, 0.0f, 10.0f);
-	m_emitter.settings.acceleration = glm::vec3(0.0f, 6.0f, 0.0f);
-	m_emitter.settings.sizeStart    = 0.35f;
+	m_emitter.settings.radius		= 0.3f;
+	m_emitter.settings.sizeStart    = 0.25f;
 	m_emitter.settings.sizeEnd      = 0.05f;
+	m_emitter.settings.acceleration = { 0.0f, 6.0f, 0.0f };
 	m_emitter.Init();
 	
 	AddEmitter(m_emitter);
@@ -124,9 +122,12 @@ void MainScene::Update(float _dt)
 	camera->HandleEvent(_dt);
 	HandleEvent(_dt);
 
-	const glm::vec3 exhaustLocalOffset(1.7f, 1.3f, 9.2f);
-	const glm::mat4& carWorld = Get(m_car).transform.GetWorldMatrix();
-	m_emitter.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
+	const Transform& car = Get(m_car).transform;
+
+	const glm::vec3 exhaustLocalOffset = { 0.0f, 0.0f, 0.7f };
+	m_emitter.settings.origin = glm::vec3(car.GetWorldMatrix() * glm::vec4(exhaustLocalOffset, 1.0f));
+	m_emitter.settings.direction = -car.GetForward();
+	m_emitter.settings.velocity = -car.GetForward() * glm::vec3(10.0f, 10.f, 10.0f);
 	m_emitter.Update(_dt);
 
 	glm::vec3 cam = camera->GetPosition();
@@ -151,6 +152,7 @@ void MainScene::HandleEvent(float _dt)
 	bool pDown = keys[SDL_SCANCODE_P];
 	if (pDown && m_pWasDown == false)
 		m_emitter.SetActive(m_emitter.IsActive() == false);
+
 	m_pWasDown = pDown;
 	
 	if (keys[SDL_SCANCODE_R])
