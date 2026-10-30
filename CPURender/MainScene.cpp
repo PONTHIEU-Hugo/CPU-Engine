@@ -95,9 +95,8 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
-	m_Terrain.SetMaterial(&m_defaultMaterial);
-	//Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
+	//Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform.SetPosition({ 0, -5, 0 });
 
 	// Systèmes
 	LoadSkybox();

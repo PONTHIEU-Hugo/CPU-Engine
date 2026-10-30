@@ -178,6 +178,7 @@ double Generation_Algorithm::PerlinNoise::PerlinFor(std::vector<int>& doublePerm
 	glm::dvec3 posD = { pos.x - posI.x, pos.y - posI.y, pos.z - posI.z };
 	glm::dvec3 fadePos = { Fade(posD.x), Fade(posD.y), Fade(posD.z) };
 
+	posI = posI & 255;
 	std::vector<int> hash = Hash(doublePermutation, posI);
 
 	double x1, x2, y1, y2, z1, z2;
@@ -196,8 +197,7 @@ double Generation_Algorithm::PerlinNoise::PerlinFor(std::vector<int>& doublePerm
 		Grad(hash[7], posD - glm::dvec3{ 1.0, 1.0, 1.0 }),
 		fadePos.x);
 	y2 = Lerp(x1, x2, fadePos.y);
-	double result = Lerp(y1, y2, fadePos.z);
-	return result;
+	return (Lerp(y1, y2, fadePos.z));
 }
 
 Generation* Generation_Algorithm::Perlin(glm::ivec2 size, double scale)
@@ -214,11 +214,45 @@ Generation* Generation_Algorithm::Perlin(glm::ivec2 size, double scale)
 	for (int i = 0; i < size.y; i++)
 	{
 		for (int j = 0; j < size.x; j++)
-		{
-			pGeneration->height[i][j] = PerlinNoise::PerlinFor(doublePermutation, size, glm::dvec3{ j * scale, i * scale, 0.f });
-		}
+			pGeneration->height[i][j] = PerlinNoise::PerlinFor(doublePermutation, size, glm::dvec3{ j, i, 0.f } * scale);
 	}
 	pGeneration->size = glm::vec3(size.x, size.y, 1.f);
 
 	return pGeneration;
+}
+
+Generation* Generation_Algorithm::PerlinOctave(glm::ivec2 size, double scale, int octave, double persistence)
+{
+	std::vector<int> doublePermutation(PerlinNoise::permutationSize * 2);
+	for (int i = 0; i < PerlinNoise::permutationSize * 2; i++)
+		doublePermutation[i] = PerlinNoise::permutation[i % PerlinNoise::permutationSize];
+
+	Generation* pGeneration = new Generation();
+	pGeneration->height.resize(size.y);
+	for (size_t i = 0; i < size.y; i++)
+		pGeneration->height[i].resize(size.x);
+
+	for (int i = 0; i < size.y; i++)
+	{
+		for (int j = 0; j < size.x; j++)
+		{
+			double frequency = 1.0;
+			double amplitude = 1.0;
+			double total = 0.0;
+			double maxValue = 0.0;
+			for (int currentOctave = 0; currentOctave < octave; currentOctave++)
+			{
+				total += PerlinNoise::PerlinFor(doublePermutation, size, glm::dvec3{ j, i, 0.f } * frequency * scale) * amplitude;
+
+				maxValue += amplitude;
+				amplitude *= persistence;
+				frequency *= 2.0;
+			}
+			
+			pGeneration->height[i][j] = ((total / maxValue) + 1) * 0.5;
+		}
+	}
+	pGeneration->size = glm::vec3(size.x, size.y, 1.f);
+
+	return pGeneration;	
 }
