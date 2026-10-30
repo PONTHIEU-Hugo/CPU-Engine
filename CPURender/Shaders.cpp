@@ -56,6 +56,16 @@ static glm::vec4 TexturePS(const Varyings& in, const Uniforms& u)
 
 const Shader TextureShader = { BasicVS, TexturePS };
 
+static glm::vec4 ParticlePS(const Varyings& in, const Uniforms& u)
+{
+	float transparency = glm::length(in.uv - glm::vec2(0.5f, 0.5f));
+	glm::vec4 color = in.color * (u.baseColor / 255.0f);
+	color.a -= 255.0f * transparency;
+	return color;
+}
+
+const Shader ParticleShader = { BasicVS, ParticlePS };
+
 static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 {
 	glm::vec4 surface   = SurfaceColor(in, u);

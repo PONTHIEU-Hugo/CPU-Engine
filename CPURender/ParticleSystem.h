@@ -27,6 +27,7 @@ struct Particle
     bool alive = false;
     float life = 0.0f;                     // temps restant
     float lifeInv = 0.0f;                  // 1 / duree de vie totale
+    float alpha = 255.0f;
     glm::vec3 pos{ 0.0f };
     glm::vec3 vel{ 0.0f };
 

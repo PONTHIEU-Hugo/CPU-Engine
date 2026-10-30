@@ -99,27 +99,23 @@ void Emitter::Spawn(Particle& _particle)
     glm::vec3 t, b;
     BuildBase(n, t, b);
 
-    glm::vec3 dir = n;
+    // Direction uniforme dans un cône autour de n.
+    float cosMax = std::cos(glm::radians(settings.coneAngle));
+    float cosTheta = RANDOM::GetRandomFloat(cosMax, 1.0f);
+    float sinTheta = std::sqrt(glm::max(1.0f - cosTheta * cosTheta, 0.0f));
+    float phi = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
+    glm::vec3 dir = t * (sinTheta * std::cos(phi)) + n * cosTheta + b * (sinTheta * std::sin(phi));;
 
-    if (settings.coneAngle > 0.0f)
-    {
-        // Direction uniforme dans un cône autour de n.
-        float cosMax = std::cos(glm::radians(settings.coneAngle));
-        float cosTheta = RANDOM::GetRandomFloat(cosMax, 1.0f);
-        float sinTheta = std::sqrt(glm::max(1.0f - cosTheta * cosTheta, 0.0f));
-        float phi = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
+    float r = settings.radius * std::sqrt(RANDOM::GetRandomFloat(0.0f, 1.0f));
+    float alpha = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
+    glm::vec3 offset = t * (r * std::cos(alpha)) + b * (r * std::sin(alpha));
 
-        dir = t * (sinTheta * std::cos(phi)) + n * cosTheta + b * (sinTheta * std::sin(phi));
-    }
+    float theta = std::acos(glm::clamp(cosTheta, -1.0f, 1.0f));
+    float angleT = (settings.coneAngle > 0.0f) ? theta / glm::radians(settings.coneAngle) : 0.0f;
+    float radiusT = (settings.radius > 0.0f) ? r / settings.radius : 0.0f;
 
-    glm::vec3 offset{ 0.0f };
-
-    if (settings.radius > 0.0f)
-    {
-        float r = settings.radius * std::sqrt(RANDOM::GetRandomFloat(0.0f, 1.0f));
-        float alpha = RANDOM::GetRandomFloat(0.0f, 2.0f * glm::pi<float>());
-        offset = t * (r * std::cos(alpha)) + b * (r * std::sin(alpha));
-    }
+    float axisT = glm::clamp(glm::max(angleT, radiusT), 0.0f, 1.0f);
+    _particle.alpha = 1.0f - axisT * axisT;
 
     _particle.pos = settings.origin + offset;
     _particle.vel = settings.velocity + dir * RANDOM::GetRandomFloat(settings.speedMin, settings.speedMax);
@@ -160,7 +156,7 @@ void Emitter::BuildQuads(const glm::mat4& _view)
 
         // ToColor lit l'alpha dans les bits 24-31 : la palette n'en a pas (0xRRGGBB), on force l'opacite.
         glm::vec4 color = ToColor(fire_palette[index]);
-        color.a = 255.0f;
+        color.a = 255.0f * particle.alpha;
         float size = glm::mix(settings.sizeEnd, settings.sizeStart, t);
 
         Vertex quad[4];

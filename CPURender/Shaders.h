@@ -10,6 +10,7 @@ extern const Shader DepthShader;
 
 extern const Shader BasicShader;
 extern const Shader TextureShader;
+extern const Shader ParticleShader;
 
 // Texture (ou couleur des sommets) eclairee par la lumiere directionnelle des Uniforms.
 // Necessite des normales dans les sommets (voir GeometryFactory::CalculateNormals). 

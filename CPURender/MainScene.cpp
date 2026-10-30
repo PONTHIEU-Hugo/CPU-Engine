@@ -109,7 +109,7 @@ void MainScene::Init()
 	m_emitter.settings.speedMax     = 5.0f;
 	m_emitter.settings.coneAngle    = 20.0f;
 	m_emitter.settings.radius		= 0.3f;
-	m_emitter.settings.sizeStart    = 0.25f;
+	m_emitter.settings.sizeStart    = 0.10f;
 	m_emitter.settings.sizeEnd      = 0.05f;
 	m_emitter.settings.acceleration = { 0.0f, 6.0f, 0.0f };
 	m_emitter.Init();
@@ -127,7 +127,7 @@ void MainScene::Update(float _dt)
 	const glm::vec3 exhaustLocalOffset = { 0.0f, 0.0f, 0.7f };
 	m_emitter.settings.origin = glm::vec3(car.GetWorldMatrix() * glm::vec4(exhaustLocalOffset, 1.0f));
 	m_emitter.settings.direction = -car.GetForward();
-	m_emitter.settings.velocity = -car.GetForward() * glm::vec3(10.0f, 10.f, 10.0f);
+	m_emitter.settings.velocity = -car.GetForward() * glm::vec3(1.0f, 1.0f, 1.0f);
 	m_emitter.Update(_dt);
 
 	glm::vec3 cam = camera->GetPosition();
