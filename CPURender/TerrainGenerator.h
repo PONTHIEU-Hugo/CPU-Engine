@@ -16,16 +16,15 @@ class TerrainGenerator
 {
 private:
 	Mesh m_Mesh;
-	Material* m_Material = nullptr;
+	Material m_Material;
 	Generation* m_Generation = nullptr;
 
 public:
-	TerrainGenerator() = default;
+	TerrainGenerator();
 	~TerrainGenerator();
 
 	Mesh& GetMesh() { return m_Mesh; }
-	Material& GetMaterial() { return *m_Material; }
-	void SetMaterial(Material* rMat) { m_Material = rMat; }
+	Material& GetMaterial() { return m_Material; }
 
 	void GenerateHeighmap(size_t size, HeighMapType type, double scale = 1.0) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
 	void GenerateHeighmap(glm::vec2 size, HeighMapType type, double scale = 1.0);

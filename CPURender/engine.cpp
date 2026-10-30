@@ -103,7 +103,6 @@ void Engine::init()
 
 	// Terrain
 	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
-	m_Terrain.SetMaterial(&m_defaultMaterial);
 	ObjectId terrainID = m_scene.Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 	m_scene.Get(terrainID).transform.SetPosition(glm::vec3{ 0, -5, 0 });	
 

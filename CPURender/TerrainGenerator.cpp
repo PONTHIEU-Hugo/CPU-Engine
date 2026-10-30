@@ -1,5 +1,14 @@
 #include "TerrainGenerator.h"
 #include <iostream>
+#include "Shaders.h"
+
+TerrainGenerator::TerrainGenerator()
+{
+	m_Material.shader = &LambertShader;
+
+	m_Material.specular = 0.01f;
+	m_Material.roughness = 0.3f;
+}
 
 TerrainGenerator::~TerrainGenerator()
 {
@@ -81,40 +90,40 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, doubl
 glm::dvec3 TerrainGenerator::NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale)
 {
 	std::vector<std::vector<double>>& rHeight = m_Generation->height;
+	if (rHeight.size() <= 0) return glm::dvec3(1000.0);
 
 	glm::dvec3 xDiff = { 0, 0, 0 };
 	if (heighmapID.x - 1 >= 0) // x - 1
-		xDiff = glm::dvec3{ (heighmapID.x - 1) * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x - 1] * heighmapValueFactor * scale };
+		xDiff = glm::dvec3{ (heighmapID.x - 1) * HeighmapValueSpace * scale, rHeight[heighmapID.y][heighmapID.x - 1] * heighmapValueFactor * scale, heighmapID.y * HeighmapValueSpace * scale };
 	else
-		xDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+		xDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale, heighmapID.y * HeighmapValueSpace * scale };
 	if (heighmapID.x + 1 < rHeight[0].size()) // x + 1
-		xDiff -= glm::dvec3{(heighmapID.x + 1)* HeighmapValueSpace* scale, heighmapID.y* HeighmapValueSpace* scale, -rHeight[heighmapID.y][heighmapID.x + 1] * heighmapValueFactor * scale };
+		xDiff -= glm::dvec3{(heighmapID.x + 1)* HeighmapValueSpace* scale, rHeight[heighmapID.y][heighmapID.x + 1] * heighmapValueFactor * scale, heighmapID.y * HeighmapValueSpace * scale };
 	else
-		xDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+		xDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale, heighmapID.y * HeighmapValueSpace * scale };
 
 	glm::dvec3 zDiff = { 0, 0, 0 };
 	if (heighmapID.y - 1 >= 0) // z - 1
-		zDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, (heighmapID.y - 1) * HeighmapValueSpace * scale, -rHeight[heighmapID.y - 1][heighmapID.x] * heighmapValueFactor * scale };
+		zDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, rHeight[heighmapID.y - 1][heighmapID.x] * heighmapValueFactor * scale, (heighmapID.y - 1) * HeighmapValueSpace * scale };
 	else
-		zDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+		zDiff = glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale, heighmapID.y * HeighmapValueSpace * scale };
 	if (heighmapID.y + 1 < rHeight.size()) // z + 1
-		zDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, (heighmapID.y + 1) * HeighmapValueSpace * scale, -rHeight[heighmapID.y + 1][heighmapID.x] * heighmapValueFactor * scale };
+		zDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, rHeight[heighmapID.y + 1][heighmapID.x] * heighmapValueFactor * scale, (heighmapID.y + 1) * HeighmapValueSpace * scale };
 	else
-		zDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, heighmapID.y * HeighmapValueSpace * scale, -rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale };
+		zDiff -= glm::dvec3{ heighmapID.x * HeighmapValueSpace * scale, rHeight[heighmapID.y][heighmapID.x] * heighmapValueFactor * scale, heighmapID.y * HeighmapValueSpace * scale };
 	
-	glm::dvec3 cross = glm::cross(xDiff, zDiff);
+	glm::dvec3 cross = glm::cross(zDiff, xDiff);
 	glm::dvec3 norm = glm::normalize(cross);
-
 	return norm;
 }
 
 glm::vec3 TerrainGenerator::ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale)
 {
-	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.6)
+	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.6)	// SNOW
 		return ToColor(0xFFFFFF);
-	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.55)
+	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.55)// STONE
 		return ToColor(0x7F8386);
-	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.35)
+	if (m_Generation->height[heighmapID.y][heighmapID.x] > 0.35)// GRASS
 		return ToColor(0x3F9B0B);
-	return ToColor(0xC2B280);
+	return ToColor(0xC2B280);									// SAND
 }
