@@ -5,7 +5,7 @@
 
 //Students cannot change anything in this file
 
-#define WIDTH 1080
+#define WIDTH  1080
 #define HEIGHT 720
 
 #define SCREEN_WIDTH 1080

@@ -220,13 +220,18 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const Varyings& vertexB = tri.varyings[1];
 	const Varyings& vertexC = tri.varyings[2];
 
-	auto uvAt = [&](const glm::vec2& p) -> glm::vec2
+	struct Attr { glm::vec2 uv; glm::vec3 pos; };
+	
+	auto attrAt = [&](const glm::vec2& p) -> Attr
 	{
 		float a = EdgeFunction(sB, sC, p) * tri.invArea / vertexA.position.w;
 		float b = EdgeFunction(sC, sA, p) * tri.invArea / vertexB.position.w;
 		float c = EdgeFunction(sA, sB, p) * tri.invArea / vertexC.position.w;
 		const float inv = 1.0f / (a + b + c);
-		return (a * vertexA.uv + b * vertexB.uv + c * vertexC.uv) * inv;
+		return {
+			(a * vertexA.uv       + b * vertexB.uv       + c * vertexC.uv)       * inv,
+			(a * vertexA.worldPos + b * vertexB.worldPos + c * vertexC.worldPos) * inv
+		};
 	};
 	
 	for (int y = minY; y <= maxY; ++y)
@@ -274,10 +279,14 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 			fragment.tangent = perspectiveA * vertexA.tangent + perspectiveB * vertexB.tangent + perspectiveC * vertexC.tangent;
-			if ( m_uniforms.texture)
+			if (m_uniforms.texture || m_uniforms.normalMap)
 			{
-				fragment.duvdx = uvAt(pixelCenter + glm::vec2(1.0f, 0.0f)) - fragment.uv;
-				fragment.duvdy = uvAt(pixelCenter + glm::vec2(0.0f, 1.0f)) - fragment.uv;
+				const Attr r	= attrAt(pixelCenter + glm::vec2(1.0f, 0.0f));
+				const Attr d	= attrAt(pixelCenter + glm::vec2(0.0f, 1.0f));
+				fragment.duvdx	= r.uv  - fragment.uv;
+				fragment.duvdy	= d.uv  - fragment.uv;
+				fragment.dpdx	= r.pos - fragment.worldPos;
+				fragment.dpdy	= d.pos - fragment.worldPos;
 			}
 			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
 			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;

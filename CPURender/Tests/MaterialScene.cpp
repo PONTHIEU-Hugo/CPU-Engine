@@ -24,7 +24,7 @@ void MaterialScene::Init()
     m_defaultMaterial = m_cubeMaterial;
     
     m_cubeMaterial.normalMap = &m_cubeNormalMap;
-    m_cubeMaterial.normalFlipY = true;
+    m_cubeMaterial.normalFlipY = false;
     
     
     float aspect = float(WIDTH) / float(HEIGHT);

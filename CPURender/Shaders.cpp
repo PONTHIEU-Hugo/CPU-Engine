@@ -29,13 +29,20 @@ static glm::vec3 SurfaceNormal(const Varyings& in, const Uniforms& u)
 	if (!u.normalMap || !u.normalMap->IsValid())
 		return N;
 
-	glm::vec3 T = in.tangent - N * glm::dot(N, in.tangent);
-	if (glm::dot(T, T) < 1e-12f)
-		return N;
-	T = glm::normalize(T);
-	glm::vec3 B = glm::cross(N, T);
+	glm::vec3 dp2perp = glm::cross(N, in.dpdy);
+	glm::vec3 dp1perp = glm::cross(in.dpdx, N);
+	glm::vec3 T = dp2perp * in.duvdx.x + dp1perp * in.duvdy.x;
+	glm::vec3 B = dp2perp * in.duvdx.y + dp1perp * in.duvdy.y;
 
-	glm::vec4 s = u.normalMap->Sample(in.uv);
+	float m = std::max(glm::dot(T, T), glm::dot(B, B));
+	if (m < 1e-20f)
+		return N;                      
+	float invMax = 1.0f / std::sqrt(m);
+	T *= invMax;
+	B *= invMax;
+
+	float lod = u.normalMap->ComputeLod(in.duvdx, in.duvdy);
+	glm::vec4 s = u.normalMap->Sample(in.uv, lod);
 	glm::vec3 t = glm::vec3(s) / 255.0f * 2.0f - 1.0f;
 
 	if (u.normalFlipY)
@@ -93,13 +100,13 @@ const Shader TextureShader = { BasicVS, TexturePS };
 static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 {
 	glm::vec4 surface   = SurfaceColor(in, u);
-	glm::vec3 baseColor = SurfaceColor(in, u);
+	glm::vec3 baseColor = surface;
 
 	glm::vec3 normal = SurfaceNormal(in, u);
 	float diffuse = 1.0f;
 	float specular = 0.0f;
 
-	if (glm::dot(normal, normal) > 0.5f)
+	if (glm::dot(normal, normal) > 0.5f) 
 	{
 		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
 		if (diffuse > 0.0f)
@@ -248,18 +255,18 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 		int i = 0;
 	glm::vec4 baseColor = SurfaceColor(in, u);
 
-	float normalLength2 = glm::dot(in.normal, in.normal);
 	float diffuse = 1.0f;
 	glm::vec3 visibility(1.0f);
 	float specular = 0.0f;
 
-	if (normalLength2 > 1e-8f)
+	glm::vec3 normal = SurfaceNormal(in, u);
+	if (glm::dot(normal, normal) > 0.5f)
 	{
-		glm::vec3 normal = in.normal / std::sqrt(normalLength2);
-		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
+		glm::vec3 L = -glm::normalize(u.lightDirection);
+		diffuse = glm::max(glm::dot(normal, L), 0.0f);
 		if (diffuse > 0.0f)
 		{
-			float geoCos = glm::max(glm::dot(glm::normalize(in.normal), -glm::normalize(u.lightDirection)), 0.0f);
+			float geoCos = glm::max(glm::dot(glm::normalize(in.normal), L), 0.0f);
 			visibility = ShadowLight(in, u, geoCos);
 			specular = PhongSpecular(in, u, normal);
 		}
