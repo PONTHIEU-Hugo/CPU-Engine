@@ -13,10 +13,11 @@ public:
     
 private:
     Material m_defaultMaterial;
-    Material m_groundMaterial;
-    Texture  m_groundTexture;
+    Material m_cubeMaterial;
+    Texture  m_cubeTexture;
+    Texture  m_cubeNormalMap;
     Mesh     m_sphereMesh;
-    Mesh     m_groundMesh;
+    Mesh     m_cubeMesh;
 };
 
 

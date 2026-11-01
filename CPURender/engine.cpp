@@ -14,7 +14,7 @@ void Engine::init()
 	printf("Init engine \n");
 	m_renderer.Init(2048);
 	m_renderer.showShadowDebug = false;
-	m_scene = new AnimatorScene();
+	m_scene = new MaterialScene();
 	m_scene->Init();
 }
 

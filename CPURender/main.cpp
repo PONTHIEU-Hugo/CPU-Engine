@@ -71,7 +71,8 @@ int main(void) {
     Engine engine;
     engine.init();
     bool isRunning = true;
-    static FinalFrameBuffer frameBuffer;
+    auto frameBufferPtr = std::make_unique<FinalFrameBuffer>();
+    FinalFrameBuffer& frameBuffer = *frameBufferPtr;
     CHRONO->SetFPSCap(60);
 
     bool isDebug = false;

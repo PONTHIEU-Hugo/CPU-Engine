@@ -15,8 +15,6 @@ void Renderer::Render(const Scene& scene, FinalFrameBuffer& out)
 	SkinObjects(scene);
 	ShadowPass(scene);
 	MainPass(scene, out);
-	std::memcpy(m_sceneColor.colorData, out.colorData, sizeof(out.colorData));
-	m_sceneDepth = m_pipeline.GetScreenDepth();
 	TransparencyPass(scene, out);
 
 	if (showShadowDebug)
@@ -112,7 +110,7 @@ void Renderer::ShadowPass(const Scene& scene)
 
 void Renderer::SkinVertex(const Mesh& mesh, size_t i,
 					   const std::vector<glm::mat4>& bones,
-					   glm::vec3& outPos, glm::vec3& outNormal)
+					   glm::vec3& outPos, glm::vec3& outNormal, glm::vec4& outTangent)
 {
 	const Vertex& v = mesh.vertices[i];
 	const VertexSkin& s = mesh.skin[i];
@@ -128,7 +126,8 @@ void Renderer::SkinVertex(const Mesh& mesh, size_t i,
 	if (total <= 0.0f) skin = glm::mat4(1.0f);
 
 	outPos    = glm::vec3(skin * glm::vec4(v.position, 1.0f));
-	outNormal = glm::normalize(glm::mat3(skin) * v.normal);
+	outNormal  = glm::normalize(glm::mat3(skin) * v.normal);
+	outTangent = glm::vec4(glm::normalize(glm::mat3(skin) * glm::vec3(v.tangent)), v.tangent.w);
 }
 
 void Renderer::SkinObjects(const Scene& scene)
@@ -144,7 +143,7 @@ void Renderer::SkinObjects(const Scene& scene)
 
 		dst.vertices = src.vertices;
 		for (size_t i = 0; i < src.vertices.size(); ++i)
-			SkinVertex(src, i, bones, dst.vertices[i].position, dst.vertices[i].normal);
+			SkinVertex(src, i, bones, dst.vertices[i].position, dst.vertices[i].normal, dst.vertices[i].tangent);
 		dst.ComputeBounds();
 	}
 }
@@ -195,7 +194,8 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 			for (size_t i = 0; i < src.vertices.size(); ++i)
 				SkinVertex(src, i, *bones,
 						   m_skinnedMesh.vertices[i].position,
-						   m_skinnedMesh.vertices[i].normal);
+						   m_skinnedMesh.vertices[i].normal,
+						   m_skinnedMesh.vertices[i].tangent);
 		}
 		DrawObject(object, base, GetMeshToDraw(object));
 	}
@@ -244,13 +244,10 @@ void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
 void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
 {
 	m_pipeline.BindFrameBuffer(&out);
-	
+
 	Uniforms base;
 	BuildBaseUniforms(scene, base);
 
-	base.sceneColor = &m_sceneColor;
-	base.sceneDepth = &m_sceneDepth;
-	
 	Frustum frustum = Frustum::FromMatrix(base.vp);
 	const glm::vec3 camPos = scene.camera->GetPosition();
 
@@ -269,15 +266,20 @@ void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
 		m_transparents.push_back({ &object, glm::dot(d, d) });
 	}
 	
+	if (m_transparents.empty())
+		return;
+	
 	std::sort(m_transparents.begin(), m_transparents.end(),
 	[](const TransparentEntry& a, const TransparentEntry& b) { return a.dist2 > b.dist2; });
 	
+	std::memcpy(m_sceneColor->colorData, out.colorData, sizeof(out.colorData));
+	base.sceneColor = m_sceneColor.get();
+	base.sceneDepth = &m_pipeline.GetScreenDepth();
+
 	m_pipeline.SetBlend(true);
 	m_pipeline.SetDepthWrite(false);
-	
 	for (const TransparentEntry& entry : m_transparents)
 		DrawObject(*entry.object, base, GetMeshToDraw(*entry.object));
-
 	m_pipeline.SetBlend(false);
 	m_pipeline.SetDepthWrite(true);
 }
@@ -288,6 +290,9 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 
 	Uniforms uniforms		  = base;
 	uniforms.texture		  = material.texture;
+	uniforms.normalMap		  = material.normalMap;
+	uniforms.normalStrength	  = material.normalStrength;
+	uniforms.normalFlipY	  = material.normalFlipY;
 	uniforms.baseColor		  = material.baseColor;
 	uniforms.eta			  = material.eta;
 	uniforms.thickness		  = material.thickness;

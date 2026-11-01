@@ -18,6 +18,7 @@ struct Varyings
     glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
     glm::vec4 color = { 255.0f, 255.0f, 255.0f, 255.0f };
     glm::vec2 uv = { 0.0f, 0.0f };
+	glm::vec3 tangent = glm::vec3(1, 0, 0);
 	glm::vec2 duvdx = glm::vec2(0.0f);
 	glm::vec2 duvdy = glm::vec2(0.0f);
     glm::vec3 worldPos = { 0.0f, 0.0f, 0.0f }; 
@@ -41,6 +42,11 @@ struct Uniforms
 	const FinalFrameBuffer*   sceneColor = nullptr;
 	const std::vector<float>* sceneDepth = nullptr;
 
+	// NormalMap
+	const Texture* normalMap	= nullptr;
+	float normalStrength		= 1.0f;
+	bool  normalFlipY			= false;
+	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
     const RenderTarget* shadowMap = nullptr;

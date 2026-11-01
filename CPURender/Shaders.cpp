@@ -19,13 +19,31 @@ static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 	return color * (u.baseColor / 255.0f);
 }
 
-static glm::vec3 refract(glm::vec3 i, glm::vec3 n, float eta)
+static glm::vec3 SurfaceNormal(const Varyings& in, const Uniforms& u)
 {
-	float cosI = -glm::dot(n, i);
-	float k = 1 - (eta * eta) * (1 - cosI * cosI);
-	if ( k < 0)
-		return glm::vec3(0, 0, 0);
-	return eta * i + (eta * cosI - sqrt(k)) * n;
+	float len2 = glm::dot(in.normal, in.normal);
+	if (len2 <= 1e-8f)
+		return glm::vec3(0.0f);
+
+	glm::vec3 N = in.normal / std::sqrt(len2);
+	if (!u.normalMap || !u.normalMap->IsValid())
+		return N;
+
+	glm::vec3 T = in.tangent - N * glm::dot(N, in.tangent);
+	if (glm::dot(T, T) < 1e-12f)
+		return N;
+	T = glm::normalize(T);
+	glm::vec3 B = glm::cross(N, T);
+
+	glm::vec4 s = u.normalMap->Sample(in.uv);
+	glm::vec3 t = glm::vec3(s) / 255.0f * 2.0f - 1.0f;
+
+	if (u.normalFlipY)
+		t.y = -t.y;
+	t.x *= u.normalStrength;
+	t.y *= u.normalStrength;
+
+	return glm::normalize(T * t.x + B * t.y + N * t.z);
 }
 
 static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
@@ -53,6 +71,7 @@ static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 	out.normal = v.normal;
 	out.color = v.color;
 	out.uv = v.uv;
+	out.tangent = v.tangent;
 
 	return out;
 }
@@ -76,18 +95,17 @@ static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 	glm::vec4 surface   = SurfaceColor(in, u);
 	glm::vec3 baseColor = SurfaceColor(in, u);
 
-	float normalLength2 = glm::dot(in.normal, in.normal);
+	glm::vec3 normal = SurfaceNormal(in, u);
 	float diffuse = 1.0f;
 	float specular = 0.0f;
 
-	if (normalLength2 > 1e-8f)
+	if (glm::dot(normal, normal) > 0.5f)
 	{
-		glm::vec3 normal = in.normal / std::sqrt(normalLength2);
 		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
 		if (diffuse > 0.0f)
 			specular = PhongSpecular(in, u, normal);
 	}
-
+	
 	float lighting = u.ambient + (1.0f - u.ambient) * diffuse;
 	glm::vec3 rgb = baseColor * lighting + glm::vec3(255.0f) * specular;
 	return glm::vec4(rgb, surface.a);
@@ -241,7 +259,8 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
 		if (diffuse > 0.0f)
 		{
-			visibility = ShadowLight(in, u, diffuse);
+			float geoCos = glm::max(glm::dot(glm::normalize(in.normal), -glm::normalize(u.lightDirection)), 0.0f);
+			visibility = ShadowLight(in, u, geoCos);
 			specular = PhongSpecular(in, u, normal);
 		}
 	}

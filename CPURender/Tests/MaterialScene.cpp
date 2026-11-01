@@ -7,23 +7,25 @@
 
 void MaterialScene::Init()
 {
-    m_sphereMesh = GeometryFactory::BuildIcosphere(5);
-    m_groundMesh = GeometryFactory::LoadGeometry("Assets/de_dust2.obj");
+    m_sphereMesh    = GeometryFactory::BuildCube();
+    m_cubeMesh      = GeometryFactory::BuildCube();
     
     Add(m_sphereMesh, m_defaultMaterial, true,
         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_groundMesh, m_groundMaterial, true,
-        new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
+    Add(m_cubeMesh, m_cubeMaterial, true,
+        new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
-    m_defaultMaterial.shader = &RefractionShader;
-    m_defaultMaterial.baseColor = glm::vec4(255.0f, 255.0f, 255.0f, 240.0f);
-    m_defaultMaterial.transparent = true;
-    m_defaultMaterial.thickness   = 1.0f;
-    m_defaultMaterial.eta         = 0.8f;
     
-    m_groundTexture.Load("Assets/de_dust2.png");
-    m_groundMaterial.shader = &LambertShader;
-    m_groundMaterial.texture = &m_groundTexture;
+    m_cubeTexture.Load("Assets/rock/rock_albedo.jpg");
+    m_cubeNormalMap.Load("Assets/rock/rock_normal.png");
+    m_cubeMaterial.shader = &LambertShader;
+    m_cubeMaterial.texture = &m_cubeTexture;
+    
+    m_defaultMaterial = m_cubeMaterial;
+    
+    m_cubeMaterial.normalMap = &m_cubeNormalMap;
+    m_cubeMaterial.normalFlipY = true;
+    
     
     float aspect = float(WIDTH) / float(HEIGHT);
     camera = new Camera({0.0f, 0.0f, 3.0f}, nullptr);

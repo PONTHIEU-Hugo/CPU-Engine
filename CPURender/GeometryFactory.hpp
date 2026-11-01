@@ -48,6 +48,36 @@ namespace GeometryFactory
 			return glm::normalize(cross(helper, _n));
 		}
 
+		inline void ComputeTangents(std::vector<Vertex>& vertices)
+		{
+			for (size_t i = 0; i + 2 < vertices.size(); i += 3)
+			{
+				Vertex& a = vertices[i];
+				Vertex& b = vertices[i + 1];
+				Vertex& c = vertices[i + 2];
+
+				glm::vec3 e1 = b.position - a.position;
+				glm::vec3 e2 = c.position - a.position;
+				glm::vec2 d1 = b.uv - a.uv;
+				glm::vec2 d2 = c.uv - a.uv;
+
+				glm::vec3 t(1.0f, 0.0f, 0.0f);
+				float w = 1.0f;
+
+				float det = d1.x * d2.y - d2.x * d1.y;
+				if (std::abs(det) > 1e-12f)
+				{
+					t = (e1 * d2.y - e2 * d1.y) / det;              
+					glm::vec3 dPdV = (e2 * d1.x - e1 * d2.x) / det;
+
+					w = glm::dot(glm::cross(a.normal, t), -dPdV) < 0.0f ? -1.0f : 1.0f;
+				}
+
+				t = SafeNormalize(t, glm::vec3(1, 0, 0));
+				a.tangent = b.tangent = c.tangent = glm::vec4(t, w);
+			}
+		}
+		
 		inline void PushTriangle(std::vector<Vertex>& _out, const Vertex& a, const Vertex& b, const Vertex& c)
 		{
 			_out.push_back(a);
@@ -178,6 +208,8 @@ namespace GeometryFactory
 		detail::PushTriangle(vertices, a, c, b);
 
 		CalculateNormals(vertices);
+		detail::ComputeTangents(vertices);
+		
 		
 		Mesh geometry;
 		geometry.vertices = std::move(vertices); 
@@ -205,6 +237,8 @@ namespace GeometryFactory
 		detail::PushTriangle(vertices, bottomLeft, top, bottomRight);
 
 		CalculateNormals(vertices);
+		detail::ComputeTangents(vertices);
+		
 		
 		Mesh geometry;
 		geometry.vertices = std::move(vertices); 
@@ -233,6 +267,8 @@ namespace GeometryFactory
 		detail::AddQuad(vertices, A, B, C, D);  // base   (-Y)
 
 		CalculateNormals(vertices);
+		detail::ComputeTangents(vertices);
+		
 		
 		Mesh geometry;
 		geometry.vertices = std::move(vertices); 
@@ -256,6 +292,7 @@ namespace GeometryFactory
 		detail::AddQuad(vertices, { 0.5f,-0.5f,-0.5f}, {-0.5f,-0.5f,-0.5f}, {-0.5f, 0.5f,-0.5f}, { 0.5f, 0.5f,-0.5f}); // -Z
 
 		CalculateNormals(vertices);
+		detail::ComputeTangents(vertices);
 		
 		Mesh geometry;
 		geometry.vertices = std::move(vertices); 
@@ -356,6 +393,8 @@ namespace GeometryFactory
 					);
 
 				vertex.normal = n;
+				glm::vec3 t(-n.z, 0.0f, n.x);
+				vertex.tangent = glm::vec4(detail::SafeNormalize(t, glm::vec3(1, 0, 0)), -1.0f);
 				vertices.push_back(vertex);
 			}
 		}
@@ -391,6 +430,7 @@ namespace GeometryFactory
 
 			Vertex vertex = detail::MakeVertex(n * _radius, uv);
 			vertex.normal = n;
+			vertex.tangent = glm::vec4(tangent, -1.0f);
 			return vertex;
 		};
 
@@ -514,6 +554,7 @@ namespace GeometryFactory
 			);
 
 			vertex.normal = glm::vec3(c, 0.0f, s);
+			vertex.tangent = glm::vec4(-s, 0.0f, c, -1.0f);
 
 			return vertex;
 		};
@@ -565,6 +606,7 @@ namespace GeometryFactory
 
 			Vertex vertex = detail::MakeVertex(pos, { u, v });
 			vertex.normal = n;
+			vertex.tangent = glm::vec4(-sinT, 0.0f, cosT, 1.0f);
 			return vertex;
 		};
 
@@ -672,6 +714,8 @@ namespace GeometryFactory
 
     	fclose(file);
 
+		detail::ComputeTangents(vertices);
+		
 		Mesh geometry;
 		geometry.vertices = std::move(vertices);
 		geometry.ComputeBounds();

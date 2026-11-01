@@ -23,8 +23,7 @@ public:
 	bool showShadowDebug = true;
 	int  shadowDebugSize = 64;
 	
-	FinalFrameBuffer   m_sceneColor;
-	std::vector<float> m_sceneDepth;
+	std::unique_ptr<FinalFrameBuffer> m_sceneColor = std::make_unique<FinalFrameBuffer>();
 
 private:
 	struct TransparentEntry { const RenderObject* object; float dist2; };
@@ -32,7 +31,7 @@ private:
 	void UpdateLight(const Scene& scene);
 	bool ShadowCastersChanged(const Scene& scene);
 	void ShadowPass(const Scene& scene);
-	void SkinVertex(const Mesh& mesh, size_t i, const std::vector<glm::mat4>& bones, glm::vec3& outPos, glm::vec3& outNormal);
+	void SkinVertex(const Mesh& mesh, size_t i, const std::vector<glm::mat4>& bones, glm::vec3& outPos, glm::vec3& outNormal, glm::vec4& outTangent);
 	void SkinObjects(const Scene& scene);
 	const Mesh* GetMeshToDraw(const RenderObject& object) const;
 	void MainPass(const Scene& scene, FinalFrameBuffer& out);

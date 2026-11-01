@@ -57,7 +57,8 @@ void Pipeline::Draw(glm::mat4 const& mat)
 		Vertex v = vertices[i];
 		v.position = glm::vec3(mat * glm::vec4(vertices[i].position, 1.0f));
 		v.normal = glm::normalize(normalMatrix * vertices[i].normal);
-
+		v.tangent = glm::vec4(glm::normalize(glm::mat3(mat) * glm::vec3(vertices[i].tangent)), vertices[i].tangent.w);
+		
 		m_varyings[i] = m_vertexShader(v, m_uniforms);
 	}
 
@@ -96,7 +97,6 @@ void Pipeline::Draw(glm::mat4 const& mat)
 		}
 	}
 
-	// Rasterisation 
 	const int width = m_target->width;
 	const int height = m_target->height;
 
@@ -106,7 +106,6 @@ void Pipeline::Draw(glm::mat4 const& mat)
 		int x0, y0, x1, y1;
 		TileBounds(tile, width, height, x0, y0, x1, y1);
 
-		// Bacs parcourus thread 0, 1, 2... -> triangles dessines dans l'ordre du mesh
 		for (int th = 0; th < threadCount; ++th)
 		{
 			const ThreadBins& tb = m_threadBins[th];
@@ -274,6 +273,7 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
+			fragment.tangent = perspectiveA * vertexA.tangent + perspectiveB * vertexB.tangent + perspectiveC * vertexC.tangent;
 			if ( m_uniforms.texture)
 			{
 				fragment.duvdx = uvAt(pixelCenter + glm::vec2(1.0f, 0.0f)) - fragment.uv;
