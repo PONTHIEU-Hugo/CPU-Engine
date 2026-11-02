@@ -3,7 +3,6 @@
 
 #include "Scene.h"
 #include "Texture.h"
-#include "ParticleSystem.h"
 #include "TerrainGenerator.h"
 
 class MainScene : public Scene
@@ -35,9 +34,7 @@ private:
     ObjectId m_wheelAr = -1;
     ObjectId m_wheelAv = -1;
 
-    Emitter  m_emitter{ 1000 };
     bool     m_pWasDown = false;
-    
 
     TerrainGenerator m_Terrain;
 };

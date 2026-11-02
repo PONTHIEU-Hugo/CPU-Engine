@@ -8,6 +8,7 @@
 
 #include "Shaders.h"
 #include "GeometryFactory.hpp"
+#include "SmokeEmitter.h"
 
 static Mesh BuildGround(float y, float half)
 {
@@ -45,10 +46,10 @@ void MainScene::Init()
 	m_defaultMaterial.shader = &ShadowLambertShader;
 	
 	m_cubeMaterial = m_defaultMaterial;
-	m_cubeMaterial.baseColor.a = 255;
+	m_cubeMaterial.baseColor.a = 200.0f;
 	m_cubeMaterial.transparent = true;
-	if (m_cubeTexture.IsValid())
-		m_cubeMaterial.texture = &m_cubeTexture;
+	//if (m_cubeTexture.IsValid())
+		//m_cubeMaterial.texture = &m_cubeTexture;
 
 	m_carMaterial = m_defaultMaterial;
 	m_carMaterial.baseColor.a = 255 / 2;
@@ -66,22 +67,18 @@ void MainScene::Init()
 	m_carMaterial.roughness     = 0.4f;
 
 	// Scene 
-	//ObjectId cube = Add(m_cubeMesh, m_defaultMaterial);
-	//Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
+	ObjectId cube = Add(m_cubeMesh, m_cubeMaterial);
+	Get(cube).transform.AddScale({ 0.0f, 0.0f, 0.0f });
 
-	m_car = Add(m_carMesh, m_carMaterial, true,
-		new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
-			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
-	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
-	// Add(m_cubeMesh, m_cubeMaterial, true,
-	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	//m_car = Add(m_carMesh, m_carMaterial, true, new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	//m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true, new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	//m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true, new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
+	// Add(m_cubeMesh, m_cubeMaterial, true, Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	Add(m_groundMesh, m_groundMaterial, false);
-	//
-	Transform& carT = Get(m_car).transform;
-	Get(m_wheelAr).transform.SetParent(&carT);
-	Get(m_wheelAv).transform.SetParent(&carT);
+
+	//Transform& carT = Get(m_car).transform;
+	//Get(m_wheelAr).transform.SetParent(&carT);
+	//Get(m_wheelAv).transform.SetParent(&carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
@@ -100,20 +97,12 @@ void MainScene::Init()
 
 	// Systèmes
 	LoadSkybox();
-	
-	m_emitter.settings.emissionRate = 1000.0f;
-	m_emitter.settings.lifeMin      = 0.6f;
-	m_emitter.settings.lifeMax      = 1.2f;
-	m_emitter.settings.speedMin     = 2.0f;
-	m_emitter.settings.speedMax     = 5.0f;
-	m_emitter.settings.coneAngle    = 20.0f;
-	m_emitter.settings.radius		= 0.3f;
-	m_emitter.settings.sizeStart    = 0.10f;
-	m_emitter.settings.sizeEnd      = 0.05f;
-	m_emitter.settings.acceleration = { 0.0f, 6.0f, 0.0f };
-	m_emitter.Init();
-	
-	AddEmitter(m_emitter);
+
+	SmokeEmitter* emitter = new SmokeEmitter();
+
+	emitter->Init();
+
+	AddEmitter(*emitter);
 }
 
 void MainScene::Update(float _dt)
@@ -123,11 +112,8 @@ void MainScene::Update(float _dt)
 
 	const Transform& car = Get(m_car).transform;
 
-	const glm::vec3 exhaustLocalOffset = { 0.0f, 0.0f, 0.7f };
-	m_emitter.settings.origin = glm::vec3(car.GetWorldMatrix() * glm::vec4(exhaustLocalOffset, 1.0f));
-	m_emitter.settings.direction = -car.GetForward();
-	m_emitter.settings.velocity = -car.GetForward() * glm::vec3(1.0f, 1.0f, 1.0f);
-	m_emitter.Update(_dt);
+	for (Emitter* emitter : emitters)
+		emitter->Update(_dt);
 
 	glm::vec3 cam = camera->GetPosition();
 	sun.shadowFocus = glm::vec3(cam.x, m_groundMesh.localBounds.min.y, cam.z);
@@ -149,8 +135,8 @@ void MainScene::HandleEvent(float _dt)
 	const bool* keys = SDL_GetKeyboardState(nullptr);
 	
 	bool pDown = keys[SDL_SCANCODE_P];
-	if (pDown && m_pWasDown == false)
-		m_emitter.SetActive(m_emitter.IsActive() == false);
+	//if (pDown && m_pWasDown == false)
+	//	m_emitter.SetActive(m_emitter.IsActive() == false);
 
 	m_pWasDown = pDown;
 	

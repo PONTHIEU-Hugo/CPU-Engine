@@ -159,6 +159,9 @@
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="ProceduralGeneration.cpp" />
     <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="SmokeEmitter.cpp" />
+    <ClCompile Include="SnowEmitter.cpp" />
+    <ClCompile Include="SparkleEmitter.cpp" />
     <ClCompile Include="TerrainGenerator.cpp" />
     <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="Tests\MaterialScene.cpp" />
@@ -183,6 +186,9 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="Shaders.h" />
     <ClInclude Include="ShadowMap.h" />
+    <ClInclude Include="SmokeEmitter.h" />
+    <ClInclude Include="SnowEmitter.h" />
+    <ClInclude Include="SparkleEmitter.h" />
     <ClInclude Include="Tests\MaterialScene.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Clipping.h" />

@@ -5,66 +5,90 @@
 #include "core.h"
 #include "Mesh.h"
 
+enum class BlendMode
+{
+    Alpha,      // SrcAlpha / InvSrcAlpha, necessite un tri back-to-front
+    Additive    // SrcAlpha / One, ordre indifferent
+};
+
 struct EmitterSettings
 {
     glm::vec3 origin{ 0.0f };
-    float emissionRate = 200.0f;           // particules creees par seconde
-    float lifeMin = 0.6f;                  // duree de vie (secondes)
-    float lifeMax = 1.2f;
-    float speedMin = 2.0f;                 // vitesse initiale
-    float speedMax = 5.0f;
-    float coneAngle = 20.0f;   
-    float radius = 0.0f;
-    glm::vec3 direction{ 0.0f, 1.0f, 0.0f };
-    glm::vec3 velocity{ 0.0f, 1.0f, 0.0f };
-    glm::vec3 acceleration{ 0.0f, 6.0f, 0.0f };   
-    float sizeStart = 0.35f;               
-    float sizeEnd = 0.05f;                 
+    float emissionRate = 100.0f;                // particules creees par seconde
+    float lifeMin = 1.0f;                       // duree de vie (secondes)
+    float lifeMax = 2.0f;
+    float speedMin = 1.0f;                      // vitesse initiale le long du cone
+    float speedMax = 2.0f;
+    float coneAngle = 20.0f;                    // demi-angle du cone (degres), 180 = sphere
+    float radius = 0.0f;                        // rayon du disque d'emission
+    glm::vec3 direction{ 0.0f, 1.0f, 0.0f };    // axe du cone
+    glm::vec3 velocity{ 0.0f };                 // vitesse ajoutee a toutes les particules
+    glm::vec3 acceleration{ 0.0f };
+    float drag = 0.0f;                          // amortissement de la vitesse (1/s)
+    float sizeStart = 0.1f;
+    float sizeEnd = 0.1f;
 };
 
 struct Particle
 {
     bool alive = false;
-    float life = 0.0f;                     // temps restant
-    float lifeInv = 0.0f;                  // 1 / duree de vie totale
-    float alpha = 255.0f;
+    float life = 0.0f;                          // temps restant
+    float lifeInv = 0.0f;                       // 1 / duree de vie totale
+    float age = 0.0f;                           // temps ecoule depuis la naissance
+    float seed = 0.0f;                          // phase aleatoire [0, 2pi]
+    float alpha = 1.0f;                         // fondu radial calcule au spawn
     glm::vec3 pos{ 0.0f };
     glm::vec3 vel{ 0.0f };
-
-    void Update(float _dt, const glm::vec3& _acceleration);
 };
 
 class Emitter
 {
 public:
     explicit Emitter(int _maxParticles = 1000) : m_maxParticles(_maxParticles) {}
+    virtual ~Emitter() = default;
+
+    // Classe polymorphe : pas de copie (evite le slicing).
+    Emitter(const Emitter&) = delete;
+    Emitter& operator=(const Emitter&) = delete;
 
     EmitterSettings settings;
 
-    void Init();                                       
-    void Update(float _dt);                            
-    void BuildQuads(const glm::mat4& _view); // remplit le mesh (un quad par particule vivante)
+    void Init();
+    void Update(float _dt);
+    void BuildQuads(const glm::mat4& _view);   // remplit le mesh (un quad par particule vivante)
+    void Burst(int _count);                    // emet _count particules immediatement
+    void Clear();                              // tue toutes les particules
 
     void SetActive(bool _active) { m_active = _active; }
     bool IsActive() const { return m_active; }
     void SetOrigin(const glm::vec3& _origin) { settings.origin = _origin; }
-    void Clear(); // tue toutes les particules
 
-    int  AliveCount() const;
-    int  MaxParticles() const { return m_maxParticles; }
+    int AliveCount() const;
+    int MaxParticles() const { return m_maxParticles; }
     const Mesh& GetMesh() const { return m_mesh; }
+
+    virtual BlendMode GetBlendMode() const = 0;
+    virtual bool NeedsSorting() const { return false; }
+
+protected:
+
+    virtual void OnSpawn(Particle& /*_particle*/) {}
+    virtual void Integrate(Particle& _particle, float _dt);
+    virtual bool ShouldDie(const Particle& _particle) const { return _particle.life <= 0.0f; }
+    virtual void Appearance(const Particle& _particle, float _t, glm::vec4& _color, float& _size) const = 0;
 
 private:
     void Spawn(Particle& _particle);
-    void BuildBase(const glm::vec3& n, glm::vec3& t, glm::vec3& b);
     Particle* FindDead();
+    static void BuildBase(const glm::vec3& _n, glm::vec3& _t, glm::vec3& _b);
 
     int m_maxParticles;
     bool m_active = true;
-    float m_emitAccumulator = 0.0f; // fraction de particule a emettre
-    int m_cursor = 0; // ou reprendre la recherche d'une particule morte
+    float m_emitAccumulator = 0.0f;            // fraction de particule a emettre
+    int m_cursor = 0;                          // ou reprendre la recherche d'une particule morte
     std::vector<Particle> m_particles;
-    Mesh m_mesh;                
+    std::vector<int> m_drawOrder;              // indices des particules vivantes, tries si besoin
+    Mesh m_mesh;
 };
 
 #endif
