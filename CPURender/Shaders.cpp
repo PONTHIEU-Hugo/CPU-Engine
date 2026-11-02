@@ -228,7 +228,7 @@ static glm::vec3 ShadowLight(const Varyings& in, const Uniforms& u, float cosThe
 
 	const RenderTarget* tint = u.shadowTint;
 
-	assert(tint->depth.size() != map->depth.size());
+	assert(tint->depth.size() == map->depth.size());
 	
 	glm::vec3 sum(0.0f);
 	for (int dy = -1; dy <= 1; ++dy)

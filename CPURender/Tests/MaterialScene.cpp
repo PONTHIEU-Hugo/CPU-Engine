@@ -7,36 +7,43 @@
 
 void MaterialScene::Init()
 {
-    m_sphereMesh    = GeometryFactory::BuildUVSphere(8, 8);
-    m_sphereIcoMesh    = GeometryFactory::BuildIcosphere(4);
+    m_sphereMesh    = GeometryFactory::BuildUVSphere(16, 16);
+    m_sphereIcoMesh    = GeometryFactory::BuildIcosphere(5);
     m_cubeMesh      = GeometryFactory::BuildCube();
     
-    Add(m_sphereMesh, m_defaultMaterial, true,
+    // Add(m_sphereMesh, m_defaultMaterial, true,
+    //     new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_sphereIcoMesh, m_sheetMaterial, true,
         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_sphereIcoMesh, m_defaultMaterial, true,
-        new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_cubeMesh, m_cubeMaterial, true,
-        new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    // Add(m_cubeMesh, m_defaultMaterial, true,
+    //     new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
     
-    m_cubeMaterial.shader = &ShadowLambertShader;
-    m_cubeTexture.Load("Assets/rock/rock_albedo.jpg");
-    m_cubeNormalMap.Load("Assets/rock/rock_normal.png");
-    m_cubeAMR.Load("Assets/rock/rock_amr.jpg");
-    m_cubeMaterial.texture      = &m_cubeTexture;
-    m_cubeMaterial.normalMap    = &m_cubeNormalMap;
-    m_cubeMaterial.amrMap       = &m_cubeAMR;
-    m_cubeMaterial.normalFlipY  = true;
+    m_defaultMaterial.shader = &ShadowLambertShader;
+    m_texture.Load("Assets/rock/albedo.png");
+    m_normalMap.Load("Assets/rock/normal.png");
+    m_arm.Load("Assets/rock/arm.png");
+    m_ao.Load("Assets/rock/ao.png");
+    m_metalness.Load("Assets/rock/metalness.png");
+    m_roughness.Load("Assets/rock/roughness.png");
     
-    m_defaultMaterial = m_cubeMaterial;
+    m_defaultMaterial.texture      = &m_texture;
+    
+    m_sheetMaterial                = m_defaultMaterial;
+    m_sheetMaterial.armMap         = &m_arm;
+    m_sheetMaterial.specular       = 1.0f;
+    
+    m_sheetMaterial.normalMap    = &m_normalMap;
+    m_sheetMaterial.normalFlipY  = true;
+    
     
     float aspect = float(WIDTH) / float(HEIGHT);
-    camera = new Camera({0.0f, 0.0f, 3.0f}, nullptr);
+    camera = new Camera({0.0f, 0.0f, 1.0f}, nullptr);
     camera->SetPerspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
     m_transforms.push_back(&camera->transform);
 
     sun.direction         = glm::vec3(-0.5f, -1.0f, -0.3f);
-    sun.ambient           = 0.2f;
+    sun.ambient           = 0.1f;
     sun.shadowRadius      = 50.0f;
     sun.shadowCasterExtra = 30.0f;
     sun.shadowFocus       = camera->GetPosition();

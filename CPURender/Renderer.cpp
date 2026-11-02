@@ -294,6 +294,10 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 	uniforms.normalStrength	  = material.normalStrength;
 	uniforms.normalFlipY	  = material.normalFlipY;
 	uniforms.baseColor		  = material.baseColor;
+	uniforms.armMap			  = material.armMap;
+	uniforms.aoMap			  = material.aoMap;
+	uniforms.roughnessMap	  = material.roughnessMap;
+	uniforms.metalnessMap	  = material.metalnessMap;
 	uniforms.eta			  = material.eta;
 	uniforms.thickness		  = material.thickness;
 	uniforms.specularStrength = material.specular;

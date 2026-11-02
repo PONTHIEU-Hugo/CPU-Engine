@@ -13,10 +13,16 @@ public:
     
 private:
     Material m_defaultMaterial;
-    Material m_cubeMaterial;
-    Texture  m_cubeTexture;
-    Texture  m_cubeNormalMap;
-    Texture  m_cubeAMR;
+    Material m_sheetMaterial;
+    
+    Texture  m_texture;
+    Texture  m_normalMap;
+    
+    Texture  m_arm;
+    Texture  m_ao;
+    Texture  m_metalness;
+    Texture  m_roughness;
+    
     Mesh     m_sphereMesh;
     Mesh     m_sphereIcoMesh;
     Mesh     m_cubeMesh;

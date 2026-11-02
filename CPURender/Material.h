@@ -10,7 +10,7 @@ struct Material
 	const Shader* shader = nullptr;
 	const Texture* texture = nullptr;
 	const Texture* normalMap = nullptr;
-	const Texture* amrMap = nullptr;
+	const Texture* armMap = nullptr;
 	const Texture* aoMap = nullptr;
 	const Texture* metalnessMap = nullptr;
 	const Texture* roughnessMap = nullptr;
