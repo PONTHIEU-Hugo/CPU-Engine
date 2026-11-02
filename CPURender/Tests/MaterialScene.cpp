@@ -22,9 +22,11 @@ void MaterialScene::Init()
     m_cubeMaterial.shader = &ShadowLambertShader;
     m_cubeTexture.Load("Assets/rock/rock_albedo.jpg");
     m_cubeNormalMap.Load("Assets/rock/rock_normal.png");
-    m_cubeMaterial.texture = &m_cubeTexture;
-    m_cubeMaterial.normalMap = &m_cubeNormalMap;
-    m_cubeMaterial.normalFlipY = true;
+    m_cubeAMR.Load("Assets/rock/rock_amr.jpg");
+    m_cubeMaterial.texture      = &m_cubeTexture;
+    m_cubeMaterial.normalMap    = &m_cubeNormalMap;
+    m_cubeMaterial.amrMap       = &m_cubeAMR;
+    m_cubeMaterial.normalFlipY  = true;
     
     m_defaultMaterial = m_cubeMaterial;
     

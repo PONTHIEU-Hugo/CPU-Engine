@@ -296,7 +296,11 @@ namespace GeometryFactory
 			for (int k = 0; k < 3; ++k)
 			{
 				const glm::vec3& n = tri[k];
-				u[k] = -(0.5f + std::atan2(n.z, n.x) / (2.0f * glm::pi<float>()));
+
+				float angle = std::atan2(n.z, n.x);           
+				if (angle < 0.0f) angle += 2.0f * glm::pi<float>();     
+				u[k] = -angle / (2.0f * glm::pi<float>());               
+
 				v[k] = 0.5f - std::asin(glm::clamp(n.y, -1.0f, 1.0f)) / glm::pi<float>();
 				isPole[k] = std::abs(n.y) > 0.9999f;
 			}
@@ -310,8 +314,10 @@ namespace GeometryFactory
 			}
 			if (maxU - minU > 0.5f)
 				for (int k = 0; k < 3; ++k)
-					if (!isPole[k] && u[k] < 0.5f)
-						u[k] += 1.0f;
+					if (maxU - minU > 0.5f)
+						for (int k = 0; k < 3; ++k)
+							if (!isPole[k] && u[k] > -0.5f)
+								u[k] -= 1.0f;
 
 			for (int k = 0; k < 3; ++k)
 				if (isPole[k])
@@ -378,7 +384,7 @@ namespace GeometryFactory
 				Vertex c = sphereVertex(i + 1, j);
 				Vertex d = sphereVertex(i + 1, j + 1);
 
-				float uMid = ((float)j + 0.5f) / (float)_sliceCount;
+				float uMid = -((float)j + 0.5f) / (float)_sliceCount;
 
 				if (i == 0)
 				{

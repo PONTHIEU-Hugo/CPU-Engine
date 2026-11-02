@@ -18,6 +18,7 @@ struct Varyings
     glm::vec3 normal	= { 0.0f, 0.0f, 0.0f };
     glm::vec4 color		= { 255.0f, 255.0f, 255.0f, 255.0f };
     glm::vec2 uv		= { 0.0f, 0.0f };
+	glm::vec3 arm		= { 1.0f, 0.5f, 0.0f };
 	glm::vec3 tangent	= glm::vec3(1, 0, 0);
 	glm::vec2 duvdx		= glm::vec2(0.0f);
 	glm::vec2 duvdy		= glm::vec2(0.0f);
@@ -49,8 +50,11 @@ struct Uniforms
 	float normalStrength		= 1.0f;
 	bool  normalFlipY			= false;
 	
-	// RoughnessMap
+	// armMap
+	const Texture* aoMap = nullptr;
 	const Texture* roughnessMap	= nullptr;
+	const Texture* metalnessMap = nullptr;
+	const Texture* armMap = nullptr;
 	
     // Ombres
     glm::mat4 lightVP{ 1.0f };

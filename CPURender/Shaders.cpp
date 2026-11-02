@@ -56,16 +56,43 @@ static glm::vec3 SurfaceNormal(const Varyings& in, const Uniforms& u)
 	return glm::normalize(T * t.x + B * t.y + N * t.z);
 }
 
+static glm::vec3 SurfaceARM(const Varyings& in, const Uniforms& u)
+{
+	if (!u.armMap || !u.armMap->IsValid())
+		return in.arm;
+	float lod = u.armMap->ComputeLod(in.duvdx, in.duvdy);
+	glm::vec4 s = u.armMap->Sample(in.uv, lod);
+	return glm::vec3(s) / 255.0f;
+}
+
+static float SurfaceAO(const Varyings& in, const Uniforms& u)
+{
+	if (u.aoMap && u.aoMap->IsValid())
+	{
+		float lod = u.aoMap->ComputeLod(in.duvdx, in.duvdy);
+		return u.aoMap->Sample(in.uv, lod).r / 255.0f;
+	}
+	return SurfaceARM(in, u).x;
+}
+
 static float SurfaceRoughness(const Varyings& in, const Uniforms& u)
 {
-	if (!u.roughnessMap || !u.roughnessMap->IsValid())
-		return 0.5f;
-	
-	float lod = u.roughnessMap->ComputeLod(in.duvdx, in.duvdy);
-	glm::vec4 s = u.roughnessMap->Sample(in.uv, lod);
+	if (u.roughnessMap && u.roughnessMap->IsValid())
+	{
+		float lod = u.roughnessMap->ComputeLod(in.duvdx, in.duvdy);
+		return u.roughnessMap->Sample(in.uv, lod).g / 255.0f;
+	}
+	return SurfaceARM(in, u).y;
+}
 
-	
-	return 0.5f;
+static float SurfaceMetalness(const Varyings& in, const Uniforms& u)
+{
+	if (u.metalnessMap && u.metalnessMap->IsValid())
+	{
+		float lod = u.metalnessMap->ComputeLod(in.duvdx, in.duvdy);
+		return u.metalnessMap->Sample(in.uv, lod).b / 255.0f;
+	}
+	return SurfaceARM(in, u).z;
 }
 
 static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
@@ -82,7 +109,12 @@ static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec
 
 	glm::vec3 reflected = glm::reflect(glm::normalize(u.lightDirection), normal);
 	
-	float r = glm::clamp(SurfaceRoughness(in, u), 0.05f, 1.0f);
+	float r;
+	if (u.armMap)
+		r = glm::clamp(SurfaceARM(in, u).g, 0.05f, 1.0f);
+	else
+		r = glm::clamp(SurfaceRoughness(in, u), 0.05f, 1.0f);
+	
 	float calculatedShininess = glm::max(2.0f / (r * r) - 2.0f, 1.0f);
 	
 	return u.specularStrength * std::pow(glm::max(glm::dot(reflected, toCamera), 0.0f), calculatedShininess);
@@ -132,8 +164,18 @@ static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 			specular = PhongSpecular(in, u, normal);
 	}
 	
-	float lighting = u.ambient + (1.0f - u.ambient) * diffuse;
-	glm::vec3 rgb = baseColor * lighting + glm::vec3(255.0f) * specular;
+	specular = std::clamp(specular, 0.0f, 255.0f);
+	
+	float ao    = SurfaceAO(in, u);
+	float metal = SurfaceMetalness(in, u);
+
+	glm::vec3 base = glm::vec3(baseColor);
+	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
+	glm::vec3 diffuseColor = base * (1.0f - metal);
+
+	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse;
+	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular;
+
 	return glm::vec4(rgb, surface.a);
 }
 
@@ -145,7 +187,7 @@ const Shader LambertShader = { BasicVS, LambertPS };
 
 static glm::vec4 TintPS(const Varyings&, const Uniforms& u)
 {
-	const float density = 0.8f;                       // 0 = ombre claire, 1 = tres sombre
+	const float density = 0.8f;                      
 	float     a     = glm::clamp(u.baseColor.a / 255.0f, 0.0f, 1.0f);
 	glm::vec3 color = glm::vec3(u.baseColor) / 255.0f;
 
@@ -186,6 +228,8 @@ static glm::vec3 ShadowLight(const Varyings& in, const Uniforms& u, float cosThe
 
 	const RenderTarget* tint = u.shadowTint;
 
+	assert(tint->depth.size() != map->depth.size());
+	
 	glm::vec3 sum(0.0f);
 	for (int dy = -1; dy <= 1; ++dy)
 		for (int dx = -1; dx <= 1; ++dx)
@@ -232,11 +276,14 @@ static glm::vec4 RefractionPS(const Varyings& in, const Uniforms& u)
 	float px = in.position.x;
 	float py = in.position.y;
 
-	glm::vec3 r = glm::refract(v, n, u.eta);
-	if (glm::dot(r, r) < 1e-8f)   
-		r = glm::reflect(v, n);
+	float cosT = glm::clamp(glm::dot(-v, n), 0.0f, 1.0f);
+	float F0 = 0.04f;
+	float fresnel = F0 + (1.0f - F0) * std::pow(1.0f - cosT, 5.0f);
 
-	glm::vec3 pointFond = in.worldPos + r * u.thickness;
+	glm::vec3 reflColor(200.0f, 210.0f, 230.0f);
+	glm::vec3 refl = glm::reflect(v, n);
+
+	glm::vec3 pointFond = in.worldPos + refl * u.thickness;
 	glm::vec4 clip = u.vp * glm::vec4(pointFond, 1.0f);
 
 	float sx = px;
@@ -270,8 +317,6 @@ const Shader RefractionShader = { ShadowVS, RefractionPS };
 
 static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
-	if (in.color.g < 10.0f)
-		int i = 0;
 	glm::vec4 baseColor = SurfaceColor(in, u);
 
 	float diffuse = 1.0f;
@@ -286,13 +331,22 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 		if (diffuse > 0.0f)
 		{
 			float geoCos = glm::max(glm::dot(glm::normalize(in.normal), L), 0.0f);
-			visibility = ShadowLight(in, u, geoCos);
-			specular = PhongSpecular(in, u, normal);
+			float terminator = glm::smoothstep(0.0f, 0.1f, geoCos);
+			visibility = ShadowLight(in, u, geoCos) * terminator;
+			specular = PhongSpecular(in, u, normal) * terminator;
 		}
 	}
 
-	glm::vec3 lighting = glm::vec3(u.ambient) + (1.0f - u.ambient) * diffuse * visibility;
-	glm::vec3 rgb = glm::vec3(baseColor) * lighting + 255.0f * specular * visibility;
+	float ao    = SurfaceAO(in, u);
+	float metal = SurfaceMetalness(in, u);
+
+	glm::vec3 base = glm::vec3(baseColor);
+	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
+	glm::vec3 diffuseColor = base * (1.0f - metal);
+
+	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse * visibility;
+	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular * visibility;
+
 	return glm::vec4(rgb, baseColor.a);
 }
 
