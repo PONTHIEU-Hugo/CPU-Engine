@@ -56,6 +56,13 @@ struct Uniforms
 	const Texture* metalnessMap = nullptr;
 	const Texture* armMap = nullptr;
 	
+	// displacement
+	const Texture* displacementMap = nullptr;
+	float displacementScale = 0.0f;
+	float displacementMidpoint = 0.5f;
+	float displacementPixelEdge = 8.0f;
+	float tessPixelEdge = 0.0f;
+	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
     const RenderTarget* shadowMap = nullptr;
@@ -139,10 +146,14 @@ private:
 		std::vector<int>            bins[TILE_COUNT];  
 	};
 
+	
 	bool SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const;
 	void BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& local) const;
 	void RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1);
-
+	int  ComputeTessLevel(const std::vector<Vertex>& world) const;
+	void TessellateTriangle(const Vertex& a, const Vertex& b, const Vertex& c, int N, std::vector<Vertex>& out) const;
+	
+	std::vector<Vertex> m_worldVertices, m_tessVertices;
     const Mesh* m_mesh = nullptr;
 
     VertexShader m_vertexShader;

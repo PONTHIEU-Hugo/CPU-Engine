@@ -123,13 +123,12 @@ static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec
 static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
-	// v.position et v.normal sont deja en espace monde (Pipeline::Draw applique la matrice modele).
-	out.position = u.vp * glm::vec4(v.position, 1.0f);
-	out.worldPos = v.position;
-	out.normal = v.normal;
-	out.color = v.color;
-	out.uv = v.uv;
-	out.tangent = v.tangent;
+	out.position	= u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos	= v.position;
+	out.normal		= v.normal;
+	out.color		= v.color;
+	out.uv			= v.uv;
+	out.tangent	 = v.tangent;
 
 	return out;
 }
@@ -264,17 +263,31 @@ static glm::vec3 ShadowLight(const Varyings& in, const Uniforms& u, float cosThe
 	return sum / 9.0f;
 }
 
+static Vertex DisplacementVS(const Vertex& v, const Uniforms& u)
+{
+	Vertex d = v;
+	if (u.displacementMap && u.displacementMap->IsValid())
+	{
+		const float h = u.displacementMap->SampleHeightBilinear(v.uv);
+		d.position += v.normal * ((h - u.displacementMidpoint) * u.displacementScale);
+	}
+	return d;
+}
+
 static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 {
+	Vertex d = DisplacementVS(v, u);
 	Varyings out;
-	out.position = u.vp * glm::vec4(v.position, 1.0f);
-	out.worldPos = v.position;
-	out.normal = v.normal;
-	out.color  = v.color;
-	out.uv     = v.uv;
-	out.lightPos = glm::vec3(u.lightVP * glm::vec4(v.position, 1.0f));
+	out.position	= u.vp * glm::vec4(d.position, 1.0f);
+	out.worldPos	= d.position;
+	out.normal		= v.normal;
+	out.color		= v.color;
+	out.uv			= v.uv;
+	out.tangent  = v.tangent;
+	out.lightPos = glm::vec3(u.lightVP * glm::vec4(d.position, 1.0f));
 	return out;
 }
+
 
 static glm::vec4 RefractionPS(const Varyings& in, const Uniforms& u)
 {
@@ -287,11 +300,6 @@ static glm::vec4 RefractionPS(const Varyings& in, const Uniforms& u)
 	float px = in.position.x;
 	float py = in.position.y;
 
-	float cosT = glm::clamp(glm::dot(-v, n), 0.0f, 1.0f);
-	float F0 = 0.04f;
-	float fresnel = F0 + (1.0f - F0) * std::pow(1.0f - cosT, 5.0f);
-
-	glm::vec3 reflColor(200.0f, 210.0f, 230.0f);
 	glm::vec3 refl = glm::reflect(v, n);
 
 	glm::vec3 pointFond = in.worldPos + refl * u.thickness;

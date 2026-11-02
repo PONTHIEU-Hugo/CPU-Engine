@@ -20,18 +20,20 @@ void MaterialScene::Init()
     
     
     m_defaultMaterial.shader = &ShadowLambertShader;
-    m_texture.Load("Assets/rock/albedo.png");
-    m_normalMap.Load("Assets/rock/normal.png");
-    m_arm.Load("Assets/rock/arm.png");
-    m_ao.Load("Assets/rock/ao.png");
-    m_metalness.Load("Assets/rock/metalness.png");
-    m_roughness.Load("Assets/rock/roughness.png");
+    m_texture.Load("Assets/rock1k/albedo.png");
+    m_normalMap.Load("Assets/rock1k/normal.png");
+    m_arm.Load("Assets/rock1k/arm.png");
+    m_ao.Load("Assets/rock1k/ao.png");
+    m_roughness.Load("Assets/rock1k/roughness.png");
+    m_displacement.Load("Assets/rock1k/displacement.png");
     
     m_defaultMaterial.texture      = &m_texture;
     
     m_sheetMaterial                = m_defaultMaterial;
     m_sheetMaterial.armMap         = &m_arm;
-    m_sheetMaterial.specular       = 1.0f;
+    m_sheetMaterial.displacementMap= &m_displacement;
+    m_sheetMaterial.displacementScale = 0.5f;
+    m_sheetMaterial.specular           = 1.0f;
     
     m_sheetMaterial.normalMap    = &m_normalMap;
     m_sheetMaterial.normalFlipY  = true;

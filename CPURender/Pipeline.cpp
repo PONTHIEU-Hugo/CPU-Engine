@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <omp.h>
 
+#include "Texture.h"
+
 namespace
 {
 	constexpr float kEdgeTolerance = -1e-5f;
@@ -24,6 +26,30 @@ namespace
 		y0 = ty * height / Pipeline::TILES_Y;
 		y1 = (ty + 1) * height / Pipeline::TILES_Y - 1;
 	}
+	
+	bool PosLess(const glm::vec3& a, const glm::vec3& b)
+	{
+		if (a.x != b.x) return a.x < b.x;
+		if (a.y != b.y) return a.y < b.y;
+		return a.z < b.z;
+	}
+
+	Vertex LerpV(const Vertex& a, const Vertex& b, float t)
+	{
+		Vertex r;
+		r.position = glm::mix(a.position, b.position, t);
+		r.normal   = glm::normalize(glm::mix(a.normal, b.normal, t));
+		r.color    = glm::mix(a.color, b.color, t);
+		r.uv       = glm::mix(a.uv, b.uv, t);
+		r.tangent  = glm::vec4(glm::normalize(glm::mix(glm::vec3(a.tangent), glm::vec3(b.tangent), t)), a.tangent.w);
+		return r;
+	}
+
+	Vertex EdgePoint(Vertex p0, Vertex p1, float t)
+	{
+		if (PosLess(p1.position, p0.position)) { std::swap(p0, p1); t = 1.0f - t; }
+		return LerpV(p0, p1, t);
+	}
 }
 
 Pipeline::Pipeline() : m_screen(WIDTH, HEIGHT)
@@ -39,79 +65,107 @@ void Pipeline::ClearDepth()
 
 void Pipeline::Draw(glm::mat4 const& mat)
 {
-	if (!m_mesh || !m_target || !m_vertexShader) return;
-	if (m_target->color && !m_pixelShader) return;
+    if (!m_mesh || !m_target || !m_vertexShader) return;
+    if (m_target->color && !m_pixelShader) return;
 
-	const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mat)));
+    const glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(mat)));
+    const std::vector<Vertex>& src = m_mesh->vertices;
+    const int srcCount = (int)src.size();
 
-	const std::vector<Vertex>& vertices = m_mesh->vertices;
-	const int vertexCount = (int)vertices.size();
-	const int triangleCount = vertexCount / 3;
-
-	m_varyings.resize(vertexCount);
-
+    m_worldVertices.resize(srcCount);
+    
 #pragma omp parallel for schedule(static)
-	for (int i = 0; i < vertexCount; ++i)
-	{
-		Vertex v = vertices[i];
-		v.position = glm::vec3(mat * glm::vec4(vertices[i].position, 1.0f));
-		v.normal = glm::normalize(normalMatrix * vertices[i].normal);
-		v.tangent = glm::vec4(glm::normalize(glm::mat3(mat) * glm::vec3(vertices[i].tangent)), vertices[i].tangent.w);
-		
-		m_varyings[i] = m_vertexShader(v, m_uniforms);
-	}
+    for (int i = 0; i < srcCount; ++i)
+    {
+        Vertex v = src[i];
+        v.position = glm::vec3(mat * glm::vec4(src[i].position, 1.0f));
+        v.normal   = glm::normalize(normalMatrix * src[i].normal);
+        v.tangent  = glm::vec4(glm::normalize(glm::mat3(mat) * glm::vec3(src[i].tangent)), src[i].tangent.w);
+        m_worldVertices[i] = v;
+    }
 
-	// Clipping + setup + binning 
-	const int threadCount = omp_get_max_threads();
-	if ((int)m_threadBins.size() < threadCount)
-		m_threadBins.resize(threadCount);
-
-	for (ThreadBins& tb : m_threadBins)
-	{
-		tb.triangles.clear();
-		for (std::vector<int>& bin : tb.bins)
-			bin.clear();
-	}
+    const std::vector<Vertex>* source = &m_worldVertices;
+    if (m_uniforms.displacementMap && m_uniforms.displacementScale != 0.0f && m_uniforms.displacementMap->IsValid())
+    {
+        const int N = ComputeTessLevel(m_worldVertices);
+        const int tris = srcCount / 3;
+        const int nt = omp_get_max_threads();
+        std::vector<std::vector<Vertex>> perThread(nt);
 
 #pragma omp parallel
-	{
-		ThreadBins& localThread = m_threadBins[omp_get_thread_num()];
+        {
+            auto& local = perThread[omp_get_thread_num()];
+            local.reserve((size_t)tris / nt * N * N * 3 + 3);
+#pragma omp for schedule(dynamic, 32)
+            for (int t = 0; t < tris; ++t)
+                TessellateTriangle(m_worldVertices[3*t], m_worldVertices[3*t+1], m_worldVertices[3*t+2], N, local);
+        }
+
+        m_tessVertices.clear();
+        for (auto& l : perThread)
+            m_tessVertices.insert(m_tessVertices.end(), l.begin(), l.end());
+        source = &m_tessVertices;
+    }
+
+    const int vertexCount = (int)source->size();
+    const int triangleCount = vertexCount / 3;
+    m_varyings.resize(vertexCount);
+
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < vertexCount; ++i)
+        m_varyings[i] = m_vertexShader((*source)[i], m_uniforms);
+
+    // Clipping + setup + binning 
+    const int threadCount = omp_get_max_threads();
+    if ((int)m_threadBins.size() < threadCount)
+       m_threadBins.resize(threadCount);
+
+    for (ThreadBins& tb : m_threadBins)
+    {
+       tb.triangles.clear();
+       for (std::vector<int>& bin : tb.bins)
+          bin.clear();
+    }
+
+#pragma omp parallel
+    {
+       ThreadBins& localThread = m_threadBins[omp_get_thread_num()];
 
 #pragma omp for schedule(static)
-		for (int t = 0; t < triangleCount; ++t)
-		{
-			Varyings poly[12];
-			const int count = ClipTriangle(m_varyings[3 * t], m_varyings[3 * t + 1], m_varyings[3 * t + 2], poly);
+       for (int t = 0; t < triangleCount; ++t)
+       {
+          Varyings poly[12];
+          const int count = ClipTriangle(m_varyings[3 * t], m_varyings[3 * t + 1], m_varyings[3 * t + 2], poly);
 
-			for (int k = 1; k + 1 < count; ++k)
-			{
-				ScreenTriangle triangle;
-				if (SetupTriangle(poly[0], poly[k], poly[k + 1], triangle) == false)
-					continue;
+          for (int k = 1; k + 1 < count; ++k)
+          {
+             ScreenTriangle triangle;
+             if (SetupTriangle(poly[0], poly[k], poly[k + 1], triangle) == false)
+                continue;
 
-				const int index = (int)localThread.triangles.size();
-				localThread.triangles.push_back(triangle);
-				BinTriangle(localThread.triangles.back(), index, localThread);
-			}
-		}
-	}
+             const int index = (int)localThread.triangles.size();
+             localThread.triangles.push_back(triangle);
+             BinTriangle(localThread.triangles.back(), index, localThread);
+          }
+       }
+    }
 
-	const int width = m_target->width;
-	const int height = m_target->height;
+    const int width = m_target->width;
+    const int height = m_target->height;
 
 #pragma omp parallel for schedule(dynamic)
-	for (int tile = 0; tile < TILE_COUNT; ++tile)
-	{
-		int x0, y0, x1, y1;
-		TileBounds(tile, width, height, x0, y0, x1, y1);
+    for (int tile = 0; tile < TILE_COUNT; ++tile)
+    {
+       int x0, y0, x1, y1;
+       TileBounds(tile, width, height, x0, y0, x1, y1);
 
-		for (int th = 0; th < threadCount; ++th)
-		{
-			const ThreadBins& tb = m_threadBins[th];
-			for (int index : tb.bins[tile])
-				RasterizeInTile(tb.triangles[index], x0, y0, x1, y1);
-		}
-	}
+       for (int th = 0; th < threadCount; ++th)
+       {
+          const ThreadBins& tb = m_threadBins[th];
+          for (int index : tb.bins[tile])
+             RasterizeInTile(tb.triangles[index], x0, y0, x1, y1);
+       }
+    }
 }
 
 bool Pipeline::SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const
@@ -198,6 +252,77 @@ void Pipeline::BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& loc
 		if (outside == false)
 			local.bins[tile].push_back(index);
 	}
+}
+
+
+int Pipeline::ComputeTessLevel(const std::vector<Vertex>& w) const
+{
+    const int tris = (int)w.size() / 3;
+    if (tris == 0) return 1;
+    const int step = std::max(1, tris / 64);
+    const glm::vec2 half((float)m_target->width * 0.5f, (float)m_target->height * 0.5f);
+
+    float sum = 0.0f; int n = 0;
+    for (int t = 0; t < tris; t += step)
+        for (int e = 0; e < 3; ++e)
+        {
+            glm::vec4 c0 = m_uniforms.vp * glm::vec4(w[3*t + e].position, 1.0f);
+            glm::vec4 c1 = m_uniforms.vp * glm::vec4(w[3*t + (e+1)%3].position, 1.0f);
+            if (c0.w <= 0.0f || c1.w <= 0.0f) continue;
+            sum += glm::length((glm::vec2(c1) / c1.w - glm::vec2(c0) / c0.w) * half);
+            ++n;
+        }
+    if (n == 0) return 1;
+    return glm::clamp((int)std::ceil(sum / (float)n / m_uniforms.displacementPixelEdge), 1, 16);
+}
+
+void Pipeline::TessellateTriangle(const Vertex& a, const Vertex& b, const Vertex& c, int N, std::vector<Vertex>& out) const
+{
+    std::vector<Vertex> G((N + 1) * (N + 1));         
+    auto at = [&](int i, int j) -> Vertex& { return G[i * (N + 1) + j]; };
+
+	for (int i = 0; i <= N; ++i)
+	{
+		for (int j = 0; j <= N - i; ++j)
+		{
+			const int k = N - i - j;    
+			Vertex p;
+
+			if      (k == N) p = a;                                  
+			else if (i == N) p = b;                                  
+			else if (j == N) p = c;                                  
+			else if (k == 0) p = EdgePoint(b, c, (float)j / N);      
+			else if (i == 0) p = EdgePoint(a, c, (float)j / N);     
+			else if (j == 0) p = EdgePoint(a, b, (float)i / N);    
+			else
+			{
+				const float wb = (float)i / N, wc = (float)j / N, wa = (float)k / N;
+				p.position = a.position * wa + b.position * wb + c.position * wc;
+				p.normal   = glm::normalize(a.normal * wa + b.normal * wb + c.normal * wc);
+				p.color    = a.color * wa + b.color * wb + c.color * wc;
+				p.uv       = a.uv * wa + b.uv * wb + c.uv * wc;
+				p.tangent  = glm::vec4(glm::normalize(glm::vec3(a.tangent * wa + b.tangent * wb + c.tangent * wc)), a.tangent.w);
+			}
+			at(i, j) = p;
+		}
+	}
+	
+
+    for (int i = 0; i < N; ++i)
+    {
+	    for (int j = 0; j < N - i; ++j)
+	    {
+	    	out.push_back(at(i, j));     
+	    	out.push_back(at(i + 1, j));     
+	    	out.push_back(at(i, j + 1));
+	    	if (j < N - i - 1)
+	    	{
+	    		out.push_back(at(i + 1, j)); 
+	    		out.push_back(at(i + 1, j + 1)); 
+	    		out.push_back(at(i, j + 1));
+	    	}
+	    }
+    }
 }
 
 void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1)

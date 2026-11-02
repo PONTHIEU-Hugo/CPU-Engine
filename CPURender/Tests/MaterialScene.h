@@ -22,6 +22,7 @@ private:
     Texture  m_ao;
     Texture  m_metalness;
     Texture  m_roughness;
+    Texture  m_displacement;
     
     Mesh     m_sphereMesh;
     Mesh     m_sphereIcoMesh;
