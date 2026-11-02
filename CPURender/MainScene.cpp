@@ -70,18 +70,18 @@ void MainScene::Init()
 	//Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
 
 	m_car = Add(m_carMesh, m_carMaterial, true,
-		new Transform({0.0f, 0.5f, 0.0f}, {1,0,0,0}, glm::vec3(3.0f)));
-	/*m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
+		new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
 			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
-	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));*/
+	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
 	// Add(m_cubeMesh, m_cubeMaterial, true,
 	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	Add(m_groundMesh, m_groundMaterial, false);
 	//
-	// Transform& carT = Get(m_car).transform;
-	// Get(wheelAr).transform.SetParent(&carT);
-	// Get(wheelAv).transform.SetParent(&carT);
+	Transform& carT = Get(m_car).transform;
+	Get(m_wheelAr).transform.SetParent(&carT);
+	Get(m_wheelAv).transform.SetParent(&carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
@@ -95,9 +95,8 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_PERLIN_2D);
-	m_Terrain.SetMaterial(&m_defaultMaterial);
-	//Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
+	//Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform.SetPosition({ 0, -5, 0 });
 
 	// Systèmes
 	LoadSkybox();

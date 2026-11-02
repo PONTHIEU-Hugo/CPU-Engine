@@ -18,6 +18,8 @@ struct Varyings
     glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
     glm::vec4 color = { 255.0f, 0.0f, 255.0f, 255.0f };
     glm::vec2 uv = { 0.0f, 0.0f };
+	glm::vec2 duvdx = glm::vec2(0.0f);
+	glm::vec2 duvdy = glm::vec2(0.0f);
     glm::vec3 worldPos = { 0.0f, 0.0f, 0.0f }; 
     glm::vec3 lightPos = { 0.0f, 0.0f, 0.0f };
 };
@@ -34,10 +36,15 @@ struct Uniforms
     glm::vec3 cameraPos = { 0.0f, 0.0f, 0.0f };
     float specularStrength = 0.0f;   // 0 = pas de reflet
     float shininess = 32.0f;         // exposant de Phong
+	float thickness = 1.0f;
+	float eta = 0.66f;
+	const FinalFrameBuffer*   sceneColor = nullptr;
+	const std::vector<float>* sceneDepth = nullptr;
 
     // Ombres
     glm::mat4 lightVP{ 1.0f };
     const RenderTarget* shadowMap = nullptr;
+	const RenderTarget* shadowTint = nullptr;
     float shadowBiasConst = 0.0f;
     float shadowBiasSlope = 0.0f;
 };
@@ -79,9 +86,7 @@ public:
     // Ecriture dans le depth buffer (le depth TEST reste toujours actif).
     // Mettre a false pour les transparents.
     void SetDepthWrite(bool enabled) { m_depthWrite = enabled; }
-
-    // Alpha blending : out = src * a + dst * (1 - a), avec a = shaded.a / 255.
-    // Mettre a true pour les transparents.
+	
     void SetBlend(bool enabled) { m_blend = enabled; }
 
     // Alpha test (hors blend) : un pixel dont l'alpha (0-255) est < cutoff est rejete.
@@ -90,6 +95,7 @@ public:
 
     bool GetDepthWrite() const { return m_depthWrite; }
     bool GetBlend() const { return m_blend; }
+	const std::vector<float>& GetScreenDepth() const { return m_screen.depth; }
 
     void ClearDepth();
 

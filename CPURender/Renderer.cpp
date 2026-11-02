@@ -14,6 +14,8 @@ void Renderer::Render(const Scene& scene, FinalFrameBuffer& out)
 	UpdateLight(scene);
 	ShadowPass(scene);
 	MainPass(scene, out);
+	std::memcpy(m_sceneColor.colorData, out.colorData, sizeof(out.colorData));
+	m_sceneDepth = m_pipeline.GetScreenDepth();
 	TransparencyPass(scene, out);
 
 	if (showShadowDebug)
@@ -39,7 +41,7 @@ void Renderer::UpdateLight(const Scene& scene)
 
 bool Renderer::ShadowCastersChanged(const Scene& scene)
 {
-	uint64_t hash = 1469598103934665603ull;   // FNV-1a
+	uint64_t hash = 1469598103934665603ull;
 	auto mix = [&hash](uint64_t value)
 	{
 		hash ^= value;
@@ -55,6 +57,15 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 		mix(i);
 		mix(reinterpret_cast<uintptr_t>(object.mesh));
 		mix(object.transform.Version());
+
+		if (object.material)
+		{
+			mix(object.material->transparent ? 1 : 0);
+			mix((uint64_t)(object.material->baseColor.r * 4.0f));
+			mix((uint64_t)(object.material->baseColor.g * 4.0f));
+			mix((uint64_t)(object.material->baseColor.b * 4.0f));
+			mix((uint64_t)(object.material->baseColor.a * 4.0f));
+		}
 	}
 
 	bool changed = hash != m_casterSignature;
@@ -69,6 +80,8 @@ void Renderer::ShadowPass(const Scene& scene)
 		return;
 
 	m_casters.clear();
+	m_tintCasters.clear();
+
 	for (const RenderObject& object : scene.objects)
 	{
 		if (object.castShadow == false || !object.mesh)
@@ -78,10 +91,18 @@ void Renderer::ShadowPass(const Scene& scene)
 		caster.mesh   = object.mesh;
 		caster.world  = object.transform.GetWorldMatrix();
 		caster.bounds = object.WorldBounds();
-		m_casters.push_back(caster);
+
+		const bool transparent = object.material && object.material->transparent;
+		if (transparent)
+		{
+			caster.tint = object.material->baseColor;
+			m_tintCasters.push_back(caster);
+		}
+		else
+			m_casters.push_back(caster);
 	}
 
-	m_shadow.Update(m_pipeline, m_casters, true);
+	m_shadow.Update(m_pipeline, m_casters, m_tintCasters, true);
 }
 
 void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
@@ -93,7 +114,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	const glm::mat4& view = scene.camera->GetViewMatrix();
 	const glm::mat4& proj = scene.camera->GetProjMatrix();
 
-	if ( !scene.skybox.faces.empty() )
+	if (scene.skybox.enabled)
 		DrawSkybox(scene.skybox, view, proj, out);
 
 	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
@@ -165,10 +186,12 @@ void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
 {
 	m_pipeline.BindFrameBuffer(&out);
 	
-
 	Uniforms base;
 	BuildBaseUniforms(scene, base);
 
+	base.sceneColor = &m_sceneColor;
+	base.sceneDepth = &m_sceneDepth;
+	
 	Frustum frustum = Frustum::FromMatrix(base.vp);
 	const glm::vec3 camPos = scene.camera->GetPosition();
 
@@ -204,11 +227,13 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 {
 	const Material& material = *object.material;
 
-	Uniforms uniforms = base;
-	uniforms.texture  = material.texture;
-	uniforms.baseColor = material.baseColor;
+	Uniforms uniforms		  = base;
+	uniforms.texture		  = material.texture;
+	uniforms.baseColor		  = material.baseColor;
+	uniforms.eta			  = material.eta;
+	uniforms.thickness		  = material.thickness;
 	uniforms.specularStrength = material.specular;
-	uniforms.shininess = ShininessFromRoughness(material.roughness);
+	uniforms.shininess		  = ShininessFromRoughness(material.roughness);
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);

@@ -68,6 +68,8 @@ public:
 	virtual void LoadSkybox() = 0;
     virtual void HandleEvent(float _dt) = 0;
 	
+	void EnableSkybox(bool enable) { skybox.enabled = enable; }
+	
 	RenderObject& Get(ObjectId id) { return objects[id]; }
 	const RenderObject& Get(ObjectId id) const { return objects[id]; }
 	

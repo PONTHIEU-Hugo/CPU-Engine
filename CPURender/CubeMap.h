@@ -12,7 +12,7 @@ struct CubeMap
 {
 	// ordre : +X, -X, +Y, -Y, +Z, -Z
 	std::array<Texture, 6> faces;
-
+	bool enabled = true;
 	glm::vec3 Sample(glm::vec3 dir) const;
 };
 

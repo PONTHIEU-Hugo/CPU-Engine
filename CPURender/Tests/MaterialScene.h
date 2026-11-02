@@ -14,6 +14,7 @@ public:
 private:
     Material m_defaultMaterial;
     Material m_groundMaterial;
+    Texture  m_groundTexture;
     Mesh     m_sphereMesh;
     Mesh     m_groundMesh;
 };

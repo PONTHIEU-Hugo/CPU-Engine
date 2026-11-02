@@ -1,7 +1,8 @@
 #include "Shaders.h"
 #include "Texture.h"
-
 #include <cmath>
+
+#include "core.h"
 
 // ---------------------------------------------------------------------------
 // Basic / Texture / Lambert
@@ -9,8 +10,22 @@
 
 static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 {
-	glm::vec4 color = u.texture ? u.texture->Sample(in.uv) : in.color;
+	glm::vec4 color = in.color;
+	if (u.texture)
+	{
+		float lod = u.texture->ComputeLod(in.duvdx, in.duvdy);
+		color = u.texture->Sample(in.uv, lod);
+	}
 	return color * (u.baseColor / 255.0f);
+}
+
+static glm::vec3 refract(glm::vec3 i, glm::vec3 n, float eta)
+{
+	float cosI = -glm::dot(n, i);
+	float k = 1 - (eta * eta) * (1 - cosI * cosI);
+	if ( k < 0)
+		return glm::vec3(0, 0, 0);
+	return eta * i + (eta * cosI - sqrt(k)) * n;
 }
 
 static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
@@ -94,6 +109,16 @@ const Shader LambertShader = { BasicVS, LambertPS };
 // Ombres 
 // ---------------------------------------------------------------------------
 
+static glm::vec4 TintPS(const Varyings&, const Uniforms& u)
+{
+	const float density = 0.8f;                       // 0 = ombre claire, 1 = tres sombre
+	float     a     = glm::clamp(u.baseColor.a / 255.0f, 0.0f, 1.0f);
+	glm::vec3 color = glm::vec3(u.baseColor) / 255.0f;
+
+	glm::vec3 t = glm::mix(glm::vec3(1.0f), color, a) * (1.0f - a * density);
+	return glm::vec4(t * 255.0f, 255.0f);
+}
+
 static Varyings DepthVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
@@ -101,40 +126,53 @@ static Varyings DepthVS(const Vertex& v, const Uniforms& u)
 	return out;
 }
 
+const Shader TintShader = { DepthVS, TintPS };
+
 const Shader DepthShader = { DepthVS, nullptr };
 
-static float ShadowVisibility(const Varyings& in, const Uniforms& u, float cosTheta)
+static glm::vec3 ShadowLight(const Varyings& in, const Uniforms& u, float cosTheta)
 {
 	const RenderTarget* map = u.shadowMap;
-	if (!map) return 1.0f;
+	if (!map) return glm::vec3(1.0f);
 
 	if (in.lightPos.z >= 1.0f || in.lightPos.z <= -1.0f)
-		return 1.0f;
+		return glm::vec3(1.0f);
 
 	float sx = (in.lightPos.x * 0.5f + 0.5f) * (float)map->width;
 	float sy = (1.0f - (in.lightPos.y * 0.5f + 0.5f)) * (float)map->height;
-
 	int x0 = (int)std::floor(sx);
 	int y0 = (int)std::floor(sy);
 	if (x0 < 0 || x0 >= map->width || y0 < 0 || y0 >= map->height)
-		return 1.0f;
+		return glm::vec3(1.0f);
 
 	float c = glm::max(cosTheta, 0.05f);
 	float tanTheta = glm::min(std::sqrt(1.0f - c * c) / c, 10.0f);
 	float bias = u.shadowBiasConst + u.shadowBiasSlope * tanTheta;
-
-	// PCF 3x3
 	float z = in.lightPos.z - bias;
-	int lit = 0;
+
+	const RenderTarget* tint = u.shadowTint;
+
+	glm::vec3 sum(0.0f);
 	for (int dy = -1; dy <= 1; ++dy)
 		for (int dx = -1; dx <= 1; ++dx)
 		{
 			int x = glm::clamp(x0 + dx, 0, map->width  - 1);
 			int y = glm::clamp(y0 + dy, 0, map->height - 1);
-			if (z <= map->depth[(size_t)y * map->width + x])
-				++lit;
+			size_t i = (size_t)y * map->width + x;
+
+			if (z > map->depth[i])
+				continue;                                 
+
+			glm::vec3 t(1.0f);
+			if (tint && !tint->tint.empty() && z > tint->depth[i])
+			{
+				uint32_t p = tint->tint[i];
+				t = glm::vec3((p >> 16) & 255, (p >> 8) & 255, p & 255) / 255.0f;
+			}
+
+			sum += t;
 		}
-	return (float)lit / 9.0f;
+	return sum / 9.0f;
 }
 
 static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
@@ -149,13 +187,60 @@ static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 	return out;
 }
 
+static glm::vec4 RefractionPS(const Varyings& in, const Uniforms& u)
+{
+	if (!u.sceneColor || !u.sceneDepth)
+		return glm::vec4(glm::vec3(u.baseColor), 255.0f);
+
+	glm::vec3 v = glm::normalize(in.worldPos - u.cameraPos);
+	glm::vec3 n = glm::normalize(in.normal);
+
+	float px = in.position.x;
+	float py = in.position.y;
+
+	glm::vec3 r = glm::refract(v, n, u.eta);
+	if (glm::dot(r, r) < 1e-8f)   
+		r = glm::reflect(v, n);
+
+	glm::vec3 pointFond = in.worldPos + r * u.thickness;
+	glm::vec4 clip = u.vp * glm::vec4(pointFond, 1.0f);
+
+	float sx = px;
+	float sy = py;
+	if (clip.w > 1e-6f)
+	{
+		sx = (clip.x / clip.w * 0.5f + 0.5f) * WIDTH;
+		sy = (1.0f - (clip.y / clip.w * 0.5f + 0.5f)) * HEIGHT;
+	}
+
+	sx = glm::clamp(sx, 0.0f, WIDTH  - 1.0f);
+	sy = glm::clamp(sy, 0.0f, HEIGHT - 1.0f);
+
+	int ix = (int)sx;
+	int iy = (int)sy;
+
+	if ((*u.sceneDepth)[(size_t)iy * WIDTH + ix] < in.position.z)
+	{
+		ix = glm::clamp((int)px, 0, WIDTH  - 1);
+		iy = glm::clamp((int)py, 0, HEIGHT - 1);
+	}
+
+	uint32_t p = u.sceneColor->colorData[(size_t)iy * WIDTH + ix];
+	glm::vec3 fond((p >> 16) & 255, (p >> 8) & 255, p & 255);
+
+	glm::vec3 rgb = fond * (glm::vec3(u.baseColor) / 255.0f);
+	return glm::vec4(rgb, 255.0f);
+}
+
+const Shader RefractionShader = { ShadowVS, RefractionPS };
+
 static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
 	glm::vec4 baseColor = SurfaceColor(in, u);
 
 	float normalLength2 = glm::dot(in.normal, in.normal);
 	float diffuse = 1.0f;
-	float visibility = 1.0f;
+	glm::vec3 visibility(1.0f);
 	float specular = 0.0f;
 
 	if (normalLength2 > 1e-8f)
@@ -164,13 +249,13 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
 		if (diffuse > 0.0f)
 		{
-			visibility = ShadowVisibility(in, u, diffuse);
+			visibility = ShadowLight(in, u, diffuse);
 			specular = PhongSpecular(in, u, normal);
 		}
 	}
 
-	float lighting = u.ambient + (1.0f - u.ambient) * diffuse * visibility;
-	glm::vec3 rgb = glm::vec3(baseColor.x, baseColor.y, baseColor.z)  * lighting + 255 * specular * visibility;
+	glm::vec3 lighting = glm::vec3(u.ambient) + (1.0f - u.ambient) * diffuse * visibility;
+	glm::vec3 rgb = glm::vec3(baseColor) * lighting + 255.0f * specular * visibility;
 	return glm::vec4(rgb, baseColor.a);
 }
 

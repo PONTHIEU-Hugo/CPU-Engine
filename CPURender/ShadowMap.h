@@ -13,7 +13,8 @@ struct ShadowCaster
 {
 	const Mesh* mesh = nullptr;
 	glm::mat4   world{ 1.0f };
-	AABB        bounds;            // espace monde
+	AABB        bounds;
+	glm::vec4   tint{ 255.0f };
 };
 
 // Shadow map d'une lumiere directionnelle. Simple membre du Renderer (plus de singleton).
@@ -28,8 +29,7 @@ public:
 	void Invalidate()     { m_dirty = true; }
 	bool IsDirty() const  { return m_dirty; }
 
-	// Redessine la depth map si elle est sale (ou si force). Renvoie true si redessinee.
-	bool Update(Pipeline& pipeline, const std::vector<ShadowCaster>& casters, bool force = false);
+	bool Update(Pipeline& pipeline, const std::vector<ShadowCaster>& opaques, const std::vector<ShadowCaster>& transparents, bool force = false);
 	void ApplyTo(Uniforms& uniforms) const;
 	void SetBiasScale(float constant, float slope) { m_biasConstScale = constant; m_biasSlopeScale = slope; }
 
@@ -41,6 +41,7 @@ public:
 
 private:
 	RenderTarget m_target;
+	RenderTarget     m_tintTarget;
 
 	glm::vec3 m_lightDir{ 0.0f, -1.0f, 0.0f };
 	glm::mat4 m_lightVP{ 1.0f };

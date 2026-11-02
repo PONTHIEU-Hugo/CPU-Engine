@@ -71,12 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)Libs\glm;$(SolutionDir)Libs\SDL3\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Libs\SDL3\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Libs\glm;$(SolutionDir)Libs\SDL3\include;$(SolutionDir)Libs\assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Libs\SDL3\lib\x64;$(SolutionDir)Libs\assimp\lib\x64\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)Libs\glm;$(SolutionDir)Libs\SDL3\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)Libs\SDL3\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)Libs\glm;$(SolutionDir)Libs\SDL3\include;$(SolutionDir)Libs\assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)Libs\SDL3\lib\x64;$(SolutionDir)Libs\assimp\lib\x64\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -117,8 +117,13 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;assimp-vc145-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>
+        xcopy /Y /D "$(SolutionDir)Libs\assimp\bin\Debug\*.dll" "$(OutDir)"
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -135,8 +140,13 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;assimp-vc145-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>
+        xcopy /Y /D "$(SolutionDir)Libs\assimp\bin\Release\*.dll" "$(OutDir)"
+      </Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp" />

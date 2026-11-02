@@ -7,6 +7,7 @@
 
 // Profondeur seule (passe d'ombre) : pas de pixel shader.
 extern const Shader DepthShader;
+extern const Shader TintShader;
 
 extern const Shader BasicShader;
 extern const Shader TextureShader;
@@ -15,6 +16,7 @@ extern const Shader ParticleShader;
 // Texture (ou couleur des sommets) eclairee par la lumiere directionnelle des Uniforms.
 // Necessite des normales dans les sommets (voir GeometryFactory::CalculateNormals). 
 extern const Shader LambertShader;
+extern const Shader RefractionShader;
 
 // Lambert + ombre portee (lit Uniforms::shadowMap / lightVP / bias).
 extern const Shader ShadowLambertShader;

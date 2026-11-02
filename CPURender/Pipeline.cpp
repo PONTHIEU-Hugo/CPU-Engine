@@ -221,6 +221,15 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const Varyings& vertexB = tri.varyings[1];
 	const Varyings& vertexC = tri.varyings[2];
 
+	auto uvAt = [&](const glm::vec2& p) -> glm::vec2
+	{
+		float a = EdgeFunction(sB, sC, p) * tri.invArea / vertexA.position.w;
+		float b = EdgeFunction(sC, sA, p) * tri.invArea / vertexB.position.w;
+		float c = EdgeFunction(sA, sB, p) * tri.invArea / vertexC.position.w;
+		const float inv = 1.0f / (a + b + c);
+		return (a * vertexA.uv + b * vertexB.uv + c * vertexC.uv) * inv;
+	};
+	
 	for (int y = minY; y <= maxY; ++y)
 	{
 		for (int x = minX; x <= maxX; ++x)
@@ -265,11 +274,25 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
+			if ( m_uniforms.texture)
+			{
+				fragment.duvdx = uvAt(pixelCenter + glm::vec2(1.0f, 0.0f)) - fragment.uv;
+				fragment.duvdy = uvAt(pixelCenter + glm::vec2(0.0f, 1.0f)) - fragment.uv;
+			}
 			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
 			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
 
 			glm::vec4 shaded = m_pixelShader(fragment, m_uniforms);
 
+			if (!m_target->tint.empty())
+			{
+				glm::vec3 c = glm::clamp(glm::vec3(shaded), 0.0f, 255.0f);
+				m_target->tint[index] = (int)c.r << 16 | (int)c.g << 8 | (int)c.b;
+				if (m_depthWrite)
+					m_target->depth[index] = depth;
+				continue;
+			}
+			
 			if (!m_target->color)
 				continue;
 
@@ -286,7 +309,7 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			else
 			{
 				if (shaded.a < m_alphaCutoff)
-					continue;              
+					continue;
 				m_target->color->put_pixel(x, y, (int)src.r << 16 | (int)src.g << 8 | (int)src.b);
 			}
 
