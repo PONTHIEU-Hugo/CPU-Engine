@@ -7,31 +7,43 @@
 
 void MaterialScene::Init()
 {
-    m_sphereMesh = GeometryFactory::BuildIcosphere(5);
-    m_groundMesh = GeometryFactory::LoadGeometry("Assets/de_dust2.obj");
+    m_sphereMesh    = GeometryFactory::BuildUVSphere(16, 16);
+    m_sphereIcoMesh    = GeometryFactory::BuildIcosphere(5);
+    m_cubeMesh      = GeometryFactory::BuildCube();
     
-    Add(m_sphereMesh, m_defaultMaterial, true,
+    // Add(m_sphereMesh, m_defaultMaterial, true,
+    //     new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_sphereIcoMesh, m_sheetMaterial, true,
         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_groundMesh, m_groundMaterial, true,
-        new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
+    // Add(m_cubeMesh, m_defaultMaterial, true,
+    //     new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
-    m_defaultMaterial.shader = &RefractionShader;
-    m_defaultMaterial.baseColor = glm::vec4(255.0f, 255.0f, 255.0f, 240.0f);
-    m_defaultMaterial.transparent = true;
-    m_defaultMaterial.thickness   = 1.0f;
-    m_defaultMaterial.eta         = 0.8f;
     
-    m_groundTexture.Load("Assets/de_dust2.png");
-    m_groundMaterial.shader = &LambertShader;
-    m_groundMaterial.texture = &m_groundTexture;
+    m_defaultMaterial.shader = &ShadowLambertShader;
+    m_texture.Load("Assets/rock/albedo.png");
+    m_normalMap.Load("Assets/rock/normal.png");
+    m_arm.Load("Assets/rock/arm.png");
+    m_ao.Load("Assets/rock/ao.png");
+    m_metalness.Load("Assets/rock/metalness.png");
+    m_roughness.Load("Assets/rock/roughness.png");
+    
+    m_defaultMaterial.texture      = &m_texture;
+    
+    m_sheetMaterial                = m_defaultMaterial;
+    m_sheetMaterial.armMap         = &m_arm;
+    m_sheetMaterial.specular       = 1.0f;
+    
+    m_sheetMaterial.normalMap    = &m_normalMap;
+    m_sheetMaterial.normalFlipY  = true;
+    
     
     float aspect = float(WIDTH) / float(HEIGHT);
-    camera = new Camera({0.0f, 0.0f, 3.0f}, nullptr);
+    camera = new Camera({0.0f, 0.0f, 1.0f}, nullptr);
     camera->SetPerspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
     m_transforms.push_back(&camera->transform);
 
     sun.direction         = glm::vec3(-0.5f, -1.0f, -0.3f);
-    sun.ambient           = 0.2f;
+    sun.ambient           = 0.1f;
     sun.shadowRadius      = 50.0f;
     sun.shadowCasterExtra = 30.0f;
     sun.shadowFocus       = camera->GetPosition();
@@ -67,9 +79,6 @@ void MaterialScene::HandleEvent(float _dt)
         glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0, 1, 0));
         sun.direction = glm::vec3(rot * glm::vec4(sun.direction, 0.0f));
     }
-    
-    if (keys[SDL_SCANCODE_RETURN])
-        EnableSkybox(!skybox.enabled);
 }
 
 #endif

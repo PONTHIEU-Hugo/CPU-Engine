@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <SDL3/SDL_keyboard.h>
+#include <memory>
 
 #include "Mesh.h"
 #include "Material.h"
@@ -12,8 +13,8 @@
 #include "CubeMap.h"
 #include "Renderer.h"
 #include "ParticleSystem.h"
+#include "Animator.h"
 
-// Une instance dans la scene : quel mesh, avec quel materiau, ou.
 struct RenderObject
 {
 	const Mesh* mesh = nullptr;
@@ -21,6 +22,8 @@ struct RenderObject
 	Transform       transform;
 	bool            castShadow = true;
 	bool            visible = true;
+
+	Animator*       animator = nullptr;
 
 	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform.GetWorldMatrix()); }
 };
@@ -64,7 +67,12 @@ public:
 	}
 
 	virtual void Init() = 0;
-	virtual void Update(float _dt) { for (auto& transform : m_transforms) transform->Update(); }
+	virtual void Update(float _dt)
+	{
+		for (auto& transform : m_transforms) transform->Update();
+		for (auto& obj : objects)
+			if (obj.animator) obj.animator->UpdateAnimation(_dt);
+	}
 	virtual void LoadSkybox() = 0;
     virtual void HandleEvent(float _dt) = 0;
 	

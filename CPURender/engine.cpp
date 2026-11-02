@@ -5,6 +5,7 @@
 #include "Chrono.h"
 #include "MainScene.h"
 #include "Shaders.h"
+#include "Tests/AnimatorScene.h"
 #include "Tests/MaterialScene.h"
 
 

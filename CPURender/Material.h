@@ -9,6 +9,12 @@ struct Material
 {
 	const Shader* shader = nullptr;
 	const Texture* texture = nullptr;
+	const Texture* normalMap = nullptr;
+	const Texture* armMap = nullptr;
+	const Texture* aoMap = nullptr;
+	const Texture* metalnessMap = nullptr;
+	const Texture* roughnessMap = nullptr;
+	
 	glm::vec4      baseColor = { 255.0f, 255.0f, 255.0f, 255.0f };  
 	CullMode       cull = CullMode::Back;
 
@@ -16,6 +22,8 @@ struct Material
 	float roughness = 0.5f;
 	float eta		= 0.66f;
 	float thickness = 1.0f;
+	float normalStrength = 1.0f;   
+	bool  normalFlipY    = false; 
 	
 	bool transparent = false;
 };

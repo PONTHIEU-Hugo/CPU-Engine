@@ -14,16 +14,20 @@ struct Mesh;
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
 {
-    glm::vec4 position = { 0.0f, 0.0f, 0.0f, 1.0f };
-    glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
-    glm::vec4 color = { 255.0f, 0.0f, 255.0f, 255.0f };
-    glm::vec2 uv = { 0.0f, 0.0f };
-	glm::vec2 duvdx = glm::vec2(0.0f);
-	glm::vec2 duvdy = glm::vec2(0.0f);
-    glm::vec3 worldPos = { 0.0f, 0.0f, 0.0f }; 
-    glm::vec3 lightPos = { 0.0f, 0.0f, 0.0f };
+    glm::vec4 position	= { 0.0f, 0.0f, 0.0f, 1.0f };
+    glm::vec3 normal	= { 0.0f, 0.0f, 0.0f };
+    glm::vec4 color		= { 255.0f, 255.0f, 255.0f, 255.0f };
+    glm::vec2 uv		= { 0.0f, 0.0f };
+	glm::vec3 arm		= { 1.0f, 0.5f, 0.0f };
+	glm::vec3 tangent	= glm::vec3(1, 0, 0);
+	glm::vec2 duvdx		= glm::vec2(0.0f);
+	glm::vec2 duvdy		= glm::vec2(0.0f);
+	glm::vec3 dpdx		= glm::vec3(0.0f);
+	glm::vec3 dpdy		= glm::vec3(0.0f);
+    glm::vec3 worldPos	= { 0.0f, 0.0f, 0.0f }; 
+    glm::vec3 lightPos	= { 0.0f, 0.0f, 0.0f };
 };
-
+ 
 struct Uniforms
 {
     glm::mat4 vp{ 1.0f };
@@ -41,6 +45,17 @@ struct Uniforms
 	const FinalFrameBuffer*   sceneColor = nullptr;
 	const std::vector<float>* sceneDepth = nullptr;
 
+	// NormalMap
+	const Texture* normalMap	= nullptr;
+	float normalStrength		= 1.0f;
+	bool  normalFlipY			= false;
+	
+	// armMap
+	const Texture* aoMap = nullptr;
+	const Texture* roughnessMap	= nullptr;
+	const Texture* metalnessMap = nullptr;
+	const Texture* armMap = nullptr;
+	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
     const RenderTarget* shadowMap = nullptr;

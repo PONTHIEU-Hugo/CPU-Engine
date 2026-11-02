@@ -9,9 +9,11 @@
 // Un meme Mesh peut etre affiche par plusieurs RenderObject (instances).
 struct Mesh
 {
-	std::vector<Vertex> vertices;   // liste de triangles (3 sommets par triangle)
-	AABB localBounds;               // espace local, calculee une fois
+	std::vector<Vertex> vertices;
+	std::vector<VertexSkin> skin;
+	AABB localBounds;               
 
+	bool IsSkinned() const { return !skin.empty(); }
 	void ComputeBounds() { localBounds = ComputeAABB(vertices); }
 };
 
