@@ -30,12 +30,12 @@ private:
     std::vector<KeyPosition> m_Positions;
     std::vector<KeyRotation> m_Rotations;
     std::vector<KeyScale> m_Scales;
-    int m_NumPositions;
-    int m_NumRotations;
-    int m_NumScalings;
+    unsigned int m_NumPositions;
+    unsigned int m_NumRotations;
+    unsigned int m_NumScalings;
 	
     glm::mat4 m_LocalTransform;
-    std::string m_Name;
+    std::string m_name;
     int m_ID;
 
 public:
@@ -45,12 +45,12 @@ public:
     void Update(float animationTime);
     
     glm::mat4 GetLocalTransform() { return m_LocalTransform; }
-    std::string GetBoneName() const { return m_Name; }
+    std::string GetBoneName() const { return m_name; }
     int GetBoneID() { return m_ID; }
     
-    int GetPositionIndex(float animationTime);
-    int GetRotationIndex(float animationTime);
-    int GetScaleIndex(float animationTime);
+    unsigned int GetPositionIndex(float animationTime);
+    unsigned int GetRotationIndex(float animationTime);
+    unsigned int GetScaleIndex(float animationTime);
 
 private:
 

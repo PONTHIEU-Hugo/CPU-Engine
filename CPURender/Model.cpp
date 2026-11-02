@@ -108,11 +108,11 @@ void Model::ExtractBoneWeightForVertices(std::vector<VertexSkin>& vertices, aiMe
             boneID = m_BoneInfoMap[boneName].id;
         }
         auto weights = mesh->mBones[boneIndex]->mWeights;
-        int numWeights = mesh->mBones[boneIndex]->mNumWeights;
+        unsigned int numWeights = mesh->mBones[boneIndex]->mNumWeights;
 
         for (unsigned int weightIndex = 0; weightIndex < numWeights; ++weightIndex)
         {
-            int vertexId = weights[weightIndex].mVertexId;
+            unsigned int vertexId = weights[weightIndex].mVertexId;
             float weight = weights[weightIndex].mWeight;
             assert(vertexId < vertices.size());
             SetVertexBoneData(vertices[vertexId], boneID, weight);
