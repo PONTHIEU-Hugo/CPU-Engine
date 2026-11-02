@@ -77,7 +77,7 @@ void MainScene::Init()
 	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));*/
 	// Add(m_cubeMesh, m_cubeMaterial, true,
 	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	Add(m_groundMesh, m_groundMaterial, false);
+	//Add(m_groundMesh, m_groundMaterial, false);
 	//
 	// Transform& carT = Get(m_car).transform;
 	// Get(wheelAr).transform.SetParent(&carT);
@@ -97,6 +97,12 @@ void MainScene::Init()
 
 	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
 	//Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform.SetPosition({ 0, -5, 0 });
+
+	m_Ocean.SetWaveNumber(1);
+	m_Ocean.SetOrientation({ 3.f, 1.5f });
+	RenderObject& ocean = Get(Add(m_Ocean.m_Mesh, m_Ocean.m_Material));
+	ocean.transform.SetPosition({ 0, 3, 0 });
+	ocean.transform.SetScale({ 5, 5, 5 });
 
 	// Systèmes
 	LoadSkybox();
@@ -124,6 +130,8 @@ void MainScene::Update(float _dt)
 	const glm::mat4& carWorld = Get(m_car).transform.GetWorldMatrix();
 	m_emitter.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
 	m_emitter.Update(_dt);
+
+	m_Ocean.Update();
 
 	glm::vec3 cam = camera->GetPosition();
 	sun.shadowFocus = glm::vec3(cam.x, m_groundMesh.localBounds.min.y, cam.z);

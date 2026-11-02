@@ -5,6 +5,7 @@
 #include "Texture.h"
 #include "ParticleSystem.h"
 #include "TerrainGenerator.h"
+#include "OceanWaves.h"
 
 class MainScene : public Scene
 {
@@ -38,8 +39,8 @@ private:
     Emitter  m_emitter{ 1000 };
     bool     m_pWasDown = false;
     
-
     TerrainGenerator m_Terrain;
+    OceanWaves m_Ocean;
 };
 
 
