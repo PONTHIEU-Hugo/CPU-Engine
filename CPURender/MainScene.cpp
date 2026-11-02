@@ -75,8 +75,8 @@ void MainScene::Init()
 			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
 	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
-	Add(m_cubeMesh, m_cubeMaterial, true,
-	 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
+	//Add(m_cubeMesh, m_cubeMaterial, true,
+	// 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
 	Add(m_groundMesh, m_groundMaterial, false);
 	
 	Transform& carT = Get(m_car).transform;
@@ -109,7 +109,7 @@ void MainScene::Init()
 
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
 	AddEmitter(m_smoke);
-	AddEmitter(m_snow);
+	//AddEmitter(m_snow);
 	AddEmitter(m_sparkle);
 }
 

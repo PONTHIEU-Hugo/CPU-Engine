@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include <vector>
-#include "main.h"  
+#include "main.h"
 
 struct RenderTarget
 {

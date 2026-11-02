@@ -104,6 +104,10 @@ public:
 	
     void SetBlend(bool enabled) { m_blend = enabled; }
 
+    // true : seuls la couleur et les uv sont interpoles par pixel (normale, tangente, worldPos et lightPos restent a zero).
+    // Pour les shaders qui n'utilisent que ceux-la, comme ParticleShader.
+    void SetLiteVaryings(bool enabled) { m_lite = enabled; }
+
     // Avec le blend actif : false = SrcAlpha / InvSrcAlpha, true = SrcAlpha / One.
     void SetAdditive(bool enabled) { m_additive = enabled; }
 
@@ -154,6 +158,7 @@ private:
     bool          m_depthWrite  = true;
     bool          m_blend       = false;
     bool          m_additive    = false;
+    bool          m_lite        = false;
     float         m_alphaCutoff = 50.0f;
 
     std::vector<Varyings> m_varyings;

@@ -150,7 +150,8 @@ const Shader TextureShader = { BasicVS, TexturePS };
 
 static glm::vec4 ParticlePS(const Varyings& in, const Uniforms& u)
 {
-	float transparency = glm::length(in.uv - glm::vec2(0.5f, 0.5f));
+	glm::vec2 fromCenter = in.uv - glm::vec2(0.5f, 0.5f);
+	float transparency = 4.0f * glm::dot(fromCenter, fromCenter);
 	glm::vec4 color = in.color * (u.baseColor / 255.0f);
 	color.a -= 255.0f * transparency;
 	return color;

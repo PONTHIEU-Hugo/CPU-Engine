@@ -203,6 +203,9 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	ParticlePass(scene, base);
 }
 
+// Alpha minimum (0-255) pour qu'un pixel d'une particule opaque soit dessine.
+static const float OPAQUE_ALPHA_CUTOFF = 128.0f;
+
 void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 {
 	const glm::mat4& view = scene.camera->GetViewMatrix();
@@ -212,28 +215,49 @@ void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 	uniforms.baseColor = glm::vec4(255.0f);
 	uniforms.specularStrength = 0.0f;
 
-	m_pipeline.SetBlend(true);
-	m_pipeline.SetDepthWrite(false);
-	m_pipeline.SetAlphaCutoff(0.0f);
+	m_pipeline.SetLiteVaryings(true);
 	m_pipeline.SetCullMode(CullMode::None);
 	m_pipeline.BindShader(ParticleShader);
 	m_pipeline.BindUniforms(uniforms);
 
-	for (Emitter* emitter : scene.emitters)
+	// Les emetteurs opaques d'abord (ils ecrivent la profondeur), puis les emetteurs avec melange par-dessus.
+	for (int pass = 0; pass < 2; ++pass)
 	{
-		if (emitter == nullptr)
-			continue;
+		const bool opaquePass = (pass == 0);
 
-		emitter->BuildQuads(view);
-		if (emitter->GetMesh().vertices.empty())
-			continue;
+		if (opaquePass)
+		{
+			// Pas de melange : un pixel est soit entierement dessine, soit rejete (alpha sous le seuil -> bords en disque).
+			m_pipeline.SetBlend(false);
+			m_pipeline.SetAdditive(false);
+			m_pipeline.SetDepthWrite(true);
+			m_pipeline.SetAlphaCutoff(OPAQUE_ALPHA_CUTOFF);
+		}
+		else
+		{
+			m_pipeline.SetBlend(true);
+			m_pipeline.SetDepthWrite(false);
+			m_pipeline.SetAlphaCutoff(0.0f);
+		}
 
-		m_pipeline.SetAdditive(emitter->GetBlendMode() == BlendMode::Additive);
-		m_pipeline.BindVertexBuffer(&emitter->GetMesh());
-		m_pipeline.Draw(glm::mat4(1.0f));
+		for (Emitter* emitter : scene.emitters)
+		{
+			if (emitter == nullptr || emitter->settings.opaque != opaquePass)
+				continue;
+
+			emitter->BuildQuads(view);
+			if (emitter->GetMesh().vertices.empty())
+				continue;
+
+			if (opaquePass == false)
+				m_pipeline.SetAdditive(emitter->GetBlendMode() == BlendMode::Additive);
+			m_pipeline.BindVertexBuffer(&emitter->GetMesh());
+			m_pipeline.Draw(glm::mat4(1.0f));
+		}
 	}
 
 	m_pipeline.SetAdditive(false);
+	m_pipeline.SetLiteVaryings(false);
 	m_pipeline.SetBlend(false);
 	m_pipeline.SetDepthWrite(true);
 }

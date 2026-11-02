@@ -27,7 +27,8 @@ struct EmitterSettings
     float drag = 0.0f;                          // amortissement de la vitesse (1/s)
     float sizeStart = 0.1f;
     float sizeEnd = 0.1f;
-    glm::vec4 colorStart{ 255.0f };             
+    bool opaque = false;                        // true : pas de melange, ecriture de profondeur, pas de tri (bords en disque via un seuil d'alpha)
+    glm::vec4 colorStart{ 255.0f };
     glm::vec4 colorEnd{ 255.0f };               
 };
 
@@ -70,29 +71,31 @@ public:
 
     virtual BlendMode GetBlendMode() const = 0;
     virtual bool NeedsSorting() const { return false; }
-
 protected:
 
-    // Degrade colorStart -> colorEnd ; _t vaut 1 a la naissance et 0 a la mort.
+    // Degrade colorStart -> colorEnd | _t vaut 1 a la naissance et 0 a la mort.
     glm::vec4 LifeColor(float _t) const { return glm::mix(settings.colorEnd, settings.colorStart, _t); }
 
-    virtual void OnSpawn(Particle& /*_particle*/) {}
+    virtual void OnSpawn(Particle& _particle) {}
     virtual void Integrate(Particle& _particle, float _dt);
     virtual bool ShouldDie(const Particle& _particle) const { return _particle.life <= 0.0f; }
     virtual void Appearance(const Particle& _particle, float _t, glm::vec4& _color, float& _size) const = 0;
 
 private:
-    void Spawn(Particle& _particle);
-    Particle* Allocate();                      // prend une particule libre et la marque vivante, nullptr si le pool est plein
-    static void BuildBase(const glm::vec3& _n, glm::vec3& _t, glm::vec3& _b);
 
-    int m_maxParticles;
+    void Spawn(Particle& _particle);        
+    static void BuildBase(const glm::vec3& _n, glm::vec3& _t, glm::vec3& _b);
+    Particle* Allocate();
+
     bool m_active = true;
-    float m_emitAccumulator = 0.0f;            // fraction de particule a emettre
+    int m_maxParticles;
+    float m_emitAccumulator = 0.0f;            
+
     std::vector<Particle> m_particles;
-    std::vector<int> m_alive;                  // indices des particules vivantes (seules celles-ci sont parcourues)
-    std::vector<int> m_free;                   // indices des particules libres (pile)
-    std::vector<int> m_drawOrder;              // copie de m_alive triee, utilisee seulement si NeedsSorting()
+    std::vector<int> m_alive;                  
+    std::vector<int> m_free;                   
+    std::vector<int> m_drawOrder;            
+
     Mesh m_mesh;
 };
 

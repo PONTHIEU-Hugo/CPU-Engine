@@ -174,7 +174,7 @@ void Emitter::BuildQuads(const glm::mat4& _view)
     static const glm::vec2 corners_uv[4] = { { 0.0f, 1.0f },   { 1.0f, 1.0f },  { 1.0f, 0.0f }, { 0.0f, 0.0f } };
 
     const std::vector<int>* drawOrder = &m_alive;
-    if (NeedsSorting())
+    if (NeedsSorting() && settings.opaque == false)   // opaque : le z-buffer suffit
     {
         // Profondeur le long de l'axe camera : les plus eloignees (valeur la plus petite) d'abord.
         std::vector<std::pair<float, int>> depthAndIndex;
