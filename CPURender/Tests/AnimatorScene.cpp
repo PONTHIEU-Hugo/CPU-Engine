@@ -8,8 +8,8 @@
 
 void AnimatorScene::Init()
 {
-    m_mesh = m_model.Load("Assets/test.fbx"); 
-    m_anim = new Animation("Assets/test.fbx", &m_model);
+    m_mesh = m_model.Load("Assets/dance2.dae"); 
+    m_anim = new Animation("Assets/dance2.dae", &m_model);
     m_animator = new Animator(m_anim);
 
     m_groundMesh = GeometryFactory::BuildSquare();

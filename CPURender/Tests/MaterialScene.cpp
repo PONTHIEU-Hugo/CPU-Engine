@@ -7,25 +7,26 @@
 
 void MaterialScene::Init()
 {
-    m_sphereMesh    = GeometryFactory::BuildCube();
+    m_sphereMesh    = GeometryFactory::BuildUVSphere(8, 8);
+    m_sphereIcoMesh    = GeometryFactory::BuildIcosphere(4);
     m_cubeMesh      = GeometryFactory::BuildCube();
     
     Add(m_sphereMesh, m_defaultMaterial, true,
         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_sphereIcoMesh, m_defaultMaterial, true,
+        new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     Add(m_cubeMesh, m_cubeMaterial, true,
         new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
     
+    m_cubeMaterial.shader = &ShadowLambertShader;
     m_cubeTexture.Load("Assets/rock/rock_albedo.jpg");
     m_cubeNormalMap.Load("Assets/rock/rock_normal.png");
-    m_cubeMaterial.shader = &LambertShader;
     m_cubeMaterial.texture = &m_cubeTexture;
+    m_cubeMaterial.normalMap = &m_cubeNormalMap;
+    m_cubeMaterial.normalFlipY = true;
     
     m_defaultMaterial = m_cubeMaterial;
-    
-    m_cubeMaterial.normalMap = &m_cubeNormalMap;
-    m_cubeMaterial.normalFlipY = false;
-    
     
     float aspect = float(WIDTH) / float(HEIGHT);
     camera = new Camera({0.0f, 0.0f, 3.0f}, nullptr);
@@ -69,9 +70,6 @@ void MaterialScene::HandleEvent(float _dt)
         glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0, 1, 0));
         sun.direction = glm::vec3(rot * glm::vec4(sun.direction, 0.0f));
     }
-    
-    if (keys[SDL_SCANCODE_RETURN])
-        EnableSkybox(!skybox.enabled);
 }
 
 #endif

@@ -1,6 +1,7 @@
 #include "Shaders.h"
 #include "Texture.h"
 #include <cmath>
+#include <SDL3/SDL_init.h>
 
 #include "core.h"
 
@@ -16,6 +17,8 @@ static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 		float lod = u.texture->ComputeLod(in.duvdx, in.duvdy);
 		color = u.texture->Sample(in.uv, lod);
 	}
+	
+	// color = glm::vec4((glm::vec3(in.normal.x, in.normal.y, in.normal.z) * 0.5f + 0.5f) * 255.0f, 128.0f);
 	return color * (u.baseColor / 255.0f);
 }
 
@@ -53,6 +56,18 @@ static glm::vec3 SurfaceNormal(const Varyings& in, const Uniforms& u)
 	return glm::normalize(T * t.x + B * t.y + N * t.z);
 }
 
+static float SurfaceRoughness(const Varyings& in, const Uniforms& u)
+{
+	if (!u.roughnessMap || !u.roughnessMap->IsValid())
+		return 0.5f;
+	
+	float lod = u.roughnessMap->ComputeLod(in.duvdx, in.duvdy);
+	glm::vec4 s = u.roughnessMap->Sample(in.uv, lod);
+
+	
+	return 0.5f;
+}
+
 static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
 {
 	if (u.specularStrength <= 0.0f)
@@ -66,7 +81,11 @@ static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec
 	toCamera /= std::sqrt(toCameraLength2);
 
 	glm::vec3 reflected = glm::reflect(glm::normalize(u.lightDirection), normal);
-	return u.specularStrength * std::pow(glm::max(glm::dot(reflected, toCamera), 0.0f), u.shininess);
+	
+	float r = glm::clamp(SurfaceRoughness(in, u), 0.05f, 1.0f);
+	float calculatedShininess = glm::max(2.0f / (r * r) - 2.0f, 1.0f);
+	
+	return u.specularStrength * std::pow(glm::max(glm::dot(reflected, toCamera), 0.0f), calculatedShininess);
 }
 
 static Varyings BasicVS(const Vertex& v, const Uniforms& u)
@@ -85,7 +104,7 @@ static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 
 static glm::vec4 BasicPS(const Varyings& in, const Uniforms& u)
 {
-	return in.color * (u.baseColor / 255.0f);
+	return SurfaceColor(in, u);
 }
 
 const Shader BasicShader = { BasicVS, BasicPS };

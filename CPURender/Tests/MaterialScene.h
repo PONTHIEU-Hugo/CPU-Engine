@@ -17,6 +17,7 @@ private:
     Texture  m_cubeTexture;
     Texture  m_cubeNormalMap;
     Mesh     m_sphereMesh;
+    Mesh     m_sphereIcoMesh;
     Mesh     m_cubeMesh;
 };
 

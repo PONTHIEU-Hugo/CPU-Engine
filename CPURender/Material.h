@@ -10,6 +10,7 @@ struct Material
 	const Shader* shader = nullptr;
 	const Texture* texture = nullptr;
 	const Texture* normalMap = nullptr;
+	const Texture* roughnessMap = nullptr;
 	glm::vec4      baseColor = { 255.0f, 255.0f, 255.0f, 255.0f };  
 	CullMode       cull = CullMode::Back;
 

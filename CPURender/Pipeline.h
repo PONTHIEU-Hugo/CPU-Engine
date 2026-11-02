@@ -49,6 +49,9 @@ struct Uniforms
 	float normalStrength		= 1.0f;
 	bool  normalFlipY			= false;
 	
+	// RoughnessMap
+	const Texture* roughnessMap	= nullptr;
+	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
     const RenderTarget* shadowMap = nullptr;

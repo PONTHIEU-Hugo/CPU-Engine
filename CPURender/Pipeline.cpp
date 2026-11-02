@@ -48,7 +48,6 @@ void Pipeline::Draw(glm::mat4 const& mat)
 	const int vertexCount = (int)vertices.size();
 	const int triangleCount = vertexCount / 3;
 
-	// Vertex shader 
 	m_varyings.resize(vertexCount);
 
 #pragma omp parallel for schedule(static)
@@ -279,6 +278,9 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 			fragment.tangent = perspectiveA * vertexA.tangent + perspectiveB * vertexB.tangent + perspectiveC * vertexC.tangent;
+			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
+			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
+			
 			if (m_uniforms.texture || m_uniforms.normalMap)
 			{
 				const Attr r	= attrAt(pixelCenter + glm::vec2(1.0f, 0.0f));
@@ -288,9 +290,7 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 				fragment.dpdx	= r.pos - fragment.worldPos;
 				fragment.dpdy	= d.pos - fragment.worldPos;
 			}
-			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
-			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
-
+			
 			glm::vec4 shaded = m_pixelShader(fragment, m_uniforms);
 
 			if (!m_target->tint.empty())

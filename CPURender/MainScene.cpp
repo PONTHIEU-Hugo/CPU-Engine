@@ -46,13 +46,13 @@ void MainScene::Init()
 	
 	m_cubeMaterial = m_defaultMaterial;
 	m_cubeMaterial.baseColor.a = 255;
-	m_cubeMaterial.transparent = true;
-	if (m_cubeTexture.IsValid())
-		m_cubeMaterial.texture = &m_cubeTexture;
+	m_cubeMaterial.transparent = false;
+	// if (m_cubeTexture.IsValid())
+	// 	m_cubeMaterial.texture = &m_cubeTexture;
 
 	m_carMaterial = m_defaultMaterial;
 	m_carMaterial.baseColor.a = 255 / 2;
-	// m_carMaterial.transparent = true;
+	m_carMaterial.transparent = true;
 	if (m_carTexture.IsValid()) 
 		m_carMaterial.texture = &m_carTexture;
 
@@ -75,10 +75,10 @@ void MainScene::Init()
 			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
 	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
 	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
-	// Add(m_cubeMesh, m_cubeMaterial, true,
-	// 		Transform({0.0f, 1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	Add(m_cubeMesh, m_cubeMaterial, true,
+	 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
 	Add(m_groundMesh, m_groundMaterial, false);
-	//
+	
 	Transform& carT = Get(m_car).transform;
 	Get(m_wheelAr).transform.SetParent(&carT);
 	Get(m_wheelAv).transform.SetParent(&carT);
@@ -107,7 +107,7 @@ void MainScene::Init()
 	m_emitter.settings.speedMin     = 2.0f;
 	m_emitter.settings.speedMax     = 5.0f;
 	m_emitter.settings.coneAngle    = 25.0f;
-	m_emitter.settings.acceleration = glm::vec3(0.0f, 6.0f, 0.0f);
+	m_emitter.settings.acceleration = glm::vec3(0.0f, 0.0f, 50.0f);
 	m_emitter.settings.sizeStart    = 0.35f;
 	m_emitter.settings.sizeEnd      = 0.05f;
 	m_emitter.Init();
