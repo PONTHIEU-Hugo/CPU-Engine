@@ -1,7 +1,9 @@
 #include "ParticleSystem.h"
 
 #include <algorithm>
+#include <cfloat>
 #include <cmath>
+#include <utility>
 #include <glm/gtc/constants.hpp>
 
 // Un seul gros pas de temps (premiere frame, fenetre deplacee) ne doit pas creer une rafale de particules.
@@ -10,10 +12,15 @@ static const float MAX_DT = 0.1f;
 void Emitter::Init()
 {
     m_particles.assign(m_maxParticles, Particle());
+    m_alive.clear();
+    m_alive.reserve(m_maxParticles);
     m_drawOrder.clear();
     m_drawOrder.reserve(m_maxParticles);
+    m_free.clear();
+    m_free.reserve(m_maxParticles);
+    for (int i = m_maxParticles - 1; i >= 0; --i)
+        m_free.push_back(i);
     m_emitAccumulator = 0.0f;
-    m_cursor = 0;
     m_mesh.vertices.clear();
     m_mesh.vertices.reserve((size_t)m_maxParticles * 6);
     m_mesh.ComputeBounds();
@@ -21,31 +28,29 @@ void Emitter::Init()
 
 void Emitter::Clear()
 {
-    for (Particle& particle : m_particles)
-        particle.alive = false;
+    for (int index : m_alive)
+    {
+        m_particles[index].alive = false;
+        m_free.push_back(index);
+    }
+    m_alive.clear();
     m_emitAccumulator = 0.0f;
 }
 
 int Emitter::AliveCount() const
 {
-    int count = 0;
-    for (const Particle& particle : m_particles)
-        count += particle.alive ? 1 : 0;
-    return count;
+    return (int)m_alive.size();
 }
 
-Particle* Emitter::FindDead()
+Particle* Emitter::Allocate()
 {
-    for (int i = 0; i < m_maxParticles; ++i)
-    {
-        int index = (m_cursor + i) % m_maxParticles;
-        if (m_particles[index].alive == false)
-        {
-            m_cursor = (index + 1) % m_maxParticles;
-            return &m_particles[index];
-        }
-    }
-    return nullptr;   // pool plein
+    if (m_free.empty())
+        return nullptr;   // pool plein
+
+    int index = m_free.back();
+    m_free.pop_back();
+    m_alive.push_back(index);
+    return &m_particles[index];
 }
 
 void Emitter::Integrate(Particle& _particle, float _dt)
@@ -59,18 +64,28 @@ void Emitter::Update(float _dt)
 {
     _dt = glm::min(_dt, MAX_DT);
 
-    for (Particle& particle : m_particles)
+    // Compactage en place : l'ordre des vivantes est conserve, les mortes retournent dans le pool.
+    size_t kept = 0;
+    for (size_t i = 0; i < m_alive.size(); ++i)
     {
-        if (particle.alive == false)
-            continue;
+        int index = m_alive[i];
+        Particle& particle = m_particles[index];
 
         particle.age += _dt;
         particle.life -= _dt;
         Integrate(particle, _dt);
 
         if (ShouldDie(particle))
+        {
             particle.alive = false;
+            m_free.push_back(index);
+        }
+        else
+        {
+            m_alive[kept++] = index;
+        }
     }
+    m_alive.resize(kept);
 
     if (m_active == false || m_particles.empty())
         return;
@@ -78,7 +93,7 @@ void Emitter::Update(float _dt)
     m_emitAccumulator += settings.emissionRate * _dt;
     while (m_emitAccumulator >= 1.0f)
     {
-        Particle* particle = FindDead();
+        Particle* particle = Allocate();
         if (particle == nullptr)
         {
             m_emitAccumulator = 0.0f;
@@ -94,7 +109,7 @@ void Emitter::Burst(int _count)
 {
     for (int i = 0; i < _count; ++i)
     {
-        Particle* particle = FindDead();
+        Particle* particle = Allocate();
         if (particle == nullptr)
             break;
         Spawn(*particle);
@@ -158,22 +173,31 @@ void Emitter::BuildQuads(const glm::mat4& _view)
     static const glm::vec2 corners[4] = { { -1.0f, -1.0f }, { 1.0f, -1.0f }, { 1.0f, 1.0f }, { -1.0f, 1.0f } };
     static const glm::vec2 corners_uv[4] = { { 0.0f, 1.0f },   { 1.0f, 1.0f },  { 1.0f, 0.0f }, { 0.0f, 0.0f } };
 
-    m_drawOrder.clear();
-    for (int i = 0; i < (int)m_particles.size(); ++i)
-        if (m_particles[i].alive)
-            m_drawOrder.push_back(i);
-
+    const std::vector<int>* drawOrder = &m_alive;
     if (NeedsSorting())
     {
-        std::sort(m_drawOrder.begin(), m_drawOrder.end(), [&](int _a, int _b)
-            {
-                return glm::dot(m_particles[_a].pos, towardCamera) < glm::dot(m_particles[_b].pos, towardCamera);
-            });
+        // Profondeur le long de l'axe camera : les plus eloignees (valeur la plus petite) d'abord.
+        std::vector<std::pair<float, int>> depthAndIndex;
+        depthAndIndex.reserve(m_alive.size());
+        for (int index : m_alive)
+            depthAndIndex.emplace_back(glm::dot(m_particles[index].pos, towardCamera), index);
+
+        std::sort(depthAndIndex.begin(), depthAndIndex.end());
+
+        m_drawOrder.clear();
+        for (const auto& entry : depthAndIndex)
+            m_drawOrder.push_back(entry.second);
+        drawOrder = &m_drawOrder;
     }
 
     m_mesh.vertices.clear();
 
-    for (int index : m_drawOrder)
+    // Boite englobante cumulee pendant la construction (evite un second parcours des sommets).
+    const glm::vec3 cameraExtent = glm::abs(right) + glm::abs(up);
+    glm::vec3 boundsMin(FLT_MAX);
+    glm::vec3 boundsMax(-FLT_MAX);
+
+    for (int index : *drawOrder)
     {
         const Particle& particle = m_particles[index];
 
@@ -184,7 +208,10 @@ void Emitter::BuildQuads(const glm::mat4& _view)
         Appearance(particle, t, color, size);
 
         if (size <= 0.0f || color.a <= 0.0f)
-            continue; 
+            continue;
+
+        boundsMin = glm::min(boundsMin, particle.pos - cameraExtent * size);
+        boundsMax = glm::max(boundsMax, particle.pos + cameraExtent * size);
 
         Vertex quad[4];
         for (int i = 0; i < 4; ++i)
@@ -203,5 +230,8 @@ void Emitter::BuildQuads(const glm::mat4& _view)
         m_mesh.vertices.push_back(quad[3]);
     }
 
-    m_mesh.ComputeBounds();
+    if (m_mesh.vertices.empty())
+        m_mesh.localBounds = AABB();
+    else
+        m_mesh.localBounds = { boundsMin, boundsMax };
 }

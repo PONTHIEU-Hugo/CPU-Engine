@@ -228,10 +228,12 @@ void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 		if (emitter->GetMesh().vertices.empty())
 			continue;
 
+		m_pipeline.SetAdditive(emitter->GetBlendMode() == BlendMode::Additive);
 		m_pipeline.BindVertexBuffer(&emitter->GetMesh());
 		m_pipeline.Draw(glm::mat4(1.0f));
 	}
 
+	m_pipeline.SetAdditive(false);
 	m_pipeline.SetBlend(false);
 	m_pipeline.SetDepthWrite(true);
 }

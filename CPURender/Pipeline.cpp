@@ -310,8 +310,11 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			if (m_blend)
 			{
 				float a = glm::clamp(shaded.a / 255.0f, 0.0f, 1.0f);
+				if (a <= 0.0f)
+					continue;   // totalement transparent : ni lecture ni ecriture du pixel
 				glm::vec3 dst = glm::vec3(ToColor(m_target->color->get_pixel(x, y)));
-				glm::vec3 out = src * a + dst * (1.0f - a);
+				glm::vec3 out = m_additive ? glm::min(dst + src * a, glm::vec3(255.0f))
+				                           : src * a + dst * (1.0f - a);
 
 				m_target->color->put_pixel(x, y, (int)out.r << 16 | (int)out.g << 8 | (int)out.b);
 			}

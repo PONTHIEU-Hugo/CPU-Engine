@@ -101,18 +101,16 @@ void MainScene::Init()
 	// Systèmes
 	LoadSkybox();
 	
-	m_emitter.settings.emissionRate = 250.0f;
-	m_emitter.settings.lifeMin      = 0.6f;
-	m_emitter.settings.lifeMax      = 1.2f;
-	m_emitter.settings.speedMin     = 2.0f;
-	m_emitter.settings.speedMax     = 5.0f;
-	m_emitter.settings.coneAngle    = 25.0f;
-	m_emitter.settings.acceleration = glm::vec3(0.0f, 0.0f, 50.0f);
-	m_emitter.settings.sizeStart    = 0.35f;
-	m_emitter.settings.sizeEnd      = 0.05f;
-	m_emitter.Init();
-	
-	AddEmitter(m_emitter);
+	m_snow.groundHeight = m_groundMesh.localBounds.min.y;
+
+	m_smoke.Init();
+	m_snow.Init();
+	m_sparkle.Init();
+
+	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
+	AddEmitter(m_smoke);
+	AddEmitter(m_snow);
+	AddEmitter(m_sparkle);
 }
 
 void MainScene::Update(float _dt)
@@ -122,10 +120,17 @@ void MainScene::Update(float _dt)
 
 	const glm::vec3 exhaustLocalOffset(1.7f, 1.3f, 9.2f);
 	const glm::mat4& carWorld = Get(m_car).transform.GetWorldMatrix();
-	m_emitter.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
-	m_emitter.Update(_dt);
+	m_smoke.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
+	m_smoke.Update(_dt);
+
+	const glm::vec3 roofLocalOffset(0.0f, 4.0f, 0.0f);
+	m_sparkle.SetOrigin(glm::vec3(carWorld * glm::vec4(roofLocalOffset, 1.0f)));
+	m_sparkle.Update(_dt);
 
 	glm::vec3 cam = camera->GetPosition();
+	m_snow.SetOrigin(cam + glm::vec3(0.0f, 20.0f, 0.0f));
+	m_snow.Update(_dt);
+
 	sun.shadowFocus = glm::vec3(cam.x, m_groundMesh.localBounds.min.y, cam.z);
 	Scene::Update(_dt);
 }
@@ -146,8 +151,18 @@ void MainScene::HandleEvent(float _dt)
 	
 	bool pDown = keys[SDL_SCANCODE_P];
 	if (pDown && m_pWasDown == false)
-		m_emitter.SetActive(m_emitter.IsActive() == false);
+	{
+		bool active = m_smoke.IsActive() == false;
+		m_smoke.SetActive(active);
+		m_snow.SetActive(active);
+		m_sparkle.SetActive(active);
+	}
 	m_pWasDown = pDown;
+
+	bool bDown = keys[SDL_SCANCODE_B];
+	if (bDown && m_bWasDown == false)
+		m_sparkle.Burst(200);
+	m_bWasDown = bDown;
 	
 	if (keys[SDL_SCANCODE_R])
 	{

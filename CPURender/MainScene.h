@@ -4,6 +4,9 @@
 #include "Scene.h"
 #include "Texture.h"
 #include "TerrainGenerator.h"
+#include "SmokeEmitter.h"
+#include "SnowEmitter.h"
+#include "SparkleEmitter.h"
 
 class MainScene : public Scene
 {
@@ -35,6 +38,11 @@ private:
     ObjectId m_wheelAv = -1;
 
     bool     m_pWasDown = false;
+    bool     m_bWasDown = false;
+
+    SmokeEmitter   m_smoke;     // pot d'echappement
+    SnowEmitter    m_snow;      // suit la camera
+    SparkleEmitter m_sparkle;   // sur le toit de la voiture (B = rafale)
 
     TerrainGenerator m_Terrain;
 };

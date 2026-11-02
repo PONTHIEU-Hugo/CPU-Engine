@@ -1,5 +1,5 @@
 #ifndef SNOW_EMITTER_H_INCLUDED
-#define SNOW_EMITTER_H_INLCUDED
+#define SNOW_EMITTER_H_INCLUDED
 
 #include "ParticleSystem.h"
 

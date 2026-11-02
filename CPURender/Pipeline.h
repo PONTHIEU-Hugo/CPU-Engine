@@ -104,6 +104,9 @@ public:
 	
     void SetBlend(bool enabled) { m_blend = enabled; }
 
+    // Avec le blend actif : false = SrcAlpha / InvSrcAlpha, true = SrcAlpha / One.
+    void SetAdditive(bool enabled) { m_additive = enabled; }
+
     // Alpha test (hors blend) : un pixel dont l'alpha (0-255) est < cutoff est rejete.
     // 0 = desactive.
     void SetAlphaCutoff(float cutoff) { m_alphaCutoff = cutoff; }
@@ -150,6 +153,7 @@ private:
 
     bool          m_depthWrite  = true;
     bool          m_blend       = false;
+    bool          m_additive    = false;
     float         m_alphaCutoff = 50.0f;
 
     std::vector<Varyings> m_varyings;

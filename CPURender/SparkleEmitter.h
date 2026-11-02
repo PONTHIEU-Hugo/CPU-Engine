@@ -13,6 +13,7 @@ public:
     BlendMode GetBlendMode() const override { return BlendMode::Additive; }
 
 protected:
+    void OnSpawn(Particle& p) override { p.alpha = 1.0f; }   // pas de fondu radial (emission spherique)
     void Appearance(const Particle& p, float t, glm::vec4& c, float& s) const override;
 };
 

@@ -53,7 +53,6 @@ public:
 
 	// L'emetteur doit survivre a la scene (il est reference, pas copie).
 	void AddEmitter(Emitter& emitter) { emitters.push_back(&emitter); }
-
 	ObjectId Add(const Mesh& mesh, const Material& material, bool castShadow = true, Transform* transform = new Transform())
 	{
 		RenderObject object;

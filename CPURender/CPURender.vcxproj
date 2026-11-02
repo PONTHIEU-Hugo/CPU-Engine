@@ -172,6 +172,7 @@
     <ClCompile Include="ShadowMap.cpp" />
     <ClCompile Include="Tests\AnimatorScene.cpp" />
     <ClCompile Include="Tests\MaterialScene.cpp" />
+    <ClCompile Include="Tests\ParticleScene.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Clipping.cpp" />
     <ClCompile Include="Frustum.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="SparkleEmitter.h" />
     <ClInclude Include="Tests\AnimatorScene.h" />
     <ClInclude Include="Tests\MaterialScene.h" />
+    <ClInclude Include="Tests\ParticleScene.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="Clipping.h" />
     <ClInclude Include="Frustum.h" />

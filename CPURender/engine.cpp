@@ -7,6 +7,7 @@
 #include "Shaders.h"
 #include "Tests/AnimatorScene.h"
 #include "Tests/MaterialScene.h"
+#include "Tests/ParticleScene.h"
 
 
 void Engine::init()
@@ -14,7 +15,7 @@ void Engine::init()
 	printf("Init engine \n");
 	m_renderer.Init(2048);
 	m_renderer.showShadowDebug = false;
-	m_scene = new MainScene();
+	m_scene = new ParticleScene();   // MainScene(), MaterialScene()... pour changer de scene
 	m_scene->Init();
 }
 

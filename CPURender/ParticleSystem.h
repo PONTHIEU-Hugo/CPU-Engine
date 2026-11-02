@@ -27,6 +27,8 @@ struct EmitterSettings
     float drag = 0.0f;                          // amortissement de la vitesse (1/s)
     float sizeStart = 0.1f;
     float sizeEnd = 0.1f;
+    glm::vec4 colorStart{ 255.0f };             
+    glm::vec4 colorEnd{ 255.0f };               
 };
 
 struct Particle
@@ -47,7 +49,6 @@ public:
     explicit Emitter(int _maxParticles = 1000) : m_maxParticles(_maxParticles) {}
     virtual ~Emitter() = default;
 
-    // Classe polymorphe : pas de copie (evite le slicing).
     Emitter(const Emitter&) = delete;
     Emitter& operator=(const Emitter&) = delete;
 
@@ -72,6 +73,9 @@ public:
 
 protected:
 
+    // Degrade colorStart -> colorEnd ; _t vaut 1 a la naissance et 0 a la mort.
+    glm::vec4 LifeColor(float _t) const { return glm::mix(settings.colorEnd, settings.colorStart, _t); }
+
     virtual void OnSpawn(Particle& /*_particle*/) {}
     virtual void Integrate(Particle& _particle, float _dt);
     virtual bool ShouldDie(const Particle& _particle) const { return _particle.life <= 0.0f; }
@@ -79,15 +83,16 @@ protected:
 
 private:
     void Spawn(Particle& _particle);
-    Particle* FindDead();
+    Particle* Allocate();                      // prend une particule libre et la marque vivante, nullptr si le pool est plein
     static void BuildBase(const glm::vec3& _n, glm::vec3& _t, glm::vec3& _b);
 
     int m_maxParticles;
     bool m_active = true;
     float m_emitAccumulator = 0.0f;            // fraction de particule a emettre
-    int m_cursor = 0;                          // ou reprendre la recherche d'une particule morte
     std::vector<Particle> m_particles;
-    std::vector<int> m_drawOrder;              // indices des particules vivantes, tries si besoin
+    std::vector<int> m_alive;                  // indices des particules vivantes (seules celles-ci sont parcourues)
+    std::vector<int> m_free;                   // indices des particules libres (pile)
+    std::vector<int> m_drawOrder;              // copie de m_alive triee, utilisee seulement si NeedsSorting()
     Mesh m_mesh;
 };
 
