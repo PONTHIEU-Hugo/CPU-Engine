@@ -24,7 +24,7 @@ public:
 	~TerrainGenerator();
 
 	Mesh& GetMesh() { return m_Mesh; }
-	Material& GetMaterial() { return m_Material; }
+	const Material& GetMaterial() { return m_Material; }
 
 	void GenerateHeighmap(size_t size, HeighMapType type, double scale = 1.0) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
 	void GenerateHeighmap(glm::vec2 size, HeighMapType type, double scale = 1.0);

@@ -19,13 +19,13 @@ struct RenderObject
 {
 	const Mesh* mesh = nullptr;
 	const Material* material = nullptr;
-	Transform       transform;
+	Transform*       transform = nullptr;
 	bool            castShadow = true;
 	bool            visible = true;
 
 	Animator*       animator = nullptr;
 
-	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform.GetWorldMatrix()); }
+	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform->GetWorldMatrix()); }
 };
 
 struct DirectionalLight
@@ -58,7 +58,7 @@ public:
 		RenderObject object;
 		object.mesh = &mesh;
 		object.material = &material;
-		object.transform = *transform;
+		object.transform = transform;
 		object.castShadow = castShadow;
 		objects.push_back(object);
 		m_transforms.push_back(transform);

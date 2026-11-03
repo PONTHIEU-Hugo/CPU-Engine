@@ -23,7 +23,7 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, doubl
 	switch (type)
 	{
 	case HeighMapType::_DIAMOND_SQUARE:
-		m_Generation = Generation_Algorithm::DiamondSquare_HeighMap(size.x);
+		m_Generation = Generation_Algorithm::DiamondSquare_HeighMap((size_t)size.x);
 		heighmapValueFactor = 0.025;
 		break;
 	case HeighMapType::_PERLIN_2D:
