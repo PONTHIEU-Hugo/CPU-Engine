@@ -60,16 +60,6 @@ void MaterialScene::Update(float _dt)
     Scene::Update(_dt);
 }
 
-void MaterialScene::LoadSkybox()
-{
-    skybox.faces[0].Load("Assets/skybox/de_dust2/right.png");
-    skybox.faces[1].Load("Assets/skybox/de_dust2/left.png");
-    skybox.faces[2].Load("Assets/skybox/de_dust2/top.png");
-    skybox.faces[3].Load("Assets/skybox/de_dust2/bottom.png");
-    skybox.faces[4].Load("Assets/skybox/de_dust2/front.png");
-    skybox.faces[5].Load("Assets/skybox/de_dust2/back.png");
-}
-
 void MaterialScene::HandleEvent(float _dt)
 {
     const bool* keys = SDL_GetKeyboardState(nullptr);

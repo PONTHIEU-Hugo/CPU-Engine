@@ -10,6 +10,7 @@
 
 struct Texture;
 struct Mesh;
+struct CubeMap;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
@@ -55,6 +56,8 @@ struct Uniforms
 	const Texture* roughnessMap	= nullptr;
 	const Texture* metalnessMap = nullptr;
 	const Texture* armMap = nullptr;
+
+    const CubeMap* cubeMap = nullptr;
 	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
@@ -80,8 +83,8 @@ class Pipeline
 {
 public:
 	// Clusters 
-	static constexpr int TILES_X = 4;
-	static constexpr int TILES_Y = 4;
+	static constexpr int TILES_X = 16;
+	static constexpr int TILES_Y = 9;
 	static constexpr int TILE_COUNT = TILES_X * TILES_Y;
 
 	Pipeline();
