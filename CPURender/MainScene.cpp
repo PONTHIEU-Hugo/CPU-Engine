@@ -109,7 +109,7 @@ void MainScene::Init()
 	m_sparkle.Init();
 
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
-	//AddEmitter(m_smoke);
+	AddEmitter(m_smoke);
 	AddEmitter(m_snow);
 	//AddEmitter(m_sparkle);
 }

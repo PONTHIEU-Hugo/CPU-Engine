@@ -132,8 +132,12 @@ private:
 	{
 		Varyings  varyings[3];        
 		glm::vec3 screenPos[3] = { glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
-		float     invArea = 1;     
-		int       minX, maxX, minY, maxY = 0;  
+        float invW[3] = { 0.0f, 0.0f, 0.0f };
+		float invArea = 1;     
+        int minX = 0;
+        int maxX = 0;
+        int minY = 0;
+        int maxY = 0;
 	};
 
 	struct ThreadBins
