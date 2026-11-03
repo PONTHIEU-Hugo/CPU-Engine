@@ -77,7 +77,7 @@ void MainScene::Init()
 	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
 	//Add(m_cubeMesh, m_cubeMaterial, true,
 	// 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
-	Add(m_groundMesh, m_groundMaterial, false);
+	//Add(m_groundMesh, m_groundMaterial, false);
 	
 	Transform* carT = Get(m_car).transform;
 	Get(m_wheelAr).transform->SetParent(carT);
@@ -95,9 +95,9 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
-	ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
-	Get(terrainID).transform->SetPosition({ 0, -5, 0 });
+	//m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
+	//ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	//Get(terrainID).transform->SetPosition({ 0, -5, 0 });
 
 	m_Ocean.GenerateMesh({ 500, 500 });
 	m_Ocean.SetWaveNumber(3);
@@ -105,8 +105,8 @@ void MainScene::Init()
 	m_Ocean.SetAmplitude(2.5f);
 	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material);
 	RenderObject& ocean = Get(m_OceanID);
-	ocean.transform.SetPosition({ 0, -3, 0 });
-	ocean.transform.SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.5f);
+	ocean.transform->SetPosition({ 0, -3, 0 });
+	ocean.transform->SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.5f);
 	
 	// Systèmes
 	LoadSkybox();
@@ -170,9 +170,9 @@ void MainScene::HandleEvent(float _dt)
 	m_pWasDown = pDown;
 
 	bool bDown = keys[SDL_SCANCODE_B];
-	if (bDown && m_bWasDown == false)
+	if (bDown && m_pWasDown == false)
 		m_sparkle.Burst(200);
-	m_bWasDown = bDown;
+	m_pWasDown = bDown;
 	
 	if (keys[SDL_SCANCODE_R])
 	{

@@ -339,8 +339,8 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 	uniforms.w = 1.f * static_cast<float>(uniforms.time);
 	uniforms.amplitude = material.amplitude;
 	uniforms.waveDirection = material.direction;
-	uniforms.scale = object.transform.GetScale();
-	uniforms.translation = object.transform.GetPosition();
+	uniforms.scale = object.transform->GetScale();
+	uniforms.translation = object.transform->GetPosition();
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);
