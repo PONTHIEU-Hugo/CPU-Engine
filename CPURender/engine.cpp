@@ -13,7 +13,7 @@
 void Engine::init()
 {
 	printf("Init engine \n");
-	m_renderer.Init(2048);
+	m_renderer.Init(4096);
 	m_renderer.showShadowDebug = false;
 	m_scene = new MaterialScene();   // MainScene(), MaterialScene()... pour changer de scene
 	m_scene->Init();

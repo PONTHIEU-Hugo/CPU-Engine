@@ -132,7 +132,7 @@ namespace GeometryFactory
 	//// SQUARE
 	////////////////////////////////////////////
 	
-	inline Mesh BuildSquare()
+	inline Mesh BuildPlane()
 	{
 		std::vector<Vertex> vertices;
 

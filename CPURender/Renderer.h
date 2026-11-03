@@ -51,6 +51,7 @@ private:
 	glm::vec3 m_lastLightDir = glm::vec3(0.0f);
 	float     m_lastShadowRadius = -1.0f;
 	float     m_lastCasterExtra = -1.0f;
+	glm::vec3 m_lastColor = {255.0f, 255.0f, 255.0f};
 
 	// Signature (mesh + version du Transform) des objets qui projettent une ombre.
 	uint64_t  m_casterSignature = 0;

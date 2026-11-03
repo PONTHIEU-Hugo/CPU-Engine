@@ -268,7 +268,11 @@ static Vertex DisplacementVS(const Vertex& v, const Uniforms& u)
 	Vertex d = v;
 	if (u.displacementMap && u.displacementMap->IsValid())
 	{
-		const float h = u.displacementMap->SampleHeightBilinear(v.uv);
+		glm::vec2 uv = v.uv;
+		if (uv.y < 1e-4f || uv.y > 1.0f - 1e-4f)
+			uv.x = 0.0f;                        
+
+		const float h = u.displacementMap->SampleHeightBilinear(uv);
 		d.position += v.normal * ((h - u.displacementMidpoint) * u.displacementScale);
 	}
 	return d;
@@ -363,8 +367,8 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
 	glm::vec3 diffuseColor = base * (1.0f - metal);
 
-	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse * visibility;
-	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular * visibility;
+	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse * visibility * (u.lightColor / 255.0f);
+	glm::vec3 rgb = diffuseColor * lighting  + 255.0f * F0 * specular * visibility;
 
 	return glm::vec4(rgb, baseColor.a);
 }

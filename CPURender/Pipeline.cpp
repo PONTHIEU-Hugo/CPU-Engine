@@ -9,6 +9,7 @@
 
 namespace
 {
+	constexpr float kPoleEps = 1e-4f;
 	constexpr float kEdgeTolerance = -1e-5f;
 
 	float EdgeFunction(const glm::vec2& edgeStart, const glm::vec2& edgeEnd, const glm::vec2& point)
@@ -34,6 +35,11 @@ namespace
 		return a.z < b.z;
 	}
 
+	bool IsPoleUV(const glm::vec2& uv)
+	{
+		return uv.y < kPoleEps || uv.y > 1.0f - kPoleEps;
+	}
+	
 	Vertex LerpV(const Vertex& a, const Vertex& b, float t)
 	{
 		Vertex r;
@@ -41,6 +47,10 @@ namespace
 		r.normal   = glm::normalize(glm::mix(a.normal, b.normal, t));
 		r.color    = glm::mix(a.color, b.color, t);
 		r.uv       = glm::mix(a.uv, b.uv, t);
+		const bool poleA = IsPoleUV(a.uv), poleB = IsPoleUV(b.uv);
+		if (poleA && !poleB)      r.uv.x = b.uv.x;
+		else if (poleB && !poleA) r.uv.x = a.uv.x;
+
 		r.tangent  = glm::vec4(glm::normalize(glm::mix(glm::vec3(a.tangent), glm::vec3(b.tangent), t)), a.tangent.w);
 		return r;
 	}
@@ -96,7 +106,7 @@ void Pipeline::Draw(glm::mat4 const& mat)
         {
             auto& local = perThread[omp_get_thread_num()];
             local.reserve((size_t)tris / nt * N * N * 3 + 3);
-#pragma omp for schedule(dynamic, 32)
+#pragma omp for schedule(dynamic, 5)
             for (int t = 0; t < tris; ++t)
                 TessellateTriangle(m_worldVertices[3*t], m_worldVertices[3*t+1], m_worldVertices[3*t+2], N, local);
         }
@@ -307,7 +317,6 @@ void Pipeline::TessellateTriangle(const Vertex& a, const Vertex& b, const Vertex
 		}
 	}
 	
-
     for (int i = 0; i < N; ++i)
     {
 	    for (int j = 0; j < N - i; ++j)

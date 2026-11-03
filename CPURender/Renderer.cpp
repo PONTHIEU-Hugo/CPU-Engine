@@ -27,12 +27,14 @@ void Renderer::UpdateLight(const Scene& scene)
 
 	if (sun.direction != m_lastLightDir
 		|| sun.shadowRadius != m_lastShadowRadius
-		|| sun.shadowCasterExtra != m_lastCasterExtra)
+		|| sun.shadowCasterExtra != m_lastCasterExtra
+		|| sun.color != m_lastColor)
 	{
-		m_shadow.SetFollowMode(sun.direction, sun.shadowRadius, sun.shadowCasterExtra);
+		m_shadow.SetFollowMode(sun.direction, sun.shadowRadius, sun.shadowCasterExtra, sun.color);
 		m_lastLightDir     = sun.direction;
 		m_lastShadowRadius = sun.shadowRadius;
 		m_lastCasterExtra  = sun.shadowCasterExtra;
+		m_lastColor        = sun.color;
 	}
 
 	m_shadow.Follow(sun.shadowFocus);

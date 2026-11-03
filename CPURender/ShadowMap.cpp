@@ -41,13 +41,14 @@ void ShadowMap::SetLight(const glm::vec3& direction, const AABB& sceneBounds)
 	m_dirty = true;
 }
 
-void ShadowMap::SetFollowMode(const glm::vec3& direction, float radius, float casterExtra)
+void ShadowMap::SetFollowMode(const glm::vec3& direction, float radius, float casterExtra, const glm::vec3& color)
 {
 	m_follow      = true;
 	m_lightDir    = glm::normalize(direction);
 	m_radius      = radius;
 	m_casterExtra = casterExtra;
 	m_depthRange  = 2.0f * radius + casterExtra;
+	m_lightColor  = color;
 
 	glm::vec3 up = (glm::abs(m_lightDir.y) > 0.99f) ? glm::vec3(0, 0, 1) : glm::vec3(0, 1, 0);
 	m_lightRot = glm::lookAt(glm::vec3(0.0f), m_lightDir, up);
@@ -97,6 +98,7 @@ bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& opaq
 	Frustum lightFrustum = Frustum::FromMatrix(m_lightVP);
 
 	Uniforms lightUniforms;
+	lightUniforms.lightColor = m_lightColor;
 	lightUniforms.vp = m_lightVP;
 
 	pipeline.BindTarget(&m_target);
@@ -145,6 +147,7 @@ void ShadowMap::ApplyTo(Uniforms& uniforms) const
 {
 	uniforms.lightDirection  = m_lightDir;
 	uniforms.lightVP         = m_lightVP;
+	uniforms.lightColor		 = m_lightColor;
 	uniforms.shadowMap       = &m_target;
 	uniforms.shadowTint		 = &m_tintTarget;
 	uniforms.shadowBiasConst = m_biasUnit * m_biasConstScale;

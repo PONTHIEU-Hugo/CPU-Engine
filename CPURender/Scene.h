@@ -37,6 +37,8 @@ struct DirectionalLight
 	float     shadowRadius = 50.0f;
 	float     shadowCasterExtra = 30.0f;
 	glm::vec3 shadowFocus = { 0.0f, 0.0f, 0.0f };
+	
+	glm::vec3 color = { 255.0f, 255.0f, 255.0f };
 };
 
 // Index stable tant qu'on ne retire pas d'objet.

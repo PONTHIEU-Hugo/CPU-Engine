@@ -13,10 +13,18 @@ public:
     
 private:
     Material m_defaultMaterial;
+    Material m_rockMaterial;
     Material m_sheetMaterial;
+    Material m_barkMaterial;
     
     Texture  m_texture;
     Texture  m_normalMap;
+    Texture  m_texture2;
+    Texture  m_normalMap2;
+    Texture  m_texture3;
+    Texture  m_normalMap3;
+    Texture  m_texture4;
+    Texture  m_normalMap4;
     
     Texture  m_arm;
     Texture  m_ao;
@@ -24,9 +32,25 @@ private:
     Texture  m_roughness;
     Texture  m_displacement;
     
+    Texture  m_arm3;
+    Texture  m_ao3;
+    Texture  m_metalness3;
+    Texture  m_roughness3;
+    Texture  m_displacement3;
+    
+    Texture  m_arm2;
+    Texture  m_ao2;
+    Texture  m_metalness2;
+    Texture  m_roughness2;
+    Texture  m_displacement2;
+
+    Texture  m_arm4;
+    Texture  m_displacement4;
+    
     Mesh     m_sphereMesh;
     Mesh     m_sphereIcoMesh;
-    Mesh     m_cubeMesh;
+    Mesh     m_donutMesh;
+    Mesh     m_planeMesh;
 };
 
 

@@ -34,6 +34,7 @@ struct Uniforms
     const Texture* texture = nullptr;
     glm::vec4 baseColor = { 255.0f, 255.0f, 255.0f, 255.0f };
     glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f };
+	glm::vec3 lightColor	 = { 255.0f, 255.0f, 255.0f};
     float ambient = 0.2f;
 
     // Reflet speculaire (Phong)
