@@ -17,3 +17,6 @@ extern const Shader LambertShader;
 
 // Lambert + ombre portee (lit Uniforms::shadowMap / lightVP / bias).
 extern const Shader ShadowLambertShader;
+
+// Rendu d'animation des vagues d'eau
+extern const Shader SinWavesShader;

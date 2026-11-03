@@ -19,6 +19,10 @@ struct Material
 	float          roughness = 0.5f;
 	
 	bool transparent = false;
+
+	float lambda = 0.f;
+	float amplitude = 0.f;
+	glm::vec2 direction = { 0.f, 0.f };
 };
 
 // Exposant de Phong d'une roughness : 0.05 -> ~800 (reflet tres net), 0.5 -> 6, 1.0 -> 1 (tres etale).

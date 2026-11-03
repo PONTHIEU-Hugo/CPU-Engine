@@ -4,6 +4,8 @@
 #include "Frustum.h"
 #include "Shaders.h"
 
+#include "core.h"
+
 void Renderer::Init(int shadowResolution)
 {
 	m_shadow.Init(shadowResolution);
@@ -206,6 +208,14 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 	uniforms.baseColor = material.baseColor;
 	uniforms.specularStrength = material.specular;
 	uniforms.shininess = ShininessFromRoughness(material.roughness);
+	
+	uniforms.time = static_cast<float>(CHRONO->GetTotalTime());
+	uniforms.k = glm::two_pi<float>() / material.lambda;
+	uniforms.w = 1.f * static_cast<float>(uniforms.time);
+	uniforms.amplitude = material.amplitude;
+	uniforms.waveDirection = material.direction;
+	uniforms.scale = object.transform.GetScale();
+	uniforms.translation = object.transform.GetPosition();
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);

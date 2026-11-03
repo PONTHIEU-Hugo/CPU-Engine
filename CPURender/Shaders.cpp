@@ -1,5 +1,6 @@
 #include "Shaders.h"
 #include "Texture.h"
+#include "core.h"
 
 #include <cmath>
 
@@ -165,3 +166,44 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 }
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };
+
+// ---------------------------------------------------------------------------
+//  Vagues d'eau
+// ---------------------------------------------------------------------------
+
+static Varyings SinWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	glm::vec3 pos = v.position;
+	glm::vec3 local = (v.position - u.translation) / u.scale;
+	float current = (local.x * u.waveDirection.x + local.z * u.waveDirection.y);
+	float height = std::sinf(u.k * current - u.w);
+
+	glm::vec3 heighVEC3 = glm::vec3{ 0, height * u.amplitude, 0 } * u.scale;
+	out.position = u.vp * glm::vec4(pos + heighVEC3, 1.0f);
+	out.worldPos = pos;
+
+	// Blue colors
+	glm::vec4 color;
+	if (height > 0.6)
+		color = ToColor(0x5CB5E1);
+	else if (height > 0.55)
+		color = ToColor(0x3EA4F0);
+	else if (height > 0.35)
+		color = ToColor(0x5D97E7);
+	else
+		color = ToColor(0x416BDF);
+	color.a = 255;
+	out.color = color;
+
+	float angle = u.amplitude * u.k * std::cos(current) * u.scale.y;			// A · k · cos(phase)
+	float angleX = angle * u.waveDirection.x;									// angle sur x
+	float angleZ = angle * u.waveDirection.y;									// angle sur z
+	out.normal = glm::normalize(glm::vec3(-angleX, 1.0f, -angleZ));
+
+	out.uv = v.uv;
+	return out;
+}
+
+const Shader SinWavesShader = { SinWavesVS, ShadowLambertPS };

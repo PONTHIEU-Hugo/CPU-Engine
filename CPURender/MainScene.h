@@ -40,7 +40,10 @@ private:
     bool     m_pWasDown = false;
     
     TerrainGenerator m_Terrain;
+
+    ObjectId m_OceanID = 0;
     OceanWaves m_Ocean;
+    int m_OceanAmplitude = 0;
 };
 
 

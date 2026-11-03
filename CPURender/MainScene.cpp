@@ -98,12 +98,15 @@ void MainScene::Init()
 	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
 	//Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform.SetPosition({ 0, -5, 0 });
 
-	m_Ocean.SetWaveNumber(1);
-	m_Ocean.SetOrientation({ 3.f, 1.5f });
-	RenderObject& ocean = Get(Add(m_Ocean.m_Mesh, m_Ocean.m_Material));
-	ocean.transform.SetPosition({ 0, 3, 0 });
-	ocean.transform.SetScale({ 5, 5, 5 });
-
+	m_Ocean.GenerateMesh({ 500, 500 });
+	m_Ocean.SetWaveNumber(3);
+	m_Ocean.SetOrientation({ -1.5f, 1.f });
+	m_Ocean.SetAmplitude(2.5f);
+	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material);
+	RenderObject& ocean = Get(m_OceanID);
+	ocean.transform.SetPosition({ 0, -3, 0 });
+	ocean.transform.SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.5f);
+	
 	// Systèmes
 	LoadSkybox();
 	
@@ -130,8 +133,6 @@ void MainScene::Update(float _dt)
 	const glm::mat4& carWorld = Get(m_car).transform.GetWorldMatrix();
 	m_emitter.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
 	m_emitter.Update(_dt);
-
-	m_Ocean.Update();
 
 	glm::vec3 cam = camera->GetPosition();
 	sun.shadowFocus = glm::vec3(cam.x, m_groundMesh.localBounds.min.y, cam.z);
@@ -168,8 +169,19 @@ void MainScene::HandleEvent(float _dt)
 	float speedRot = 10.0f;
 	float speedSca = 0.2f;
 	
-	ObjectId currentObj = m_car;
+	ObjectId currentObj = m_OceanID;
 	
+	if (keys[SDL_SCANCODE_KP_MULTIPLY])
+	{
+		m_OceanAmplitude++;
+		m_Ocean.SetAmplitude(m_OceanAmplitude);
+	}
+	else if(keys[SDL_SCANCODE_KP_DIVIDE])
+	{
+		m_OceanAmplitude--;
+		m_Ocean.SetAmplitude(m_OceanAmplitude);
+	}
+
 	if (keys[SDL_SCANCODE_KP_8])
 	{
 		Get(currentObj).transform.Move(Get(currentObj).transform.GetForward() * (speed * dt));

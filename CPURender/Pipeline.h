@@ -40,6 +40,11 @@ struct Uniforms
     const RenderTarget* shadowMap = nullptr;
     float shadowBiasConst = 0.0f;
     float shadowBiasSlope = 0.0f;
+
+    // Vagues
+    float time, k, w, amplitude;
+    glm::vec2 waveDirection;
+    glm::vec3 scale, translation;
 };
 
 enum class CullMode { None, Back, Front };

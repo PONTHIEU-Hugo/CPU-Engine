@@ -5,40 +5,33 @@
 
 OceanWaves::OceanWaves()
 {
-	m_Material.shader = &LambertShader;
+	m_Material.shader = &SinWavesShader;
 
 	m_Material.specular = 0.01f;
 	m_Material.roughness = 0.3f;
+	m_Material.amplitude = 5.f;
 
-	GenerateMesh({ 10, 10 });
-	m_WaveNumber = 1;
-	m_Dir = { -0.5f, 0.5f };
-	glm::normalize(m_Dir);
+	GenerateMesh({ 15, 5 });
+	SetWaveNumber(1);
+	SetOrientation({ -0.5f, 0.5f });
+}
+
+void OceanWaves::SetWaveNumber(size_t waveNumber)
+{
+	m_WaveNumber = waveNumber;
+	UpdateLambda();
 }
 
 void OceanWaves::SetOrientation(glm::vec2 newDir)
 {
-	m_Dir = newDir;
-	glm::normalize(m_Dir);
+	m_Dir = glm::normalize(newDir);
+	m_Material.direction = m_Dir;
+	UpdateLambda();
 }
 
-void OceanWaves::Update()
+void OceanWaves::SetAmplitude(float newAmplitude)
 {
-	std::vector<Vertex>& rVertices = m_Mesh.vertices;
-
-	float fT = static_cast<float>(CHRONO->GetTotalTime());
-	float lambda = m_Size.x / static_cast<float>(m_WaveNumber); // Distance entre les vagues
-	float k = (2 * 3.14) / lambda;		// Nombre d'onde
-	float w = 1 * fT;					// Waves pulsation
-
-	for (Vertex& rVertex : rVertices)
-	{
-		glm::vec2 localPos = { rVertex.position.x - m_Mesh.localBounds.min.x, rVertex.position.z - m_Mesh.localBounds.min.z };
-		float current = ((localPos.x * m_Dir.x + localPos.y * m_Dir.y) * 0.5f);
-
-		rVertex.position.y = std::sinf(k * current - w);
-		AdaptColor(rVertex);
-	}
+	m_Material.amplitude = newAmplitude;
 }
 
 void OceanWaves::GenerateMesh(glm::ivec2 size)
@@ -86,6 +79,13 @@ void OceanWaves::GenerateMesh(glm::ivec2 size)
 	}
 	m_Mesh.ComputeBounds();
 	m_Size = size;
+}
+
+void OceanWaves::UpdateLambda()
+{
+	float x = std::abs(m_Size.x * m_Dir.x);
+	float y = std::abs(m_Size.y * m_Dir.y);
+	m_Material.lambda = (x + y) / static_cast<float>(m_WaveNumber); // Distance entre les vagues
 }
 
 void OceanWaves::AdaptColor(Vertex& rVertex)
