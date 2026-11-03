@@ -23,7 +23,9 @@ static glm::mat4 ComputeLightVP(const glm::vec3& lightDir, const AABB& bounds, f
 
 void ShadowMap::Init(int resolution)
 {
-	m_target = RenderTarget(resolution, resolution);
+	m_target     = RenderTarget(resolution, resolution);
+	m_tintTarget = RenderTarget(resolution, resolution);
+	m_tintTarget.EnableTint();
 	m_dirty = true;
 	RecomputeBias();
 }
@@ -87,10 +89,12 @@ void ShadowMap::RecomputeBias()
 	m_biasUnit = 2.0f * texelWorld / m_depthRange;
 }
 
-bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& casters, bool force)
+bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& opaques, const std::vector<ShadowCaster>& transparents, bool force)
 {
 	if (m_dirty == false && force == false)
 		return false;
+
+	Frustum lightFrustum = Frustum::FromMatrix(m_lightVP);
 
 	Uniforms lightUniforms;
 	lightUniforms.vp = m_lightVP;
@@ -101,12 +105,34 @@ bool ShadowMap::Update(Pipeline& pipeline, const std::vector<ShadowCaster>& cast
 	pipeline.BindShader(DepthShader);
 	pipeline.BindUniforms(lightUniforms);
 
-	Frustum lightFrustum = Frustum::FromMatrix(m_lightVP);
-	for (const ShadowCaster& caster : casters)
+	for (const ShadowCaster& caster : opaques)
+	{
+		if (!caster.mesh || lightFrustum.Intersects(caster.bounds) == false)
+			continue;
+		pipeline.BindVertexBuffer(caster.mesh);
+		pipeline.Draw(caster.world);
+	}
+
+	m_tintTarget.depth = m_target.depth;
+	m_tintTarget.ClearTint(); 
+
+	pipeline.BindTarget(&m_tintTarget);
+	pipeline.SetCullMode(CullMode::Front);
+	pipeline.SetBlend(false);
+	pipeline.SetDepthWrite(true);
+	pipeline.SetAlphaCutoff(0.0f);
+	pipeline.BindShader(TintShader);
+
+	for (const ShadowCaster& caster : transparents)
 	{
 		if (!caster.mesh || lightFrustum.Intersects(caster.bounds) == false)
 			continue;
 
+		Uniforms tintUniforms;
+		tintUniforms.vp        = m_lightVP;
+		tintUniforms.baseColor = caster.tint;
+
+		pipeline.BindUniforms(tintUniforms);
 		pipeline.BindVertexBuffer(caster.mesh);
 		pipeline.Draw(caster.world);
 	}
@@ -120,6 +146,7 @@ void ShadowMap::ApplyTo(Uniforms& uniforms) const
 	uniforms.lightDirection  = m_lightDir;
 	uniforms.lightVP         = m_lightVP;
 	uniforms.shadowMap       = &m_target;
+	uniforms.shadowTint		 = &m_tintTarget;
 	uniforms.shadowBiasConst = m_biasUnit * m_biasConstScale;
 	uniforms.shadowBiasSlope = m_biasUnit * m_biasSlopeScale;
 }

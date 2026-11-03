@@ -1,11 +1,13 @@
 ﻿*
 !*/
 !Libs/SDL3/lib/x64/*
+!Libs/assimp/
+!Libs/assimp/**
 !*.cpp
 !*.hpp
 !*.h
 !*.sln
 !.gitignore
-!Assets/*
+!Assets/**
 !*.vcxproj*
 !*.inl!*.md

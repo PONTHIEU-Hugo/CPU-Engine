@@ -3,9 +3,11 @@
 
 #include "Scene.h"
 #include "Texture.h"
-#include "ParticleSystem.h"
 #include "TerrainGenerator.h"
 #include "OceanWaves.h"
+#include "SmokeEmitter.h"
+#include "SnowEmitter.h"
+#include "SparkleEmitter.h"
 
 class MainScene : public Scene
 {
@@ -36,9 +38,12 @@ private:
     ObjectId m_wheelAr = -1;
     ObjectId m_wheelAv = -1;
 
-    Emitter  m_emitter{ 1000 };
     bool     m_pWasDown = false;
-    
+
+    SmokeEmitter   m_smoke;     // pot d'echappement
+    SnowEmitter    m_snow;      // suit la camera
+    SparkleEmitter m_sparkle;   // sur le toit de la voiture (B = rafale)
+
     TerrainGenerator m_Terrain;
 
     ObjectId m_OceanID = 0;

@@ -14,14 +14,20 @@ struct Mesh;
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
 {
-    glm::vec4 position = { 0.0f, 0.0f, 0.0f, 1.0f };
-    glm::vec3 normal = { 0.0f, 0.0f, 0.0f };
-    glm::vec4 color = { 255.0f, 0.0f, 255.0f, 255.0f };
-    glm::vec2 uv = { 0.0f, 0.0f };
-    glm::vec3 worldPos = { 0.0f, 0.0f, 0.0f }; 
-    glm::vec3 lightPos = { 0.0f, 0.0f, 0.0f };
+    glm::vec4 position	= { 0.0f, 0.0f, 0.0f, 1.0f };
+    glm::vec3 normal	= { 0.0f, 0.0f, 0.0f };
+    glm::vec4 color		= { 255.0f, 255.0f, 255.0f, 255.0f };
+    glm::vec2 uv		= { 0.0f, 0.0f };
+	glm::vec3 arm		= { 1.0f, 0.5f, 0.0f };
+	glm::vec3 tangent	= glm::vec3(1, 0, 0);
+	glm::vec2 duvdx		= glm::vec2(0.0f);
+	glm::vec2 duvdy		= glm::vec2(0.0f);
+	glm::vec3 dpdx		= glm::vec3(0.0f);
+	glm::vec3 dpdy		= glm::vec3(0.0f);
+    glm::vec3 worldPos	= { 0.0f, 0.0f, 0.0f }; 
+    glm::vec3 lightPos	= { 0.0f, 0.0f, 0.0f };
 };
-
+ 
 struct Uniforms
 {
     glm::mat4 vp{ 1.0f };
@@ -34,10 +40,26 @@ struct Uniforms
     glm::vec3 cameraPos = { 0.0f, 0.0f, 0.0f };
     float specularStrength = 0.0f;   // 0 = pas de reflet
     float shininess = 32.0f;         // exposant de Phong
+	float thickness = 1.0f;
+	float eta = 0.66f;
+	const FinalFrameBuffer*   sceneColor = nullptr;
+	const std::vector<float>* sceneDepth = nullptr;
 
+	// NormalMap
+	const Texture* normalMap	= nullptr;
+	float normalStrength		= 1.0f;
+	bool  normalFlipY			= false;
+	
+	// armMap
+	const Texture* aoMap = nullptr;
+	const Texture* roughnessMap	= nullptr;
+	const Texture* metalnessMap = nullptr;
+	const Texture* armMap = nullptr;
+	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
     const RenderTarget* shadowMap = nullptr;
+	const RenderTarget* shadowTint = nullptr;
     float shadowBiasConst = 0.0f;
     float shadowBiasSlope = 0.0f;
 
@@ -84,10 +106,15 @@ public:
     // Ecriture dans le depth buffer (le depth TEST reste toujours actif).
     // Mettre a false pour les transparents.
     void SetDepthWrite(bool enabled) { m_depthWrite = enabled; }
-
-    // Alpha blending : out = src * a + dst * (1 - a), avec a = shaded.a / 255.
-    // Mettre a true pour les transparents.
+	
     void SetBlend(bool enabled) { m_blend = enabled; }
+
+    // true : seuls la couleur et les uv sont interpoles par pixel (normale, tangente, worldPos et lightPos restent a zero).
+    // Pour les shaders qui n'utilisent que ceux-la, comme ParticleShader.
+    void SetLiteVaryings(bool enabled) { m_lite = enabled; }
+
+    // Avec le blend actif : false = SrcAlpha / InvSrcAlpha, true = SrcAlpha / One.
+    void SetAdditive(bool enabled) { m_additive = enabled; }
 
     // Alpha test (hors blend) : un pixel dont l'alpha (0-255) est < cutoff est rejete.
     // 0 = desactive.
@@ -95,6 +122,7 @@ public:
 
     bool GetDepthWrite() const { return m_depthWrite; }
     bool GetBlend() const { return m_blend; }
+	const std::vector<float>& GetScreenDepth() const { return m_screen.depth; }
 
     void ClearDepth();
 
@@ -134,6 +162,8 @@ private:
 
     bool          m_depthWrite  = true;
     bool          m_blend       = false;
+    bool          m_additive    = false;
+    bool          m_lite        = false;
     float         m_alphaCutoff = 50.0f;
 
     std::vector<Varyings> m_varyings;

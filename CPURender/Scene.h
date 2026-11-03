@@ -4,6 +4,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include <SDL3/SDL_keyboard.h>
+#include <memory>
 
 #include "Mesh.h"
 #include "Material.h"
@@ -12,17 +13,19 @@
 #include "CubeMap.h"
 #include "Renderer.h"
 #include "ParticleSystem.h"
+#include "Animator.h"
 
-// Une instance dans la scene : quel mesh, avec quel materiau, ou.
 struct RenderObject
 {
 	const Mesh* mesh = nullptr;
 	const Material* material = nullptr;
-	Transform       transform;
+	Transform*       transform = nullptr;
 	bool            castShadow = true;
 	bool            visible = true;
 
-	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform.GetWorldMatrix()); }
+	Animator*       animator = nullptr;
+
+	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform->GetWorldMatrix()); }
 };
 
 struct DirectionalLight
@@ -50,13 +53,12 @@ public:
 
 	// L'emetteur doit survivre a la scene (il est reference, pas copie).
 	void AddEmitter(Emitter& emitter) { emitters.push_back(&emitter); }
-
 	ObjectId Add(const Mesh& mesh, const Material& material, bool castShadow = true, Transform* transform = new Transform())
 	{
 		RenderObject object;
 		object.mesh = &mesh;
 		object.material = &material;
-		object.transform = *transform;
+		object.transform = transform;
 		object.castShadow = castShadow;
 		objects.push_back(object);
 		m_transforms.push_back(transform);
@@ -64,9 +66,16 @@ public:
 	}
 
 	virtual void Init() = 0;
-	virtual void Update(float _dt) { for (auto& transform : m_transforms) transform->Update(); }
+	virtual void Update(float _dt)
+	{
+		for (auto& transform : m_transforms) transform->Update();
+		for (auto& obj : objects)
+			if (obj.animator) obj.animator->UpdateAnimation(_dt);
+	}
 	virtual void LoadSkybox() = 0;
     virtual void HandleEvent(float _dt) = 0;
+	
+	void EnableSkybox(bool enable) { skybox.enabled = enable; }
 	
 	RenderObject& Get(ObjectId id) { return objects[id]; }
 	const RenderObject& Get(ObjectId id) const { return objects[id]; }

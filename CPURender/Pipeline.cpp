@@ -48,7 +48,6 @@ void Pipeline::Draw(glm::mat4 const& mat)
 	const int vertexCount = (int)vertices.size();
 	const int triangleCount = vertexCount / 3;
 
-	// Vertex shader 
 	m_varyings.resize(vertexCount);
 
 #pragma omp parallel for schedule(static)
@@ -57,7 +56,8 @@ void Pipeline::Draw(glm::mat4 const& mat)
 		Vertex v = vertices[i];
 		v.position = glm::vec3(mat * glm::vec4(vertices[i].position, 1.0f));
 		v.normal = glm::normalize(normalMatrix * vertices[i].normal);
-
+		v.tangent = glm::vec4(glm::normalize(glm::mat3(mat) * glm::vec3(vertices[i].tangent)), vertices[i].tangent.w);
+		
 		m_varyings[i] = m_vertexShader(v, m_uniforms);
 	}
 
@@ -96,7 +96,6 @@ void Pipeline::Draw(glm::mat4 const& mat)
 		}
 	}
 
-	// Rasterisation 
 	const int width = m_target->width;
 	const int height = m_target->height;
 
@@ -106,7 +105,6 @@ void Pipeline::Draw(glm::mat4 const& mat)
 		int x0, y0, x1, y1;
 		TileBounds(tile, width, height, x0, y0, x1, y1);
 
-		// Bacs parcourus thread 0, 1, 2... -> triangles dessines dans l'ordre du mesh
 		for (int th = 0; th < threadCount; ++th)
 		{
 			const ThreadBins& tb = m_threadBins[th];
@@ -221,6 +219,20 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const Varyings& vertexB = tri.varyings[1];
 	const Varyings& vertexC = tri.varyings[2];
 
+	struct Attr { glm::vec2 uv; glm::vec3 pos; };
+	
+	auto attrAt = [&](const glm::vec2& p) -> Attr
+	{
+		float a = EdgeFunction(sB, sC, p) * tri.invArea / vertexA.position.w;
+		float b = EdgeFunction(sC, sA, p) * tri.invArea / vertexB.position.w;
+		float c = EdgeFunction(sA, sB, p) * tri.invArea / vertexC.position.w;
+		const float inv = 1.0f / (a + b + c);
+		return {
+			(a * vertexA.uv       + b * vertexB.uv       + c * vertexC.uv)       * inv,
+			(a * vertexA.worldPos + b * vertexB.worldPos + c * vertexC.worldPos) * inv
+		};
+	};
+	
 	for (int y = minY; y <= maxY; ++y)
 	{
 		for (int x = minX; x <= maxX; ++x)
@@ -262,14 +274,37 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 
 			Varyings fragment;
 			fragment.position = glm::vec4(pixelCenter.x, pixelCenter.y, depth, 1.0f);
-			fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
+			if (m_lite == false)
+			{
+				fragment.normal = perspectiveA * vertexA.normal + perspectiveB * vertexB.normal + perspectiveC * vertexC.normal;
+				fragment.tangent = perspectiveA * vertexA.tangent + perspectiveB * vertexB.tangent + perspectiveC * vertexC.tangent;
+				fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
+				fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
+			}
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
-			fragment.worldPos = perspectiveA * vertexA.worldPos + perspectiveB * vertexB.worldPos + perspectiveC * vertexC.worldPos;
-			fragment.lightPos = perspectiveA * vertexA.lightPos + perspectiveB * vertexB.lightPos + perspectiveC * vertexC.lightPos;
-
+			
+			if (m_uniforms.texture || m_uniforms.normalMap)
+			{
+				const Attr r	= attrAt(pixelCenter + glm::vec2(1.0f, 0.0f));
+				const Attr d	= attrAt(pixelCenter + glm::vec2(0.0f, 1.0f));
+				fragment.duvdx	= r.uv  - fragment.uv;
+				fragment.duvdy	= d.uv  - fragment.uv;
+				fragment.dpdx	= r.pos - fragment.worldPos;
+				fragment.dpdy	= d.pos - fragment.worldPos;
+			}
+			
 			glm::vec4 shaded = m_pixelShader(fragment, m_uniforms);
 
+			if (!m_target->tint.empty())
+			{
+				glm::vec3 c = glm::clamp(glm::vec3(shaded), 0.0f, 255.0f);
+				m_target->tint[index] = (int)c.r << 16 | (int)c.g << 8 | (int)c.b;
+				if (m_depthWrite)
+					m_target->depth[index] = depth;
+				continue;
+			}
+			
 			if (!m_target->color)
 				continue;
 
@@ -278,15 +313,20 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			if (m_blend)
 			{
 				float a = glm::clamp(shaded.a / 255.0f, 0.0f, 1.0f);
+				if (a <= 0.0f)
+					continue;   // totalement transparent : ni lecture ni ecriture du pixel
 				glm::vec3 dst = glm::vec3(ToColor(m_target->color->get_pixel(x, y)));
-				glm::vec3 out = src * a + dst * (1.0f - a);
+				glm::vec3 out = m_additive ? glm::min(dst + src * a, glm::vec3(255.0f))
+				                           : src * a + dst * (1.0f - a);
 
 				m_target->color->put_pixel(x, y, (int)out.r << 16 | (int)out.g << 8 | (int)out.b);
 			}
 			else
 			{
 				if (shaded.a < m_alphaCutoff)
-					continue;              
+					continue;
+				if (src.g < 10.0f)
+					int ki = 0;
 				m_target->color->put_pixel(x, y, (int)src.r << 16 | (int)src.g << 8 | (int)src.b);
 			}
 

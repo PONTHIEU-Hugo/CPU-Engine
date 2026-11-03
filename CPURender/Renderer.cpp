@@ -14,6 +14,7 @@ void Renderer::Init(int shadowResolution)
 void Renderer::Render(const Scene& scene, FinalFrameBuffer& out)
 {
 	UpdateLight(scene);
+	SkinObjects(scene);
 	ShadowPass(scene);
 	MainPass(scene, out);
 	TransparencyPass(scene, out);
@@ -41,7 +42,7 @@ void Renderer::UpdateLight(const Scene& scene)
 
 bool Renderer::ShadowCastersChanged(const Scene& scene)
 {
-	uint64_t hash = 1469598103934665603ull;   // FNV-1a
+	uint64_t hash = 1469598103934665603ull;
 	auto mix = [&hash](uint64_t value)
 	{
 		hash ^= value;
@@ -56,7 +57,20 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 
 		mix(i);
 		mix(reinterpret_cast<uintptr_t>(object.mesh));
-		mix(object.transform.Version());
+		mix(object.transform->Version());
+
+		if (object.material)
+		{
+			mix(object.material->transparent ? 1 : 0);
+			mix((uint64_t)(object.material->baseColor.r * 4.0f));
+			mix((uint64_t)(object.material->baseColor.g * 4.0f));
+			mix((uint64_t)(object.material->baseColor.b * 4.0f));
+			mix((uint64_t)(object.material->baseColor.a * 4.0f));
+		}
+		
+		mix(object.transform->Version());
+		if (object.animator)
+			mix(object.animator->Version());
 	}
 
 	bool changed = hash != m_casterSignature;
@@ -71,19 +85,75 @@ void Renderer::ShadowPass(const Scene& scene)
 		return;
 
 	m_casters.clear();
+	m_tintCasters.clear();
+
 	for (const RenderObject& object : scene.objects)
 	{
 		if (object.castShadow == false || !object.mesh)
 			continue;
 
 		ShadowCaster caster;
-		caster.mesh   = object.mesh;
-		caster.world  = object.transform.GetWorldMatrix();
+		caster.mesh   = GetMeshToDraw(object);
+		caster.world  = object.transform->GetWorldMatrix();
 		caster.bounds = object.WorldBounds();
-		m_casters.push_back(caster);
+
+		const bool transparent = object.material && object.material->transparent;
+		if (transparent)
+		{
+			caster.tint = object.material->baseColor;
+			m_tintCasters.push_back(caster);
+		}
+		else
+			m_casters.push_back(caster);
 	}
 
-	m_shadow.Update(m_pipeline, m_casters, true);
+	m_shadow.Update(m_pipeline, m_casters, m_tintCasters, true);
+}
+
+void Renderer::SkinVertex(const Mesh& mesh, size_t i,
+					   const std::vector<glm::mat4>& bones,
+					   glm::vec3& outPos, glm::vec3& outNormal, glm::vec4& outTangent)
+{
+	const Vertex& v = mesh.vertices[i];
+	const VertexSkin& s = mesh.skin[i];
+
+	glm::mat4 skin(0.0f);
+	float total = 0.0f;
+	for (int k = 0; k < MAX_BONE_INFLUENCE; ++k)
+	{
+		if (s.boneIDs[k] < 0) continue;
+		skin += bones[s.boneIDs[k]] * s.weights[k];
+		total += s.weights[k];
+	}
+	if (total <= 0.0f) skin = glm::mat4(1.0f);
+
+	outPos    = glm::vec3(skin * glm::vec4(v.position, 1.0f));
+	outNormal  = glm::normalize(glm::mat3(skin) * v.normal);
+	outTangent = glm::vec4(glm::normalize(glm::mat3(skin) * glm::vec3(v.tangent)), v.tangent.w);
+}
+
+void Renderer::SkinObjects(const Scene& scene)
+{
+	for (const RenderObject& object : scene.objects)
+	{
+		if (!object.mesh || !object.animator || !object.mesh->IsSkinned())
+			continue;
+
+		const auto& bones = object.animator->GetFinalBoneMatrices();
+		Mesh& dst = m_skinnedMeshes[&object];
+		const Mesh& src = *object.mesh;
+
+		dst.vertices = src.vertices;
+		for (size_t i = 0; i < src.vertices.size(); ++i)
+			SkinVertex(src, i, bones, dst.vertices[i].position, dst.vertices[i].normal, dst.vertices[i].tangent);
+		dst.ComputeBounds();
+	}
+}
+
+const Mesh* Renderer::GetMeshToDraw(const RenderObject& object) const
+{
+	auto it = m_skinnedMeshes.find(&object);
+	return it != m_skinnedMeshes.end() ? &it->second : object.mesh;
 }
 
 void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
@@ -95,7 +165,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	const glm::mat4& view = scene.camera->GetViewMatrix();
 	const glm::mat4& proj = scene.camera->GetProjMatrix();
 
-	if ( !scene.skybox.faces.empty() )
+	if (scene.skybox.enabled)
 		DrawSkybox(scene.skybox, view, proj, out);
 
 	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
@@ -107,6 +177,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 
 	m_pipeline.SetAlphaCutoff(0.0f);
 	
+	
 	for (const RenderObject& object : scene.objects)
 	{
 		if (!object.visible || !object.mesh || !object.material || !object.material->shader || object.material->transparent)
@@ -114,12 +185,28 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 
 		if (frustum.Intersects(object.WorldBounds()) == false)
 			continue;
+		
+		const bool skinned = object.mesh->IsSkinned() && object.animator;
+		const std::vector<glm::mat4>* bones = skinned ? &object.animator->GetFinalBoneMatrices() : nullptr;
 
-		DrawObject(object, base);
+		if (skinned)
+		{
+			const Mesh& src = *object.mesh;
+			m_skinnedMesh.vertices = src.vertices; 
+			for (size_t i = 0; i < src.vertices.size(); ++i)
+				SkinVertex(src, i, *bones,
+						   m_skinnedMesh.vertices[i].position,
+						   m_skinnedMesh.vertices[i].normal,
+						   m_skinnedMesh.vertices[i].tangent);
+		}
+		DrawObject(object, base, GetMeshToDraw(object));
 	}
 
 	ParticlePass(scene, base);
 }
+
+// Alpha minimum (0-255) pour qu'un pixel d'une particule opaque soit dessine.
+static const float OPAQUE_ALPHA_CUTOFF = 128.0f;
 
 void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 {
@@ -130,26 +217,51 @@ void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 	uniforms.baseColor = glm::vec4(255.0f);
 	uniforms.specularStrength = 0.0f;
 
-	// Particules opaques : ecrivent la profondeur, sans melange ni test d'alpha.
-	m_pipeline.SetBlend(false);
-	m_pipeline.SetDepthWrite(true);
-	m_pipeline.SetAlphaCutoff(0.0f);
+	m_pipeline.SetLiteVaryings(true);
 	m_pipeline.SetCullMode(CullMode::None);
-	m_pipeline.BindShader(BasicShader);
+	m_pipeline.BindShader(ParticleShader);
 	m_pipeline.BindUniforms(uniforms);
 
-	for (Emitter* emitter : scene.emitters)
+	// Les emetteurs opaques d'abord (ils ecrivent la profondeur), puis les emetteurs avec melange par-dessus.
+	for (int pass = 0; pass < 2; ++pass)
 	{
-		if (emitter == nullptr)
-			continue;
+		const bool opaquePass = (pass == 0);
 
-		emitter->BuildQuads(view);
-		if (emitter->GetMesh().vertices.empty())
-			continue;
+		if (opaquePass)
+		{
+			// Pas de melange : un pixel est soit entierement dessine, soit rejete (alpha sous le seuil -> bords en disque).
+			m_pipeline.SetBlend(false);
+			m_pipeline.SetAdditive(false);
+			m_pipeline.SetDepthWrite(true);
+			m_pipeline.SetAlphaCutoff(OPAQUE_ALPHA_CUTOFF);
+		}
+		else
+		{
+			m_pipeline.SetBlend(true);
+			m_pipeline.SetDepthWrite(false);
+			m_pipeline.SetAlphaCutoff(0.0f);
+		}
 
-		m_pipeline.BindVertexBuffer(&emitter->GetMesh());
-		m_pipeline.Draw(glm::mat4(1.0f));
+		for (Emitter* emitter : scene.emitters)
+		{
+			if (emitter == nullptr || emitter->settings.opaque != opaquePass)
+				continue;
+
+			emitter->BuildQuads(view);
+			if (emitter->GetMesh().vertices.empty())
+				continue;
+
+			if (opaquePass == false)
+				m_pipeline.SetAdditive(emitter->GetBlendMode() == BlendMode::Additive);
+			m_pipeline.BindVertexBuffer(&emitter->GetMesh());
+			m_pipeline.Draw(glm::mat4(1.0f));
+		}
 	}
+
+	m_pipeline.SetAdditive(false);
+	m_pipeline.SetLiteVaryings(false);
+	m_pipeline.SetBlend(false);
+	m_pipeline.SetDepthWrite(true);
 }
 
 void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
@@ -163,7 +275,6 @@ void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
 void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
 {
 	m_pipeline.BindFrameBuffer(&out);
-	
 
 	Uniforms base;
 	BuildBaseUniforms(scene, base);
@@ -186,26 +297,40 @@ void Renderer::TransparencyPass(const Scene& scene, FinalFrameBuffer& out)
 		m_transparents.push_back({ &object, glm::dot(d, d) });
 	}
 	
+	if (m_transparents.empty())
+		return;
+	
 	std::sort(m_transparents.begin(), m_transparents.end(),
 	[](const TransparentEntry& a, const TransparentEntry& b) { return a.dist2 > b.dist2; });
 	
+	std::memcpy(m_sceneColor->colorData, out.colorData, sizeof(out.colorData));
+	base.sceneColor = m_sceneColor.get();
+	base.sceneDepth = &m_pipeline.GetScreenDepth();
+
 	m_pipeline.SetBlend(true);
 	m_pipeline.SetDepthWrite(false);
-	
 	for (const TransparentEntry& entry : m_transparents)
-		DrawObject(*entry.object, base);
-
+		DrawObject(*entry.object, base, GetMeshToDraw(*entry.object));
 	m_pipeline.SetBlend(false);
 	m_pipeline.SetDepthWrite(true);
 }
 
-void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
+void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, const Mesh* meshOverride)
 {
 	const Material& material = *object.material;
 
-	Uniforms uniforms = base;
-	uniforms.texture  = material.texture;
-	uniforms.baseColor = material.baseColor;
+	Uniforms uniforms		  = base;
+	uniforms.texture		  = material.texture;
+	uniforms.normalMap		  = material.normalMap;
+	uniforms.normalStrength	  = material.normalStrength;
+	uniforms.normalFlipY	  = material.normalFlipY;
+	uniforms.baseColor		  = material.baseColor;
+	uniforms.armMap			  = material.armMap;
+	uniforms.aoMap			  = material.aoMap;
+	uniforms.roughnessMap	  = material.roughnessMap;
+	uniforms.metalnessMap	  = material.metalnessMap;
+	uniforms.eta			  = material.eta;
+	uniforms.thickness		  = material.thickness;
 	uniforms.specularStrength = material.specular;
 	uniforms.shininess = ShininessFromRoughness(material.roughness);
 	
@@ -219,9 +344,9 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base)
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);
-	m_pipeline.BindVertexBuffer(object.mesh);
+	m_pipeline.BindVertexBuffer(meshOverride ? meshOverride : object.mesh);
 	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw(object.transform.GetWorldMatrix());
+	m_pipeline.Draw(object.transform->GetWorldMatrix());
 }
 
 void Renderer::DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out)
