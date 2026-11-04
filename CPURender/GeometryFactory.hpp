@@ -132,7 +132,7 @@ namespace GeometryFactory
 	//// SQUARE
 	////////////////////////////////////////////
 	
-	inline Mesh BuildSquare()
+	inline Mesh BuildPlane()
 	{
 		std::vector<Vertex> vertices;
 
@@ -603,6 +603,7 @@ namespace GeometryFactory
 				glm::vec3 pos;
     			fscanf_s(file, "%f %f %f\n", &pos.x, &pos.y, &pos.z);
     			pos.z = -pos.z;
+    			pos.x = -pos.x;
     			rawPositions.push_back(pos);
     		}
     		else if (strcmp(lineHeader, "vn") == 0)
@@ -637,7 +638,7 @@ namespace GeometryFactory
     				return {};
     			}
 
-    			int order[3] = {0, 2, 1};
+    			int order[3] = {0, 1, 2};
     			for (int k = 0; k < 3; ++k)
     			{
     				int idx = order[k];
@@ -659,6 +660,31 @@ namespace GeometryFactory
 		geometry.vertices = std::move(vertices);
 		geometry.ComputeBounds();
 		return geometry;
+	}
+
+	inline Mesh BuildSkybox()
+	{
+		static const glm::vec3 p[8] = 
+		{
+			{-1,-1,-1},{ 1,-1,-1},{ 1, 1,-1},{-1, 1,-1},
+			{-1,-1, 1},{ 1,-1, 1},{ 1, 1, 1},{-1, 1, 1} 
+		};
+		static const int idx[36] = 
+		{
+			0,1,2, 0,2,3,  5,4,7, 5,7,6,  4,0,3, 4,3,7,
+			1,5,6, 1,6,2,  3,2,6, 3,6,7,  4,5,1, 4,1,0 
+		};
+
+		Mesh m;
+		for (int i : idx)
+		{
+			Vertex v{};
+			v.position = p[i];
+			v.normal = -glm::normalize(p[i]);
+			v.tangent = glm::vec4(1, 0, 0, 1);
+			m.vertices.push_back(v);
+		}
+		return m;
 	}
 }
 

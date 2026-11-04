@@ -27,12 +27,14 @@ void Renderer::UpdateLight(const Scene& scene)
 
 	if (sun.direction != m_lastLightDir
 		|| sun.shadowRadius != m_lastShadowRadius
-		|| sun.shadowCasterExtra != m_lastCasterExtra)
+		|| sun.shadowCasterExtra != m_lastCasterExtra
+		|| sun.color != m_lastColor)
 	{
-		m_shadow.SetFollowMode(sun.direction, sun.shadowRadius, sun.shadowCasterExtra);
+		m_shadow.SetFollowMode(sun.direction, sun.shadowRadius, sun.shadowCasterExtra, sun.color);
 		m_lastLightDir     = sun.direction;
 		m_lastShadowRadius = sun.shadowRadius;
 		m_lastCasterExtra  = sun.shadowCasterExtra;
+		m_lastColor        = sun.color;
 	}
 
 	m_shadow.Follow(sun.shadowFocus);
@@ -163,9 +165,6 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	const glm::mat4& view = scene.camera->GetViewMatrix();
 	const glm::mat4& proj = scene.camera->GetProjMatrix();
 
-	if (scene.skybox.enabled)
-		DrawSkybox(scene.skybox, view, proj, out);
-
 	const glm::mat4& viewProj = scene.camera->GetVPMatrix();
 
 	Uniforms base;
@@ -176,10 +175,21 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 	m_pipeline.SetAlphaCutoff(0.0f);
 	
 	
+	const RenderObject* skybox = nullptr;
+
 	for (const RenderObject& object : scene.objects)
 	{
 		if (!object.visible || !object.mesh || !object.material || !object.material->shader || object.material->transparent)
 			continue;
+
+		if (object.material->isSkybox)
+		{
+			if (!skybox)
+			{
+				skybox = &object;
+				continue;
+			}
+		}
 
 		if (frustum.Intersects(object.WorldBounds()) == false)
 			continue;
@@ -199,7 +209,7 @@ void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 		}
 		DrawObject(object, base, GetMeshToDraw(object));
 	}
-
+	DrawSkybox(skybox, base);
 	ParticlePass(scene, base);
 }
 
@@ -262,6 +272,30 @@ void Renderer::ParticlePass(const Scene& scene, const Uniforms& base)
 	m_pipeline.SetDepthWrite(true);
 }
 
+void Renderer::DrawSkybox(const RenderObject* skybox, const Uniforms& base)
+{
+	if (!skybox) return;
+
+	const Material& material = *skybox->material;
+	if (!material.cubeMap || !material.cubeMap->enabled) return;
+
+	Uniforms uniforms = base;
+	uniforms.cubeMap = material.cubeMap;
+	uniforms.texture = nullptr;   
+	uniforms.normalMap = nullptr;
+
+	m_pipeline.SetDepthWrite(false);
+	m_pipeline.SetBlend(false);
+	m_pipeline.SetLiteVaryings(false);  
+	m_pipeline.SetCullMode(material.cull);
+	m_pipeline.BindShader(*material.shader);
+	m_pipeline.BindVertexBuffer(skybox->mesh);
+	m_pipeline.BindUniforms(uniforms);
+	m_pipeline.Draw(skybox->transform->GetWorldMatrix());
+
+	m_pipeline.SetDepthWrite(true);
+}
+
 void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
 {
 	base.vp        = scene.camera->GetVPMatrix();
@@ -317,46 +351,28 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 {
 	const Material& material = *object.material;
 
-	Uniforms uniforms		  = base;
-	uniforms.texture		  = material.texture;
-	uniforms.normalMap		  = material.normalMap;
-	uniforms.normalStrength	  = material.normalStrength;
-	uniforms.normalFlipY	  = material.normalFlipY;
-	uniforms.baseColor		  = material.baseColor;
-	uniforms.armMap			  = material.armMap;
-	uniforms.aoMap			  = material.aoMap;
-	uniforms.roughnessMap	  = material.roughnessMap;
-	uniforms.metalnessMap	  = material.metalnessMap;
-	uniforms.eta			  = material.eta;
-	uniforms.thickness		  = material.thickness;
-	uniforms.specularStrength = material.specular;
-	uniforms.shininess		  = ShininessFromRoughness(material.roughness);
+	Uniforms uniforms				= base;
+	uniforms.texture				= material.texture;
+	uniforms.normalMap				= material.normalMap;
+	uniforms.normalStrength			= material.normalStrength;
+	uniforms.normalFlipY			= material.normalFlipY;
+	uniforms.baseColor				= material.baseColor;
+	uniforms.armMap					= material.armMap;
+	uniforms.aoMap					= material.aoMap;
+	uniforms.roughnessMap			= material.roughnessMap;
+	uniforms.metalnessMap			= material.metalnessMap;
+	uniforms.eta					= material.eta;
+	uniforms.thickness				= material.thickness;
+	uniforms.specularStrength		= material.specular;
+	uniforms.shininess				= ShininessFromRoughness(material.roughness);
+	uniforms.displacementMap        = material.displacementMap;
+	uniforms.displacementScale      = material.displacementScale;
+	uniforms.displacementMidpoint   = material.displacementMidpoint;
+	uniforms.displacementPixelEdge  = material.displacementPixelEdge;
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);
 	m_pipeline.BindVertexBuffer(meshOverride ? meshOverride : object.mesh);
 	m_pipeline.BindUniforms(uniforms);
 	m_pipeline.Draw(object.transform->GetWorldMatrix());
-}
-
-void Renderer::DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out)
-{
-	glm::mat4 viewNoTranslation = glm::mat4(glm::mat3(view));
-	glm::mat4 invVP = glm::inverse(proj * viewNoTranslation);
-
-	for (int y = 0; y < HEIGHT; ++y) 
-	{
-		for (int x = 0; x < WIDTH; ++x) 
-		{
-			// Centre du pixel en NDC (y vers le haut)
-			float ndcX = ((x + 0.5f) / WIDTH) * 2.0f - 1.0f;
-			float ndcY = 1.0f - ((y + 0.5f) / HEIGHT) * 2.0f;
-
-			glm::vec4 p = invVP * glm::vec4(ndcX, ndcY, 1.0f, 1.0f);
-			glm::vec3 dir = glm::vec3(p) / p.w;
-
-			glm::vec3 color = skybox.Sample(dir);
-			out.put_pixel(x, y, (int)color.r << 16 | (int)color.g << 8 | (int)color.b);
-		}
-	}
 }

@@ -96,6 +96,28 @@ glm::vec4 Texture::SampleLevel(int level, glm::vec2 uv) const
 					 (float)(p & 0xFF), (float)((p >> 24) & 0xFF));
 }
 
+float Texture::SampleHeightBilinear(glm::vec2 uv, int level) const
+{
+	if (!IsValid()) return 0.5f;
+	level = glm::clamp(level, 0, (int)mips.size() - 1);
+	const MipLevel& m = mips[level];
+
+	float u = uv.x - std::floor(uv.x);
+	float v = uv.y - std::floor(uv.y);
+	float fx = u * (float)m.width  - 0.5f;
+	float fy = v * (float)m.height - 0.5f;
+	int x0 = (int)std::floor(fx), y0 = (int)std::floor(fy);
+	float tx = fx - (float)x0, ty = fy - (float)y0;
+
+	auto h = [&](int x, int y) {
+		x = (x % m.width  + m.width)  % m.width;  
+		y = (y % m.height + m.height) % m.height;
+		return (float)((m.pixels[(size_t)y * m.width + x] >> 16) & 0xFF) / 255.0f;
+	};
+	return glm::mix(glm::mix(h(x0, y0), h(x0 + 1, y0), tx),
+					glm::mix(h(x0, y0 + 1), h(x0 + 1, y0 + 1), tx), ty);
+}
+
 glm::vec4 Texture::Sample(glm::vec2 uv, float lod) const
 {
 	if (!IsValid())

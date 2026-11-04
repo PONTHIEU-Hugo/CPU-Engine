@@ -39,7 +39,7 @@ private:
 	void TransparencyPass(const Scene& scene, FinalFrameBuffer& out);
 	void DrawObject(const RenderObject& object, const Uniforms& base, const Mesh* meshOverride = nullptr);
 	void ParticlePass(const Scene& scene, const Uniforms& base);
-	void DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out);
+	void DrawSkybox(const RenderObject* skybox, const Uniforms& base);
 
 	Pipeline  m_pipeline;
 	ShadowMap m_shadow;
@@ -51,6 +51,7 @@ private:
 	glm::vec3 m_lastLightDir = glm::vec3(0.0f);
 	float     m_lastShadowRadius = -1.0f;
 	float     m_lastCasterExtra = -1.0f;
+	glm::vec3 m_lastColor = {255.0f, 255.0f, 255.0f};
 
 	// Signature (mesh + version du Transform) des objets qui projettent une ombre.
 	uint64_t  m_casterSignature = 0;
