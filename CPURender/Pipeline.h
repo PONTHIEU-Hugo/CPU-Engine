@@ -10,6 +10,7 @@
 
 struct Texture;
 struct Mesh;
+struct WaveData;
 struct CubeMap;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
@@ -73,12 +74,19 @@ struct Uniforms
 	const RenderTarget* shadowTint = nullptr;
     float shadowBiasConst = 0.0f;
     float shadowBiasSlope = 0.0f;
+
+    // Vagues
+    float time = 0.f;
+    glm::vec3 scale{ 1, 1, 1 };
+    glm::vec3 translation{ 0, 0, 0 };
+    WaveData* waveDatas = nullptr;
+    uint8_t waveNumber = 0;
 };
 
 enum class CullMode { None, Back, Front };
 
-using VertexShader = std::function<Varyings(const Vertex&, const Uniforms&)>;
-using PixelShader = std::function<glm::vec4(const Varyings&, const Uniforms&)>;
+using VertexShader = Varyings(*)(const Vertex&, const Uniforms&);
+using PixelShader = glm::vec4(*)(const Varyings&, const Uniforms&);
 
 // Un shader = vertex shader + pixel shader
 struct Shader
@@ -154,7 +162,6 @@ private:
 		std::vector<int>            bins[TILE_COUNT];  
 	};
 
-	
 	bool SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const;
 	void BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& local) const;
 	void RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1);

@@ -34,6 +34,9 @@ struct Material
 	bool  isSkybox = false;
 	
 	bool transparent = false;
+
+	WaveData* waveDatas = nullptr;	// ptr on array of waves
+	uint8_t waveNumber = 0;			// number of wave => number of element in waves array
 };
 
 inline float ShininessFromRoughness(float roughness)

@@ -5,10 +5,16 @@
 #include "CubeMap.h"
 
 #include "core.h"
+#include "WaveData.h"
 
-// ---------------------------------------------------------------------------
-// Basic / Texture / Lambert
-// ---------------------------------------------------------------------------
+struct SurfaceData
+{
+	glm::vec4 color;
+	glm::vec3 normal;
+	float ao = 1.0f;
+	float roughness = 0.5f;
+	float metal = 0.0f;
+};
 
 static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 {
@@ -57,12 +63,43 @@ static glm::vec3 SurfaceNormal(const Varyings& in, const Uniforms& u)
 	return glm::normalize(T * t.x + B * t.y + N * t.z);
 }
 
+static SurfaceData EvaluateSurface(const Varyings& in, const Uniforms& u)
+{
+	SurfaceData s;
+	s.color = SurfaceColor(in, u);
+	s.normal = SurfaceNormal(in, u);
+
+	// ARM lue une seule fois
+	glm::vec3 arm = in.arm;
+	if (u.armMap && u.armMap->IsValid())
+	{
+		float lod = u.armMap->ComputeLod(in.duvdx, in.duvdy);
+		arm = glm::vec3(u.armMap->Sample(in.uv, lod)) / 255.0f;
+	}
+
+	s.ao = arm.x;
+	if (u.aoMap && u.aoMap->IsValid())
+		s.ao = u.aoMap->Sample(in.uv, u.aoMap->ComputeLod(in.duvdx, in.duvdy)).r / 255.0f;
+
+	s.roughness = arm.y;
+	if (u.roughnessMap && u.roughnessMap->IsValid())
+		s.roughness = u.roughnessMap->Sample(in.uv, u.roughnessMap->ComputeLod(in.duvdx, in.duvdy)).g / 255.0f;
+
+	s.metal = arm.z;
+	if (u.metalnessMap && u.metalnessMap->IsValid())
+		s.metal = u.metalnessMap->Sample(in.uv, u.metalnessMap->ComputeLod(in.duvdx, in.duvdy)).b / 255.0f;
+
+	return s;
+}
+
 static glm::vec3 SurfaceARM(const Varyings& in, const Uniforms& u)
 {
 	if (!u.armMap || !u.armMap->IsValid())
 		return in.arm;
+
 	float lod = u.armMap->ComputeLod(in.duvdx, in.duvdy);
 	glm::vec4 s = u.armMap->Sample(in.uv, lod);
+
 	return glm::vec3(s) / 255.0f;
 }
 
@@ -96,7 +133,7 @@ static float SurfaceMetalness(const Varyings& in, const Uniforms& u)
 	return SurfaceARM(in, u).z;
 }
 
-static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
+static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal, float roughness)
 {
 	if (u.specularStrength <= 0.0f)
 		return 0.0f;
@@ -108,13 +145,9 @@ static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec
 
 	toCamera /= std::sqrt(toCameraLength2);
 
-	glm::vec3 reflected = glm::reflect(glm::normalize(u.lightDirection), normal);
+	glm::vec3 reflected = glm::reflect(u.lightDirection, normal);
 	
-	float r;
-	if (u.armMap)
-		r = glm::clamp(SurfaceARM(in, u).g, 0.05f, 1.0f);
-	else
-		r = glm::clamp(SurfaceRoughness(in, u), 0.05f, 1.0f);
+	float r = glm::clamp(roughness, 0.05f, 1.0f);
 	
 	float calculatedShininess = glm::max(2.0f / (r * r) - 2.0f, 1.0f);
 	
@@ -161,33 +194,30 @@ const Shader ParticleShader = { BasicVS, ParticlePS };
 
 static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec4 surface   = SurfaceColor(in, u);
-	glm::vec3 baseColor = surface;
+	SurfaceData data = EvaluateSurface(in, u);
+	glm::vec3 baseColor = data.color;
 
-	glm::vec3 normal = SurfaceNormal(in, u);
 	float diffuse = 1.0f;
 	float specular = 0.0f;
 
-	if (glm::dot(normal, normal) > 0.5f) 
+	if (glm::dot(data.normal, data.normal) > 0.5f)
 	{
-		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
+		diffuse = glm::max(glm::dot(data.normal, -u.lightDirection), 0.0f);
 		if (diffuse > 0.0f)
-			specular = PhongSpecular(in, u, normal);
+			specular = PhongSpecular(in, u, data.normal, data.roughness);
 	}
 	
 	specular = std::clamp(specular, 0.0f, 255.0f);
-	
-	float ao    = SurfaceAO(in, u);
-	float metal = SurfaceMetalness(in, u);
+
 
 	glm::vec3 base = glm::vec3(baseColor);
-	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
-	glm::vec3 diffuseColor = base * (1.0f - metal);
+	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, data.metal);
+	glm::vec3 diffuseColor = base * (1.0f - data.metal);
 
-	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse;
+	glm::vec3 lighting = glm::vec3(u.ambient * data.ao) + (1.0f - u.ambient) * diffuse;
 	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular;
 
-	return glm::vec4(rgb, surface.a);
+	return glm::vec4(rgb, data.color.a);
 }
 
 const Shader LambertShader = { BasicVS, LambertPS };
@@ -362,37 +392,212 @@ const Shader RefractionShader = { ShadowVS, RefractionPS };
 
 static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec4 baseColor = SurfaceColor(in, u);
-
+	SurfaceData data = EvaluateSurface(in, u);
+	
+	glm::vec3 visibility{ 1.0f };
 	float diffuse = 1.0f;
-	glm::vec3 visibility(1.0f);
 	float specular = 0.0f;
 
-	glm::vec3 normal = SurfaceNormal(in, u);
-	if (glm::dot(normal, normal) > 0.5f)
+	if (glm::dot(data.normal, data.normal) > 0.5f)
 	{
-		glm::vec3 L = -glm::normalize(u.lightDirection);
-		diffuse = glm::max(glm::dot(normal, L), 0.0f);
+		glm::vec3 L = -u.lightDirection;
+		diffuse = glm::max(glm::dot(data.normal, L), 0.0f);
 		if (diffuse > 0.0f)
 		{
 			float geoCos = glm::max(glm::dot(glm::normalize(in.normal), L), 0.0f);
 			float terminator = glm::smoothstep(0.0f, 0.1f, geoCos);
 			visibility = ShadowLight(in, u, geoCos) * terminator;
-			specular = PhongSpecular(in, u, normal) * terminator;
+			specular = PhongSpecular(in, u, data.normal, data.roughness) * terminator;
 		}
 	}
 
-	float ao    = SurfaceAO(in, u);
-	float metal = SurfaceMetalness(in, u);
+	glm::vec3 base = glm::vec3(data.color);
+	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, data.metal);
+	glm::vec3 diffuseColor = base * (1.0f - data.metal);
 
-	glm::vec3 base = glm::vec3(baseColor);
-	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
-	glm::vec3 diffuseColor = base * (1.0f - metal);
+	glm::vec3 lighting = glm::vec3(u.ambient * data.ao) + (1.0f - u.ambient) * diffuse * visibility * (u.lightColor / 255.0f);
+	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular * visibility;
 
-	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse * visibility * (u.lightColor / 255.0f);
-	glm::vec3 rgb = diffuseColor * lighting  + 255.0f * F0 * specular * visibility;
-
-	return glm::vec4(rgb, baseColor.a);
+	return glm::vec4(rgb, data.color.a);
 }
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };
+
+// ---------------------------------------------------------------------------
+//  Vagues d'eau
+// ---------------------------------------------------------------------------
+
+static Varyings SinWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	if (u.waveNumber > 0 && u.waveDatas != nullptr)
+	{
+		WaveData* pWaveData = u.waveDatas;
+		float w = pWaveData->angularFrequency * u.time;
+
+		glm::vec3 pos = v.position;
+		glm::vec3 local = (v.position - u.translation) / u.scale;
+		float current = (local.x * pWaveData->direction.x + local.z * pWaveData->direction.y);
+		float phase = pWaveData->k * current - w;
+		float height = std::sinf(phase);
+
+		glm::vec3 heighVEC3 = glm::vec3{ 0, height * pWaveData->amplitude, 0 } * u.scale;
+		out.position = u.vp * glm::vec4(pos + heighVEC3, 1.0f);
+		out.worldPos = pos;
+
+		// Blue colors
+		//glm::vec4 color = glm::mix(ToColor(0x416BDF), ToColor(0x5CB5E1), std::clamp(height, 0.f, 1.f));
+		glm::vec4 color = glm::mix(ToColor(0x0B3A4A), ToColor(0x3E8FA8), std::clamp(height, 0.f, 1.f));
+		color.a = 255;
+		out.color = color;
+
+		float angle = pWaveData->amplitude * pWaveData->k * std::cos(phase) * u.scale.y;			// A · k · cos(phase)
+		float angleX = angle * pWaveData->direction.x;									// angle sur x
+		float angleZ = angle * pWaveData->direction.y;									// angle sur z
+		out.normal = glm::normalize(glm::vec3(-angleX, 1.0f, -angleZ));
+
+		out.uv = v.uv;
+		return out;
+	}
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
+	out.normal = v.normal;
+	out.color = v.color;
+	out.uv = v.uv;
+	out.tangent = v.tangent;
+	return out;
+}
+
+const Shader SinWavesShader = { SinWavesVS, ShadowLambertPS };
+
+static Varyings GerstnerWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	if (u.waveNumber > 0 && u.waveDatas != nullptr)
+	{
+		WaveData* pWaveData = u.waveDatas;
+		float w = pWaveData->angularFrequency * u.time;
+
+		glm::vec3 pos = v.position;
+		glm::vec3 local = (v.position - u.translation) / u.scale;
+		float current = (local.x * pWaveData->direction.x + local.z * pWaveData->direction.y);
+		float phase = pWaveData->k * current - w;
+
+		float height = std::sin(phase);
+		float deviation = std::cos(phase);
+		float sharpCoef = pWaveData->sharpness / (pWaveData->k * pWaveData->amplitude * u.waveNumber);
+
+		glm::vec3 vecBase = pWaveData->amplitude * glm::vec3{
+				pWaveData->direction.x * deviation,
+				height,
+				pWaveData->direction.y * deviation
+		};
+
+		// Position
+		glm::vec3 heighVEC3 = vecBase * glm::vec3{ sharpCoef, 1.f, sharpCoef };
+		// Normal
+		glm::vec3 normalsSum = vecBase * pWaveData->k * glm::vec3{ 1.f, sharpCoef,	1.f };
+
+		// Apply position to vertex
+		glm::vec3 world = v.position + heighVEC3 * u.scale;
+		out.position = u.vp * glm::vec4(world, 1.0f);
+		out.worldPos = world;
+
+		// Blue colors
+		//glm::vec4 color = glm::mix(ToColor(0x416BDF), ToColor(0x5CB5E1), std::clamp(height, 0.f, 1.f));
+		glm::vec4 color = glm::mix(ToColor(0x0B3A4A), ToColor(0x3E8FA8), std::clamp(height, 0.f, 1.f));
+		color.a = 255;
+		out.color = color;
+
+		// Apply normal
+		normalsSum *= glm::vec3{ -1.f, 0.f, -1.f };
+		normalsSum = glm::vec3{ 0.f, 1.f, 0.f } - normalsSum;
+		normalsSum /= glm::vec3{ u.scale.x, u.scale.y, u.scale.z };
+		out.normal = glm::normalize(normalsSum);
+
+		out.uv = v.uv;
+		return out;
+	}
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
+	out.normal = v.normal;
+	out.color = v.color;
+	out.uv = v.uv;
+	out.tangent = v.tangent;
+	return out;
+}
+
+static Varyings MultipleGerstnerWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	if (u.waveNumber > 0 && u.waveDatas != nullptr)
+	{
+		WaveData* pWaveData = u.waveDatas;
+
+		glm::vec3 local = (v.position - u.translation) / u.scale;
+
+		/// Position of vertex
+		glm::vec3 normalsSum{ 0, 0, 0 };
+
+		glm::vec3 heighVEC3{ 0, 0, 0 };
+		float totalAmplitude = 0.f;
+		for (size_t i = 0; i < u.waveNumber; i++)
+		{
+			WaveData& wave = pWaveData[i];
+			if (wave.amplitude == 0) continue;
+
+			float w = wave.angularFrequency * u.time;
+			float current = local.x * wave.direction.x + local.z * wave.direction.y;
+			float phase = wave.k * current - w;
+
+			float height = std::sin(phase);
+			float deviation = std::cos(phase);
+			float sharpCoef = wave.sharpness / (wave.k * wave.amplitude * u.waveNumber);
+
+			glm::vec3 vecBase = wave.amplitude * glm::vec3{
+				wave.direction.x * deviation,
+				height,
+				wave.direction.y * deviation
+			};
+
+			// Position
+			heighVEC3 += vecBase * glm::vec3{ sharpCoef, 1.f, sharpCoef	};
+			totalAmplitude += wave.amplitude;
+
+			// Normal
+			normalsSum += vecBase * wave.k * glm::vec3{	1.f, sharpCoef,	1.f	};
+		}
+		glm::vec3 world = v.position + heighVEC3 * u.scale;
+
+		out.position = u.vp * glm::vec4(world, 1.0f);
+		out.worldPos = world;
+
+		// Color of vertex
+		float h = heighVEC3.y / totalAmplitude;
+		//glm::vec4 color = glm::mix(ToColor(0x416BDF), ToColor(0x5CB5E1), std::clamp(h, 0.f, 1.f));
+		glm::vec4 color = glm::mix(ToColor(0x0B3A4A), ToColor(0x3E8FA8), std::clamp(h, 0.f, 1.f));
+		color.a = v.color.a;
+		out.color = color;
+
+		// Normal of vertex
+		normalsSum *= glm::vec3{ -1.f, 0.f, -1.f };
+		normalsSum = glm::vec3{ 0.f, 1.f, 0.f } - normalsSum;
+		normalsSum /= glm::vec3{ u.scale.x, u.scale.y, u.scale.z };
+		out.normal = glm::normalize(normalsSum);
+
+		out.uv = v.uv;
+		return out;
+	}
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
+	out.normal = v.normal;
+	out.color = v.color;
+	out.uv = v.uv;
+	out.tangent = v.tangent;
+	return out;
+}
+
+const Shader GerstnerWavesShader = { MultipleGerstnerWavesVS, LambertPS };

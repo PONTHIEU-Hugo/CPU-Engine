@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SHADERS_H_INCLUDED
+#define SHADERS_H_INCLUDED
 
 #include "Pipeline.h"
 
@@ -21,3 +22,11 @@ extern const Shader RefractionShader;
 
 // Lambert + ombre portee (lit Uniforms::shadowMap / lightVP / bias).
 extern const Shader ShadowLambertShader;
+
+// Rendu d'animation des vagues d'eau
+// Rendu basique de vagues arrondis
+extern const Shader SinWavesShader;
+// Rendu plus realiste utilisant les vagues de Gerstner
+extern const Shader GerstnerWavesShader;
+
+#endif // !SHADERS_H_INCLUDED

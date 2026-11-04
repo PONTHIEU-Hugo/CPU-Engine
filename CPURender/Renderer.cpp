@@ -4,6 +4,8 @@
 #include "Frustum.h"
 #include "Shaders.h"
 
+#include "core.h"
+
 void Renderer::Init(int shadowResolution)
 {
 	m_shadow.Init(shadowResolution);
@@ -301,6 +303,7 @@ void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
 	base.vp        = scene.camera->GetVPMatrix();
 	base.ambient   = scene.sun.ambient;
 	base.cameraPos = scene.camera->GetPosition();
+	base.lightDirection = glm::normalize(scene.sun.direction);
 	m_shadow.ApplyTo(base);
 }
 
@@ -351,24 +354,30 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 {
 	const Material& material = *object.material;
 
-	Uniforms uniforms				= base;
-	uniforms.texture				= material.texture;
-	uniforms.normalMap				= material.normalMap;
-	uniforms.normalStrength			= material.normalStrength;
-	uniforms.normalFlipY			= material.normalFlipY;
-	uniforms.baseColor				= material.baseColor;
-	uniforms.armMap					= material.armMap;
-	uniforms.aoMap					= material.aoMap;
-	uniforms.roughnessMap			= material.roughnessMap;
-	uniforms.metalnessMap			= material.metalnessMap;
-	uniforms.eta					= material.eta;
-	uniforms.thickness				= material.thickness;
-	uniforms.specularStrength		= material.specular;
-	uniforms.shininess				= ShininessFromRoughness(material.roughness);
+	Uniforms uniforms		  = base;
+	uniforms.texture		  = material.texture;
+	uniforms.normalMap		  = material.normalMap;
+	uniforms.normalStrength	  = material.normalStrength;
+	uniforms.normalFlipY	  = material.normalFlipY;
+	uniforms.baseColor		  = material.baseColor;
+	uniforms.armMap			  = material.armMap;
+	uniforms.aoMap			  = material.aoMap;
+	uniforms.roughnessMap	  = material.roughnessMap;
+	uniforms.metalnessMap	  = material.metalnessMap;
+	uniforms.eta			  = material.eta;
+	uniforms.thickness		  = material.thickness;
+	uniforms.specularStrength = material.specular;
+	uniforms.shininess = ShininessFromRoughness(material.roughness);
 	uniforms.displacementMap        = material.displacementMap;
 	uniforms.displacementScale      = material.displacementScale;
 	uniforms.displacementMidpoint   = material.displacementMidpoint;
 	uniforms.displacementPixelEdge  = material.displacementPixelEdge;
+	
+	uniforms.time 			= static_cast<float>(CHRONO->GetTotalTime());
+	uniforms.waveDatas 		= material.waveDatas;
+	uniforms.waveNumber 	= material.waveNumber;
+	uniforms.scale 			= object.transform->GetScale();
+	uniforms.translation 	= object.transform->GetPosition();
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);

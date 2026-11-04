@@ -43,6 +43,9 @@ void Chrono::Restart()
 
 void Chrono::Update()
 {
+	if (m_DeltaTime < m_CapFPS && m_CapFPS > 0.f)
+		SDL_Delay((Uint32)((m_CapFPS - m_DeltaTime) * 1000));
+
 	auto now = std::chrono::steady_clock::now();
 	m_DeltaTime = std::chrono::duration<double>(now - m_LastPoint).count();
 	m_LastPoint = now;
@@ -56,9 +59,6 @@ void Chrono::Update()
 		m_BeginFPS = now;
 		std::cout << ShowFPS() << std::endl;
 	}
-
-	if (m_DeltaTime < m_CapFPS && m_CapFPS > 0.f)
-		SDL_Delay((Uint32)((m_CapFPS - m_DeltaTime) * 1000));
 }
 
 std::string Chrono::GetCurrentTimeAsString() const
