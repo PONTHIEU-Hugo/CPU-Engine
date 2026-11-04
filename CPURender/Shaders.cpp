@@ -6,9 +6,14 @@
 
 #include "core.h"
 
-// ---------------------------------------------------------------------------
-// Basic / Texture / Lambert
-// ---------------------------------------------------------------------------
+struct SurfaceData
+{
+	glm::vec4 color;
+	glm::vec3 normal;
+	float ao = 1.0f;
+	float roughness = 0.5f;
+	float metal = 0.0f;
+};
 
 static glm::vec4 SurfaceColor(const Varyings& in, const Uniforms& u)
 {
@@ -57,12 +62,43 @@ static glm::vec3 SurfaceNormal(const Varyings& in, const Uniforms& u)
 	return glm::normalize(T * t.x + B * t.y + N * t.z);
 }
 
+static SurfaceData EvaluateSurface(const Varyings& in, const Uniforms& u)
+{
+	SurfaceData s;
+	s.color = SurfaceColor(in, u);
+	s.normal = SurfaceNormal(in, u);
+
+	// ARM lue une seule fois
+	glm::vec3 arm = in.arm;
+	if (u.armMap && u.armMap->IsValid())
+	{
+		float lod = u.armMap->ComputeLod(in.duvdx, in.duvdy);
+		arm = glm::vec3(u.armMap->Sample(in.uv, lod)) / 255.0f;
+	}
+
+	s.ao = arm.x;
+	if (u.aoMap && u.aoMap->IsValid())
+		s.ao = u.aoMap->Sample(in.uv, u.aoMap->ComputeLod(in.duvdx, in.duvdy)).r / 255.0f;
+
+	s.roughness = arm.y;
+	if (u.roughnessMap && u.roughnessMap->IsValid())
+		s.roughness = u.roughnessMap->Sample(in.uv, u.roughnessMap->ComputeLod(in.duvdx, in.duvdy)).g / 255.0f;
+
+	s.metal = arm.z;
+	if (u.metalnessMap && u.metalnessMap->IsValid())
+		s.metal = u.metalnessMap->Sample(in.uv, u.metalnessMap->ComputeLod(in.duvdx, in.duvdy)).b / 255.0f;
+
+	return s;
+}
+
 static glm::vec3 SurfaceARM(const Varyings& in, const Uniforms& u)
 {
 	if (!u.armMap || !u.armMap->IsValid())
 		return in.arm;
+
 	float lod = u.armMap->ComputeLod(in.duvdx, in.duvdy);
 	glm::vec4 s = u.armMap->Sample(in.uv, lod);
+
 	return glm::vec3(s) / 255.0f;
 }
 
@@ -96,7 +132,7 @@ static float SurfaceMetalness(const Varyings& in, const Uniforms& u)
 	return SurfaceARM(in, u).z;
 }
 
-static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal)
+static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec3& normal, float roughness)
 {
 	if (u.specularStrength <= 0.0f)
 		return 0.0f;
@@ -108,13 +144,9 @@ static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec
 
 	toCamera /= std::sqrt(toCameraLength2);
 
-	glm::vec3 reflected = glm::reflect(glm::normalize(u.lightDirection), normal);
+	glm::vec3 reflected = glm::reflect(u.lightDirection, normal);
 	
-	float r;
-	if (u.armMap)
-		r = glm::clamp(SurfaceARM(in, u).g, 0.05f, 1.0f);
-	else
-		r = glm::clamp(SurfaceRoughness(in, u), 0.05f, 1.0f);
+	float r = glm::clamp(roughness, 0.05f, 1.0f);
 	
 	float calculatedShininess = glm::max(2.0f / (r * r) - 2.0f, 1.0f);
 	
@@ -161,33 +193,30 @@ const Shader ParticleShader = { BasicVS, ParticlePS };
 
 static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec4 surface   = SurfaceColor(in, u);
-	glm::vec3 baseColor = surface;
+	SurfaceData data = EvaluateSurface(in, u);
+	glm::vec3 baseColor = data.color;
 
-	glm::vec3 normal = SurfaceNormal(in, u);
 	float diffuse = 1.0f;
 	float specular = 0.0f;
 
-	if (glm::dot(normal, normal) > 0.5f) 
+	if (glm::dot(data.normal, data.normal) > 0.5f)
 	{
-		diffuse = glm::max(glm::dot(normal, -glm::normalize(u.lightDirection)), 0.0f);
+		diffuse = glm::max(glm::dot(data.normal, -u.lightDirection), 0.0f);
 		if (diffuse > 0.0f)
-			specular = PhongSpecular(in, u, normal);
+			specular = PhongSpecular(in, u, data.normal, data.roughness);
 	}
 	
 	specular = std::clamp(specular, 0.0f, 255.0f);
-	
-	float ao    = SurfaceAO(in, u);
-	float metal = SurfaceMetalness(in, u);
+
 
 	glm::vec3 base = glm::vec3(baseColor);
-	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
-	glm::vec3 diffuseColor = base * (1.0f - metal);
+	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, data.metal);
+	glm::vec3 diffuseColor = base * (1.0f - data.metal);
 
-	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse;
+	glm::vec3 lighting = glm::vec3(u.ambient * data.ao) + (1.0f - u.ambient) * diffuse;
 	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular;
 
-	return glm::vec4(rgb, surface.a);
+	return glm::vec4(rgb, data.color.a);
 }
 
 const Shader LambertShader = { BasicVS, LambertPS };
@@ -362,37 +391,33 @@ const Shader RefractionShader = { ShadowVS, RefractionPS };
 
 static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
-	glm::vec4 baseColor = SurfaceColor(in, u);
-
-	float diffuse = 1.0f;
+	SurfaceData data = EvaluateSurface(in, u);
+	
 	glm::vec3 visibility(1.0f);
+	float diffuse = 1.0f;
 	float specular = 0.0f;
 
-	glm::vec3 normal = SurfaceNormal(in, u);
-	if (glm::dot(normal, normal) > 0.5f)
+	if (glm::dot(data.normal, data.normal) > 0.5f)
 	{
-		glm::vec3 L = -glm::normalize(u.lightDirection);
-		diffuse = glm::max(glm::dot(normal, L), 0.0f);
+		glm::vec3 L = -u.lightDirection;
+		diffuse = glm::max(glm::dot(data.normal, L), 0.0f);
 		if (diffuse > 0.0f)
 		{
 			float geoCos = glm::max(glm::dot(glm::normalize(in.normal), L), 0.0f);
 			float terminator = glm::smoothstep(0.0f, 0.1f, geoCos);
 			visibility = ShadowLight(in, u, geoCos) * terminator;
-			specular = PhongSpecular(in, u, normal) * terminator;
+			specular = PhongSpecular(in, u, data.normal, data.roughness) * terminator;
 		}
 	}
 
-	float ao    = SurfaceAO(in, u);
-	float metal = SurfaceMetalness(in, u);
+	glm::vec3 base = glm::vec3(data.color);
+	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, data.metal);
+	glm::vec3 diffuseColor = base * (1.0f - data.metal);
 
-	glm::vec3 base = glm::vec3(baseColor);
-	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, metal);
-	glm::vec3 diffuseColor = base * (1.0f - metal);
+	glm::vec3 lighting = glm::vec3(u.ambient * data.ao) + (1.0f - u.ambient) * diffuse * visibility * (u.lightColor / 255.0f);
+	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular * visibility;
 
-	glm::vec3 lighting = glm::vec3(u.ambient * ao) + (1.0f - u.ambient) * diffuse * visibility * (u.lightColor / 255.0f);
-	glm::vec3 rgb = diffuseColor * lighting  + 255.0f * F0 * specular * visibility;
-
-	return glm::vec4(rgb, baseColor.a);
+	return glm::vec4(rgb, data.color.a);
 }
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };

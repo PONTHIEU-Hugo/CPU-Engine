@@ -77,8 +77,8 @@ struct Uniforms
 
 enum class CullMode { None, Back, Front };
 
-using VertexShader = std::function<Varyings(const Vertex&, const Uniforms&)>;
-using PixelShader = std::function<glm::vec4(const Varyings&, const Uniforms&)>;
+using VertexShader = Varyings(*)(const Vertex&, const Uniforms&);
+using PixelShader = glm::vec4(*)(const Varyings&, const Uniforms&);
 
 // Un shader = vertex shader + pixel shader
 struct Shader
