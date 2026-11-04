@@ -11,12 +11,12 @@ void MaterialScene::Init()
     m_sphereIcoMesh    = GeometryFactory::BuildIcosphere(5);
     m_cubeMesh      = GeometryFactory::BuildCube();
     
-    // Add(m_sphereMesh, m_defaultMaterial, true,
-    //     new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+     Add(m_sphereMesh, m_defaultMaterial, true,
+         new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     Add(m_sphereIcoMesh, m_sheetMaterial, true,
         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    // Add(m_cubeMesh, m_defaultMaterial, true,
-    //     new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+     Add(m_cubeMesh, m_defaultMaterial, true,
+         new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
     
     m_defaultMaterial.shader = &ShadowLambertShader;
@@ -58,6 +58,10 @@ void MaterialScene::Update(float _dt)
     sun.shadowFocus = glm::vec3(cam.x, 0, cam.z);
     HandleEvent(_dt);
     Scene::Update(_dt);
+}
+
+void MaterialScene::LoadSkybox()
+{
 }
 
 void MaterialScene::HandleEvent(float _dt)

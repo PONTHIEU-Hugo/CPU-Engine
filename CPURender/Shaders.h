@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SHADERS_H_INCLUDED
+#define SHADERS_H_INCLUDED
 
 #include "Pipeline.h"
 
@@ -21,3 +22,5 @@ extern const Shader RefractionShader;
 
 // Lambert + ombre portee (lit Uniforms::shadowMap / lightVP / bias).
 extern const Shader ShadowLambertShader;
+
+#endif // !SHADERS_H_INCLUDED

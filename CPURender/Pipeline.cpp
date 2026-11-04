@@ -223,26 +223,33 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const Varyings& vertexB = tri.varyings[1];
 	const Varyings& vertexC = tri.varyings[2];
 
-	struct Attr { glm::vec2 uv; glm::vec3 pos; };
-	
-	auto attrAt = [&](const glm::vec2& p) -> Attr
-	{
-		float a = EdgeFunction(sB, sC, p) * tri.invArea * tri.invW[0];
-		float b = EdgeFunction(sC, sA, p) * tri.invArea * tri.invW[1];
-		float c = EdgeFunction(sA, sB, p) * tri.invArea * tri.invW[2]; 
-		const float inv = 1.0f / (a + b + c);
-		return {
-			(a * vertexA.uv       + b * vertexB.uv       + c * vertexC.uv)       * inv,
-			(a * vertexA.worldPos + b * vertexB.worldPos + c * vertexC.worldPos) * inv
-		};
-	};
-
 	// Poids A = arete (B,C), B = arete (C,A), C = arete (A,B)
 	const float dAx = -(sC.y - sB.y) * tri.invArea, dAy = (sC.x - sB.x) * tri.invArea;
 	const float dBx = -(sA.y - sC.y) * tri.invArea, dBy = (sA.x - sC.x) * tri.invArea;
 	const float dCx = -(sB.y - sA.y) * tri.invArea, dCy = (sB.x - sA.x) * tri.invArea;
 
 	const float dZx = dAx * screenA.z + dBx * screenB.z + dCx * screenC.z;
+
+	// Derivees 
+	const bool needDerivatives = m_uniforms.texture || m_uniforms.normalMap;
+
+	// Attributs divises par w (ce qui est lineaire en espace ecran)
+	const glm::vec2 uvW0 = vertexA.uv * tri.invW[0];
+	const glm::vec2 uvW1 = vertexB.uv * tri.invW[1];
+	const glm::vec2 uvW2 = vertexC.uv * tri.invW[2];
+	const glm::vec3 posW0 = vertexA.worldPos * tri.invW[0];
+	const glm::vec3 posW1 = vertexB.worldPos * tri.invW[1];
+	const glm::vec3 posW2 = vertexC.worldPos * tri.invW[2];
+
+	// dD/dx, dD/dy
+	const float dDx = dAx * tri.invW[0] + dBx * tri.invW[1] + dCx * tri.invW[2];
+	const float dDy = dAy * tri.invW[0] + dBy * tri.invW[1] + dCy * tri.invW[2];
+
+	// dN/dx, dN/dy
+	const glm::vec2 dNuvX = dAx * uvW0 + dBx * uvW1 + dCx * uvW2;
+	const glm::vec2 dNuvY = dAy * uvW0 + dBy * uvW1 + dCy * uvW2;
+	const glm::vec3 dNposX = dAx * posW0 + dBx * posW1 + dCx * posW2;
+	const glm::vec3 dNposY = dAy * posW0 + dBy * posW1 + dCy * posW2;
 	
 	for (int y = minY; y <= maxY; ++y)
 	{
@@ -294,14 +301,12 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 			fragment.color = perspectiveA * vertexA.color + perspectiveB * vertexB.color + perspectiveC * vertexC.color;
 			fragment.uv = perspectiveA * vertexA.uv + perspectiveB * vertexB.uv + perspectiveC * vertexC.uv;
 			
-			if (m_uniforms.texture || m_uniforms.normalMap)
+			if (needDerivatives)
 			{
-				const Attr r	= attrAt(pixelCenter + glm::vec2(1.0f, 0.0f));
-				const Attr d	= attrAt(pixelCenter + glm::vec2(0.0f, 1.0f));
-				fragment.duvdx	= r.uv  - fragment.uv;
-				fragment.duvdy	= d.uv  - fragment.uv;
-				fragment.dpdx	= r.pos - fragment.worldPos;
-				fragment.dpdy	= d.pos - fragment.worldPos;
+				fragment.duvdx = (dNuvX - fragment.uv * dDx) * invPerspectiveSum;
+				fragment.duvdy = (dNuvY - fragment.uv * dDy) * invPerspectiveSum;
+				fragment.dpdx = (dNposX - fragment.worldPos * dDx) * invPerspectiveSum;
+				fragment.dpdy = (dNposY - fragment.worldPos * dDy) * invPerspectiveSum;
 			}
 			
 			glm::vec4 shaded = m_pixelShader(fragment, m_uniforms);
