@@ -5,7 +5,8 @@
 struct Generation
 {
 	std::vector<std::vector<double>> height;
-	glm::vec3 size = glm::vec3{ 0.f, 0.f, 0.f };
+	glm::vec3 size{ 0.f, 0.f, 0.f };
+	double min = 10.0, max = -10.0;
 
 	void Print();
 };
