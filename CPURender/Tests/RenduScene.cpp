@@ -7,11 +7,11 @@
 
 void RenduScene::Init()
 {
-    m_roof              = GeometryFactory::LoadGeometry("Assets/Maison/roof.obj");
-    m_wallOfRock        = GeometryFactory::LoadGeometry("Assets/Maison/wall.obj");
-    m_wallOfConcrete    = GeometryFactory::LoadGeometry("Assets/Maison/concrete.obj");
-    m_wood              = GeometryFactory::LoadGeometry("Assets/Maison/wood.obj");
-    m_assets            = GeometryFactory::LoadGeometry("Assets/Maison/asset.obj");
+    m_roof              = GeometryFactory::LoadGeometry("Assets/Maison/roof2.obj");
+    m_wallOfRock        = GeometryFactory::LoadGeometry("Assets/Maison/wall2.obj");
+    m_wallOfConcrete    = GeometryFactory::LoadGeometry("Assets/Maison/concrete2.obj");
+    m_wood              = GeometryFactory::LoadGeometry("Assets/Maison/wood2.obj");
+    m_assets            = GeometryFactory::LoadGeometry("Assets/Maison/asset2.obj");
     
     glm::vec3 pos = glm::vec3(70.0f, 27.5f, 88.0f);
     m_roofID = Add(m_roof, m_roofMaterial, true,
@@ -82,7 +82,7 @@ void RenduScene::Init()
     m_assetMaterial.texture                  = &m_assetTexture;
     
     float aspect = float(WIDTH) / float(HEIGHT);
-    camera = new Camera({0.0f, 0.0f, 1.0f}, nullptr);
+    camera = new Camera(glm::vec3(62.18f, 30.04f, 51.06f), nullptr);
     camera->SetPerspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
     m_transforms.push_back(&camera->transform);
 
@@ -117,7 +117,7 @@ void RenduScene::Update(float _dt)
     sun.shadowFocus = glm::vec3(cam.x, 0, cam.z);
     HandleEvent(_dt);
     
-    m_snow->SetOrigin(glm::vec3(62.18f, 49.04f, 51.06f));
+    m_snow->SetOrigin(glm::vec3(62.18f, 70.04f, 51.06f));
     m_snow->Update(_dt);
     
     Scene::Update(_dt);
