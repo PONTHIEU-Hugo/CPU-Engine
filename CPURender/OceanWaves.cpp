@@ -2,6 +2,7 @@
 #include "Shaders.h"
 #include "GeometryFactory.hpp"
 #include "Chrono.h"
+#include "ProceduralGeneration.h"
 
 OceanWaves::OceanWaves()
 {
@@ -19,13 +20,10 @@ OceanWaves::OceanWaves()
 void OceanWaves::AddWave(glm::vec2 dir, float amplitude, float sharpness, float lambda)
 {
 	dir = glm::normalize(dir);
-	sharpness = std::clamp(sharpness, 0.f, 1.f);
+	m_RawSharpness.push_back(std::clamp(sharpness, 0.f, 1.f));
 
 	if (lambda == 0.f)
-	{
-		std::runtime_error("Lambda wave can't be 0)");
-		exit(-1);
-	}
+		throw std::runtime_error("Lambda wave can't be 0)");
 
 	float k = glm::two_pi<float>() / lambda;
 
@@ -33,11 +31,19 @@ void OceanWaves::AddWave(glm::vec2 dir, float amplitude, float sharpness, float 
 		k,
 		std::sqrt(_gravity * k),
 		amplitude,
-		sharpness,
+		0.f,
 		dir
 		});
 	m_Material.waveDatas = m_Waves.data();
-	m_Material.waveNumber = static_cast<size_t>(m_Waves.size());
+	size_t newSize = m_Waves.size();
+	m_Material.waveNumber = static_cast<size_t>(newSize);
+
+	for (int i = 0; i < m_Waves.size(); i++)
+	{
+		WaveData& rWave = m_Waves[i];
+		float kAmplitude = rWave.k * rWave.amplitude;
+		rWave.sharpness = kAmplitude > 0.f ? m_RawSharpness[i] / (kAmplitude * newSize) : 0.f;
+	}
 
 	m_Mesh.localBounds.min -= glm::vec3(amplitude);
 	m_Mesh.localBounds.max += glm::vec3(amplitude);
@@ -45,47 +51,8 @@ void OceanWaves::AddWave(glm::vec2 dir, float amplitude, float sharpness, float 
 
 void OceanWaves::GenerateMesh(glm::ivec2 size)
 {
-	m_Mesh.vertices.clear();
-	glm::vec4 color = ToColor(0x0041C2);
-	color.a = 255;
-
-	for (int y = 0; y < size.y; y++)
-	{
-		for (int x = 0; x < size.x; x++)
-		{
-			Vertex current{
-				{x, 1, y},
-				{0, 1, 0},
-				color,
-				{0.f, 0.f}
-			};
-
-			Vertex corner{
-				{x + 1, 1, y + 1},
-				{0, 1, 0},
-				color,
-				{0.f, 0.f}
-			};
-
-			m_Mesh.vertices.push_back(current);
-			m_Mesh.vertices.push_back(Vertex{
-				{x, 1, y + 1},
-				{0, 1, 0},
-				color,
-				{0.f, 0.f}
-			});
-			m_Mesh.vertices.push_back(corner);
-
-			m_Mesh.vertices.push_back(current);
-			m_Mesh.vertices.push_back(corner);
-			m_Mesh.vertices.push_back(Vertex{
-				{x + 1, 1, y},
-				{0, 1, 0},
-				color,
-				{0.f, 0.f}
-			});
-		}
-	}
-	m_Mesh.ComputeBounds();
+	Generation* pGeneration = Generation_Algorithm::PerlinOctave(size, 0.025, 4, 0.5);
+	Generation_Algorithm::MeshTools::GenerateMesh(m_Mesh, *pGeneration, { 0.5, 0.6, 0.5 }, {});
+	delete pGeneration;
 	m_Size = size;
 }

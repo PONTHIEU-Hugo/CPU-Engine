@@ -2,6 +2,9 @@
 #include "core.h"
 #include <vector>
 
+struct Vertex;
+struct Mesh;
+
 struct Generation
 {
 	std::vector<std::vector<double>> height;
@@ -45,4 +48,19 @@ namespace Generation_Algorithm
 	}
 	Generation* Perlin(glm::ivec2 size, double scale);
 	Generation* PerlinOctave(glm::ivec2 size, double scale, int octave, double persistence);
+
+	namespace MeshTools
+	{
+		using ColorOf = glm::vec4(*)(Generation* pGeneration, glm::ivec2 heighmapID);
+		using NormalOf = glm::dvec3(*)(Generation* pGeneration, glm::ivec2 heighmapID, glm::dvec3 valueFactor);
+
+		struct VertexMethods
+		{
+			ColorOf colorFunc		= nullptr;
+			NormalOf normalFunc		= nullptr;
+		};
+
+		Vertex MakeVertex(Generation* pGeneration, glm::ivec2 heighmapID, glm::vec3 valueFactor, VertexMethods methods);
+		void GenerateMesh(Mesh& rOut, Generation& rGeneration, glm::dvec3 valueFactor, VertexMethods methods);
+	}
 }

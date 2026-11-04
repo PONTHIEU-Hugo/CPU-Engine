@@ -76,11 +76,12 @@ struct Uniforms
     float shadowBiasSlope = 0.0f;
 
     // Vagues
-    float time = 0.f;
-    glm::vec3 scale{ 1, 1, 1 };
+    double time = 0.0;
+    glm::vec3 scale{ 1, 1, 1 }; 
+    glm::vec3 divScale{ 1, 1, 1 }; // 1/scale to multpily instead of divide
     glm::vec3 translation{ 0, 0, 0 };
-    WaveData* waveDatas = nullptr;
     uint8_t waveNumber = 0;
+    WaveData* waveDatas = nullptr;
 };
 
 enum class CullMode { None, Back, Front };

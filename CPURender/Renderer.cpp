@@ -373,10 +373,11 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 	uniforms.displacementMidpoint   = material.displacementMidpoint;
 	uniforms.displacementPixelEdge  = material.displacementPixelEdge;
 	
-	uniforms.time 			= static_cast<float>(CHRONO->GetTotalTime());
+	uniforms.time			= CHRONO->GetTotalTime();
 	uniforms.waveDatas 		= material.waveDatas;
 	uniforms.waveNumber 	= material.waveNumber;
-	uniforms.scale 			= object.transform->GetScale();
+	uniforms.scale			= object.transform->GetScale();
+	uniforms.divScale 		= 1.f / uniforms.scale;
 	uniforms.translation 	= object.transform->GetPosition();
 
 	m_pipeline.SetCullMode(material.cull);

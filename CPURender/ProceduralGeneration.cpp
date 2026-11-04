@@ -1,5 +1,6 @@
 #include "ProceduralGeneration.h"
 #include <iostream>
+#include "Mesh.h"
 
 void Generation::Print()
 {
@@ -258,4 +259,70 @@ Generation* Generation_Algorithm::PerlinOctave(glm::ivec2 size, double scale, in
 	pGeneration->size = glm::vec3(size.x, size.y, 1.f);
 
 	return pGeneration;	
+}
+
+// ---------------------------------------------------------------------------
+//  Generation of mesh
+// ---------------------------------------------------------------------------
+
+void Generation_Algorithm::MeshTools::GenerateMesh(Mesh& rOut, Generation& rGeneration, glm::dvec3 valueFactor, VertexMethods methods)
+{
+	std::vector<std::vector<double>>& rHeight = rGeneration.height;
+
+	glm::vec3 rSize = rGeneration.size;
+	rOut.vertices.clear();
+
+	for (int y = 0; y < rHeight.size(); y++)
+	{
+		for (int x = 0; x < rHeight[y].size(); x++)
+		{
+			if (y + 1 >= rHeight.size()) continue;
+			if (x + 1 >= rHeight[y].size()) continue;
+
+			Vertex a = MakeVertex(&rGeneration, { x,		y },		valueFactor, methods);
+			Vertex b = MakeVertex(&rGeneration, { x + 1,	y },		valueFactor, methods);
+			Vertex c = MakeVertex(&rGeneration, { x,		y + 1 },	valueFactor, methods);
+			Vertex d = MakeVertex(&rGeneration, { x + 1,	y + 1 },	valueFactor, methods);
+
+			if (std::abs(a.position.y - d.position.y) < std::abs(b.position.y - c.position.y))
+			{
+				rOut.vertices.push_back(a);
+				rOut.vertices.push_back(c);
+				rOut.vertices.push_back(d);
+
+				rOut.vertices.push_back(a);
+				rOut.vertices.push_back(d);
+				rOut.vertices.push_back(b);
+			}
+			else
+			{
+				rOut.vertices.push_back(a);
+				rOut.vertices.push_back(c);
+				rOut.vertices.push_back(b);
+
+				rOut.vertices.push_back(b);
+				rOut.vertices.push_back(c);
+				rOut.vertices.push_back(d);
+			}
+		}
+	}
+	rOut.ComputeBounds();
+}
+
+Vertex Generation_Algorithm::MeshTools::MakeVertex(Generation* pGeneration, glm::ivec2 heighmapID, glm::vec3 valueFactor, VertexMethods methods)
+{
+	int x = heighmapID.x, y = heighmapID.y;
+	if (y < 0 || y >= pGeneration->height.size() || x < 0 || x >= pGeneration->height[0].size())
+	{
+		std::string error = "Can't create vertex for: " + x;
+		error += " / " + y;
+		throw std::runtime_error(error.c_str());
+	}
+
+	return Vertex{
+				glm::vec3{ x,	static_cast<float>(pGeneration->height[y][x]),		y } * valueFactor, // * scale
+				methods.normalFunc ? methods.normalFunc(pGeneration, { x,	y }, valueFactor) : glm::dvec3{ 0.0, 1.0, 0.0 },
+				methods.colorFunc ? methods.colorFunc(pGeneration,{ x,	y }) : glm::vec4{ 255, 0, 255, 255 },
+				glm::vec2(0.f, 0.f)
+	};
 }

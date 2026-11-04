@@ -12,9 +12,11 @@ enum class HeighMapType : uint8_t
 
 class TerrainGenerator
 {
-private:
+public:
 	Mesh m_Mesh;
 	Material m_Material;
+
+private:
 	Generation* m_Generation = nullptr;
 
 	float m_Scale = 1.f;
@@ -25,14 +27,9 @@ public:
 	TerrainGenerator();
 	~TerrainGenerator();
 
-	Mesh& GetMesh() { return m_Mesh; }
-	const Material& GetMaterial() { return m_Material; }
-
 	void GenerateHeighmap(size_t size, HeighMapType type, float spaceValue = 1.f, double factorValue = 1.0, float scale = 1.f) { return GenerateHeighmap(glm::vec2{ size, size }, type, spaceValue, factorValue, scale); }
 	void GenerateHeighmap(glm::vec2 size, HeighMapType type, float spaceValue = 1.f, double factorValue = 1.0, float scale = 1.f);
 
-private:
-	Vertex MakeVertex(glm::ivec2 heighmapID);
-	glm::dvec3 NormalOf(glm::ivec2 heighmapID);
-	glm::vec4 ColorOf(glm::ivec2 heighmapID);
+	static glm::dvec3 NormalOf(Generation* pGeneration, glm::ivec2 heighmapID, glm::dvec3 valueFactor);
+	static glm::vec4 ColorOf(Generation* pGeneration, glm::ivec2 heighmapID);
 };

@@ -95,18 +95,34 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
-	RenderObject& rTerrain = Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial()));
+	//m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
+	//RenderObject& rTerrain = Get(Add(m_Terrain.m_Mesh, m_Terrain.m_Material));
 
-	m_Ocean.GenerateMesh({ 100, 100 });
-	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);   // houle principale
-	m_Ocean.AddWave({ 1.0f, -0.2f }, 1.2f, 0.7f, 25.0f);   // houle secondaire
-	m_Ocean.AddWave({ 0.7f,  0.7f }, 0.6f, 0.6f, 15.0f);   // mer du vent
-	m_Ocean.AddWave({ 1.0f,  0.8f }, 0.3f, 0.5f, 9.0f);   // clapot
+	// 1 unite = 1 metre. Mer moyenne (force 4 environ), vue depuis ~7 m de haut.
+	// 161 x 161 points, espacement 0.5 m => 80 x 80 m (le far plane de la camera est a 100 m)
+	m_Ocean.GenerateMesh({ 161, 161 });
+	// Vagues regroupees par PAIRES proches (meme direction a ~8 deg pres, lambda proches) :
+	// deux sinus de frequences voisines "battent" => leur somme forme des TRAINS de vagues
+	// (serie de grosses vagues, puis accalmie), comme les "series" observees en mer.
+	//   paire 1 (60 / 45 m) : une serie toutes les ~40 s
+	//   paire 2 (33 / 28 m) : toutes les ~54 s
+	//   paire 3 (19.5 / 17.5 m) : toutes les ~64 s
+	// Ces periodes n'ont pas de rapport simple entre elles => l'ensemble ne se repete jamais a l'identique.
+	// Cambrure k*A ~ 0.08 - 0.09 pour toutes (houle realiste). Lambda min 6.3 m >= 8 sommets.
+	//            direction             A       Q      lambda      angle
+	m_Ocean.AddWave({ 0.956f,  0.292f }, 0.85f, 0.45f, 60.0f);   //  17 deg  houle, paire 1
+	m_Ocean.AddWave({ 0.985f,  0.174f }, 0.60f, 0.50f, 45.0f);   //  10 deg  houle, paire 1
+	m_Ocean.AddWave({ 0.848f,  0.530f }, 0.45f, 0.55f, 33.0f);   //  32 deg  houle, paire 2
+	m_Ocean.AddWave({ 0.766f,  0.643f }, 0.36f, 0.60f, 28.0f);   //  40 deg  houle, paire 2
+	m_Ocean.AddWave({ 0.970f, -0.242f }, 0.27f, 0.70f, 19.5f);   // -14 deg  mer du vent, paire 3
+	m_Ocean.AddWave({ 0.995f, -0.105f }, 0.22f, 0.75f, 17.5f);   //  -6 deg  mer du vent, paire 3
+	m_Ocean.AddWave({ 0.616f,  0.788f }, 0.15f, 0.80f, 10.5f);   //  52 deg  clapot
+	m_Ocean.AddWave({ 0.819f, -0.574f }, 0.085f, 0.85f, 6.3f);   // -35 deg  clapot
 	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material, false);
 	RenderObject& ocean = Get(m_OceanID);
-	ocean.transform->SetPosition({ 0, -3, 0 });
-	ocean.transform->SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.1f);
+	// Centre l'ocean (0..80 m) sous la camera
+	ocean.transform->SetPosition({ -40.f, -3.f, -40.f });
+	ocean.transform->SetScale(glm::vec3{ 1.f, 1.f, 1.f });
 	
 	// Systèmes
 	LoadSkybox();
@@ -118,8 +134,8 @@ void MainScene::Init()
 	m_sparkle.Init();
 
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
-	AddEmitter(m_smoke);
-	AddEmitter(m_snow);
+	//AddEmitter(m_smoke);
+	//AddEmitter(m_snow);
 	//AddEmitter(m_sparkle);
 }
 

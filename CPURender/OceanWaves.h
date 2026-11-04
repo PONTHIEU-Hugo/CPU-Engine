@@ -13,6 +13,7 @@ public:
 private:
 	glm::ivec2 m_Size;
 	std::vector<WaveData> m_Waves;
+	std::vector<float>  m_RawSharpness;
 
 	static constexpr float _gravity = 9.81f;
 
@@ -23,4 +24,6 @@ public:
 	void AddWave(glm::vec2 dir, float amplitude, float sharpness, float lambda);
 
 	void GenerateMesh(glm::ivec2 size);
+
+
 };

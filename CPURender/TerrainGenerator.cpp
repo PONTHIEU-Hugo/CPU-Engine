@@ -46,75 +46,15 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, float
 	}
 
 	if (m_Generation == nullptr) exit(-1);
-	std::vector<std::vector<double>>& rHeight = m_Generation->height;
-
-	glm::vec3 rSize = m_Generation->size;
-	m_Mesh.vertices.clear();
-
-	for (int y = 0; y < rHeight.size(); y++)
-	{
-		for (int x = 0; x < rHeight[y].size(); x++)
-		{
-			if (y + 1 >= rHeight.size()) continue;
-			if (x + 1 >= rHeight[y].size()) continue;
-
-			Vertex a = MakeVertex({ x,		y });
-			Vertex b = MakeVertex({ x + 1,	y });
-			Vertex c = MakeVertex({ x,		y + 1 });
-			Vertex d = MakeVertex({ x + 1,	y + 1 });
-
-			if (std::abs(a.position.y - d.position.y) < std::abs(b.position.y - c.position.y))
-			{
-				m_Mesh.vertices.push_back(a);
-				m_Mesh.vertices.push_back(c);
-				m_Mesh.vertices.push_back(d);
-
-				m_Mesh.vertices.push_back(a);
-				m_Mesh.vertices.push_back(d);
-				m_Mesh.vertices.push_back(b);
-			}
-			else
-			{
-				m_Mesh.vertices.push_back(a);
-				m_Mesh.vertices.push_back(c);
-				m_Mesh.vertices.push_back(b);
-
-				m_Mesh.vertices.push_back(b);
-				m_Mesh.vertices.push_back(c);
-				m_Mesh.vertices.push_back(d);
-			}
-		}
-	}
-	m_Mesh.ComputeBounds();
-}
-
-Vertex TerrainGenerator::MakeVertex(glm::ivec2 heighmapID)
-{
-	int x = heighmapID.x, y = heighmapID.y;
-	if (y < 0 || y >= m_Generation->height.size() || x < 0 || x >= m_Generation->height[0].size())
-	{
-		std::string error = "Can't create vertex for: " + x;
-		error += " / " + y;
-		std::runtime_error(error.c_str());
-		exit(-1);
-	}
-
-	glm::vec3 valueFactor{ m_SpaceValue, m_FactorValue, m_SpaceValue };
-
-	return Vertex{
-				glm::vec3	{ x,	static_cast<float>(m_Generation->height[y][x]),		y } * valueFactor * m_Scale,
-				NormalOf({ x,	y}),
-				ColorOf({ x,	y}),
-				glm::vec2(0.f, 0.f)
-	};
-}
-
-glm::dvec3 TerrainGenerator::NormalOf(glm::ivec2 heighmapID)
-{
-	std::vector<std::vector<double>>& rHeight = m_Generation->height;
-	if (rHeight.size() <= 0) return glm::dvec3(1000.0);
 
 	glm::dvec3 valueFactor = glm::dvec3{ m_SpaceValue, m_FactorValue, m_SpaceValue } * static_cast<double>(m_Scale);
+	Generation_Algorithm::MeshTools::GenerateMesh(m_Mesh, *m_Generation, valueFactor, { ColorOf, NormalOf });
+}
+
+glm::dvec3 TerrainGenerator::NormalOf(Generation* pGeneration, glm::ivec2 heighmapID, glm::dvec3 valueFactor)
+{
+	std::vector<std::vector<double>>& rHeight = pGeneration->height;
+	if (rHeight.size() <= 0) return glm::dvec3(1000.0);
 
 	glm::dvec3 xDiff = { 0, 0, 0 };
 	if (heighmapID.x - 1 >= 0)
@@ -122,28 +62,28 @@ glm::dvec3 TerrainGenerator::NormalOf(glm::ivec2 heighmapID)
 	else
 		xDiff = glm::dvec3{ heighmapID.x,		rHeight[heighmapID.y][heighmapID.x],		heighmapID.y } * valueFactor;
 	if (heighmapID.x + 1 < rHeight[0].size())
-		xDiff -= glm::dvec3{(heighmapID.x + 1), rHeight[heighmapID.y][heighmapID.x + 1],	heighmapID.y } * valueFactor;
+		xDiff -= glm::dvec3{ (heighmapID.x + 1), rHeight[heighmapID.y][heighmapID.x + 1],	heighmapID.y } * valueFactor;
 	else
 		xDiff -= glm::dvec3{ heighmapID.x,		rHeight[heighmapID.y][heighmapID.x],		heighmapID.y } * valueFactor;
 
 	glm::dvec3 zDiff = { 0, 0, 0 };
 	if (heighmapID.y - 1 >= 0) // z - 1
-		zDiff = glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y - 1][heighmapID.x],	(heighmapID.y - 1) }	* valueFactor;
+		zDiff = glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y - 1][heighmapID.x],	(heighmapID.y - 1) } * valueFactor;
 	else
-		zDiff = glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y][heighmapID.x],		heighmapID.y }			* valueFactor;
+		zDiff = glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y][heighmapID.x],		heighmapID.y } * valueFactor;
 	if (heighmapID.y + 1 < rHeight.size()) // z + 1
-		zDiff -= glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y + 1][heighmapID.x],	(heighmapID.y + 1) }	* valueFactor;
+		zDiff -= glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y + 1][heighmapID.x],	(heighmapID.y + 1) } * valueFactor;
 	else
-		zDiff -= glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y][heighmapID.x],		heighmapID.y }			* valueFactor;
-	
+		zDiff -= glm::dvec3{ heighmapID.x,	rHeight[heighmapID.y][heighmapID.x],		heighmapID.y } * valueFactor;
+
 	glm::dvec3 cross = glm::cross(zDiff, xDiff);
 	glm::dvec3 norm = glm::normalize(cross);
 	return norm;
 }
 
-glm::vec4 TerrainGenerator::ColorOf(glm::ivec2 heighmapID)
+glm::vec4 TerrainGenerator::ColorOf(Generation* pGeneration, glm::ivec2 heighmapID)
 {
-	double value = (m_Generation->height[heighmapID.y][heighmapID.x] - m_Generation->min) / (m_Generation->max - m_Generation->min);
+	double value = (pGeneration->height[heighmapID.y][heighmapID.x] - pGeneration->min) / (pGeneration->max - pGeneration->min);
 	glm::vec4 color{ 0, 0, 0, 0 };
 
 	if (value > 0.6)			// SNOW

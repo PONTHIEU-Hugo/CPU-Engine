@@ -434,10 +434,10 @@ static Varyings SinWavesVS(const Vertex& v, const Uniforms& u)
 	if (u.waveNumber > 0 && u.waveDatas != nullptr)
 	{
 		WaveData* pWaveData = u.waveDatas;
-		float w = pWaveData->angularFrequency * u.time;
+		float w = static_cast<float>(std::fmod(static_cast<double>(pWaveData->angularFrequency) * u.time, glm::two_pi<double>()));
 
 		glm::vec3 pos = v.position;
-		glm::vec3 local = (v.position - u.translation) / u.scale;
+		glm::vec3 local = (v.position - u.translation) * u.divScale;
 		float current = (local.x * pWaveData->direction.x + local.z * pWaveData->direction.y);
 		float phase = pWaveData->k * current - w;
 		float height = std::sinf(phase);
@@ -478,16 +478,15 @@ static Varyings GerstnerWavesVS(const Vertex& v, const Uniforms& u)
 	if (u.waveNumber > 0 && u.waveDatas != nullptr)
 	{
 		WaveData* pWaveData = u.waveDatas;
-		float w = pWaveData->angularFrequency * u.time;
+		float w = static_cast<float>(std::fmod(static_cast<double>(pWaveData->angularFrequency) * u.time, glm::two_pi<double>()));
 
 		glm::vec3 pos = v.position;
-		glm::vec3 local = (v.position - u.translation) / u.scale;
+		glm::vec3 local = (v.position - u.translation) * u.divScale;
 		float current = (local.x * pWaveData->direction.x + local.z * pWaveData->direction.y);
 		float phase = pWaveData->k * current - w;
 
 		float height = std::sin(phase);
 		float deviation = std::cos(phase);
-		float sharpCoef = pWaveData->sharpness / (pWaveData->k * pWaveData->amplitude * u.waveNumber);
 
 		glm::vec3 vecBase = pWaveData->amplitude * glm::vec3{
 				pWaveData->direction.x * deviation,
@@ -496,9 +495,9 @@ static Varyings GerstnerWavesVS(const Vertex& v, const Uniforms& u)
 		};
 
 		// Position
-		glm::vec3 heighVEC3 = vecBase * glm::vec3{ sharpCoef, 1.f, sharpCoef };
+		glm::vec3 heighVEC3 = vecBase * glm::vec3{ pWaveData->sharpness, 1.f, pWaveData->sharpness };
 		// Normal
-		glm::vec3 normalsSum = vecBase * pWaveData->k * glm::vec3{ 1.f, sharpCoef,	1.f };
+		glm::vec3 normalsSum = vecBase * pWaveData->k * glm::vec3{ 1.f, pWaveData->sharpness,	1.f };
 
 		// Apply position to vertex
 		glm::vec3 world = v.position + heighVEC3 * u.scale;
@@ -514,7 +513,7 @@ static Varyings GerstnerWavesVS(const Vertex& v, const Uniforms& u)
 		// Apply normal
 		normalsSum *= glm::vec3{ -1.f, 0.f, -1.f };
 		normalsSum = glm::vec3{ 0.f, 1.f, 0.f } - normalsSum;
-		normalsSum /= glm::vec3{ u.scale.x, u.scale.y, u.scale.z };
+		normalsSum *= u.divScale;
 		out.normal = glm::normalize(normalsSum);
 
 		out.uv = v.uv;
@@ -537,7 +536,7 @@ static Varyings MultipleGerstnerWavesVS(const Vertex& v, const Uniforms& u)
 	{
 		WaveData* pWaveData = u.waveDatas;
 
-		glm::vec3 local = (v.position - u.translation) / u.scale;
+		glm::vec3 local = (v.position - u.translation) * u.divScale;
 
 		/// Position of vertex
 		glm::vec3 normalsSum{ 0, 0, 0 };
@@ -549,13 +548,12 @@ static Varyings MultipleGerstnerWavesVS(const Vertex& v, const Uniforms& u)
 			WaveData& wave = pWaveData[i];
 			if (wave.amplitude == 0) continue;
 
-			float w = wave.angularFrequency * u.time;
+			float w = static_cast<float>(std::fmod(static_cast<double>(wave.angularFrequency) * u.time, glm::two_pi<double>()));
 			float current = local.x * wave.direction.x + local.z * wave.direction.y;
 			float phase = wave.k * current - w;
 
 			float height = std::sin(phase);
 			float deviation = std::cos(phase);
-			float sharpCoef = wave.sharpness / (wave.k * wave.amplitude * u.waveNumber);
 
 			glm::vec3 vecBase = wave.amplitude * glm::vec3{
 				wave.direction.x * deviation,
@@ -564,11 +562,11 @@ static Varyings MultipleGerstnerWavesVS(const Vertex& v, const Uniforms& u)
 			};
 
 			// Position
-			heighVEC3 += vecBase * glm::vec3{ sharpCoef, 1.f, sharpCoef	};
+			heighVEC3 += vecBase * glm::vec3{ wave.sharpness, 1.f, wave.sharpness };
 			totalAmplitude += wave.amplitude;
 
 			// Normal
-			normalsSum += vecBase * wave.k * glm::vec3{	1.f, sharpCoef,	1.f	};
+			normalsSum += vecBase * wave.k * glm::vec3{	1.f, wave.sharpness,	1.f	};
 		}
 		glm::vec3 world = v.position + heighVEC3 * u.scale;
 
@@ -585,7 +583,7 @@ static Varyings MultipleGerstnerWavesVS(const Vertex& v, const Uniforms& u)
 		// Normal of vertex
 		normalsSum *= glm::vec3{ -1.f, 0.f, -1.f };
 		normalsSum = glm::vec3{ 0.f, 1.f, 0.f } - normalsSum;
-		normalsSum /= glm::vec3{ u.scale.x, u.scale.y, u.scale.z };
+		normalsSum *= u.divScale;
 		out.normal = glm::normalize(normalsSum);
 
 		out.uv = v.uv;
