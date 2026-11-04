@@ -343,6 +343,8 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const int maxX = std::min(tri.maxX, tileX1);
 	const int minY = std::max(tri.minY, tileY0);
 	const int maxY = std::min(tri.maxY, tileY1);
+	if (minX > maxX || minY > maxY)
+		return;
 
 	const int width = m_target->width;
 
@@ -412,10 +414,12 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 				continue;
 			}
 			
+			const glm::vec2 pixelCenter(x + 0.5f, y + 0.5f);
+
 			// Interpolation et correction perspective
-			float perspectiveA = weightA / vertexA.position.w;
-			float perspectiveB = weightB / vertexB.position.w;
-			float perspectiveC = weightC / vertexC.position.w;
+			float perspectiveA = weightA * tri.invW[0];
+			float perspectiveB = weightB * tri.invW[1];
+			float perspectiveC = weightC * tri.invW[2];
 
 			const float invPerspectiveSum = 1.0f / (perspectiveA + perspectiveB + perspectiveC);
 
