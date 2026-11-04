@@ -10,6 +10,7 @@
 
 struct Texture;
 struct Mesh;
+struct WaveData;
 struct CubeMap;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
@@ -73,6 +74,13 @@ struct Uniforms
 	const RenderTarget* shadowTint = nullptr;
     float shadowBiasConst = 0.0f;
     float shadowBiasSlope = 0.0f;
+
+    // Vagues
+    float time = 0.f;
+    glm::vec3 scale{ 1, 1, 1 };
+    glm::vec3 translation{ 0, 0, 0 };
+    WaveData* waveDatas = nullptr;
+    uint8_t waveNumber = 0;
 };
 
 enum class CullMode { None, Back, Front };

@@ -4,6 +4,7 @@
 #include "Scene.h"
 #include "Texture.h"
 #include "TerrainGenerator.h"
+#include "OceanWaves.h"
 #include "SmokeEmitter.h"
 #include "SnowEmitter.h"
 #include "SparkleEmitter.h"
@@ -41,13 +42,16 @@ private:
     ObjectId m_skybox = 0;
 
     bool     m_pWasDown = false;
-    bool     m_bWasDown = false;
 
     SmokeEmitter   m_smoke;     // pot d'echappement
     SnowEmitter    m_snow;      // suit la camera
     SparkleEmitter m_sparkle;   // sur le toit de la voiture (B = rafale)
 
     TerrainGenerator m_Terrain;
+
+    ObjectId m_OceanID = 0;
+    OceanWaves m_Ocean;
+    int m_OceanAmplitude = 0;
 };
 
 

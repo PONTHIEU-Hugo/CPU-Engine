@@ -5,6 +5,7 @@
 #include "CubeMap.h"
 
 #include "core.h"
+#include "WaveData.h"
 
 struct SurfaceData
 {
@@ -421,3 +422,182 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 }
 
 const Shader ShadowLambertShader = { ShadowVS, ShadowLambertPS };
+
+// ---------------------------------------------------------------------------
+//  Vagues d'eau
+// ---------------------------------------------------------------------------
+
+static Varyings SinWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	if (u.waveNumber > 0 && u.waveDatas != nullptr)
+	{
+		WaveData* pWaveData = u.waveDatas;
+		float w = pWaveData->angularFrequency * u.time;
+
+		glm::vec3 pos = v.position;
+		glm::vec3 local = (v.position - u.translation) / u.scale;
+		float current = (local.x * pWaveData->direction.x + local.z * pWaveData->direction.y);
+		float phase = pWaveData->k * current - w;
+		float height = std::sinf(phase);
+
+		glm::vec3 heighVEC3 = glm::vec3{ 0, height * pWaveData->amplitude, 0 } * u.scale;
+		out.position = u.vp * glm::vec4(pos + heighVEC3, 1.0f);
+		out.worldPos = pos;
+
+		// Blue colors
+		//glm::vec4 color = glm::mix(ToColor(0x416BDF), ToColor(0x5CB5E1), std::clamp(height, 0.f, 1.f));
+		glm::vec4 color = glm::mix(ToColor(0x0B3A4A), ToColor(0x3E8FA8), std::clamp(height, 0.f, 1.f));
+		color.a = 255;
+		out.color = color;
+
+		float angle = pWaveData->amplitude * pWaveData->k * std::cos(phase) * u.scale.y;			// A · k · cos(phase)
+		float angleX = angle * pWaveData->direction.x;									// angle sur x
+		float angleZ = angle * pWaveData->direction.y;									// angle sur z
+		out.normal = glm::normalize(glm::vec3(-angleX, 1.0f, -angleZ));
+
+		out.uv = v.uv;
+		return out;
+	}
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
+	out.normal = v.normal;
+	out.color = v.color;
+	out.uv = v.uv;
+	out.tangent = v.tangent;
+	return out;
+}
+
+const Shader SinWavesShader = { SinWavesVS, ShadowLambertPS };
+
+static Varyings GerstnerWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	if (u.waveNumber > 0 && u.waveDatas != nullptr)
+	{
+		WaveData* pWaveData = u.waveDatas;
+		float w = pWaveData->angularFrequency * u.time;
+
+		glm::vec3 pos = v.position;
+		glm::vec3 local = (v.position - u.translation) / u.scale;
+		float current = (local.x * pWaveData->direction.x + local.z * pWaveData->direction.y);
+		float phase = pWaveData->k * current - w;
+
+		float height = std::sin(phase);
+		float deviation = std::cos(phase);
+		float sharpCoef = pWaveData->sharpness / (pWaveData->k * pWaveData->amplitude * u.waveNumber);
+
+		glm::vec3 vecBase = pWaveData->amplitude * glm::vec3{
+				pWaveData->direction.x * deviation,
+				height,
+				pWaveData->direction.y * deviation
+		};
+
+		// Position
+		glm::vec3 heighVEC3 = vecBase * glm::vec3{ sharpCoef, 1.f, sharpCoef };
+		// Normal
+		glm::vec3 normalsSum = vecBase * pWaveData->k * glm::vec3{ 1.f, sharpCoef,	1.f };
+
+		// Apply position to vertex
+		glm::vec3 world = v.position + heighVEC3 * u.scale;
+		out.position = u.vp * glm::vec4(world, 1.0f);
+		out.worldPos = world;
+
+		// Blue colors
+		//glm::vec4 color = glm::mix(ToColor(0x416BDF), ToColor(0x5CB5E1), std::clamp(height, 0.f, 1.f));
+		glm::vec4 color = glm::mix(ToColor(0x0B3A4A), ToColor(0x3E8FA8), std::clamp(height, 0.f, 1.f));
+		color.a = 255;
+		out.color = color;
+
+		// Apply normal
+		normalsSum *= glm::vec3{ -1.f, 0.f, -1.f };
+		normalsSum = glm::vec3{ 0.f, 1.f, 0.f } - normalsSum;
+		normalsSum /= glm::vec3{ u.scale.x, u.scale.y, u.scale.z };
+		out.normal = glm::normalize(normalsSum);
+
+		out.uv = v.uv;
+		return out;
+	}
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
+	out.normal = v.normal;
+	out.color = v.color;
+	out.uv = v.uv;
+	out.tangent = v.tangent;
+	return out;
+}
+
+static Varyings MultipleGerstnerWavesVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings out;
+
+	if (u.waveNumber > 0 && u.waveDatas != nullptr)
+	{
+		WaveData* pWaveData = u.waveDatas;
+
+		glm::vec3 local = (v.position - u.translation) / u.scale;
+
+		/// Position of vertex
+		glm::vec3 normalsSum{ 0, 0, 0 };
+
+		glm::vec3 heighVEC3{ 0, 0, 0 };
+		float totalAmplitude = 0.f;
+		for (size_t i = 0; i < u.waveNumber; i++)
+		{
+			WaveData& wave = pWaveData[i];
+			if (wave.amplitude == 0) continue;
+
+			float w = wave.angularFrequency * u.time;
+			float current = local.x * wave.direction.x + local.z * wave.direction.y;
+			float phase = wave.k * current - w;
+
+			float height = std::sin(phase);
+			float deviation = std::cos(phase);
+			float sharpCoef = wave.sharpness / (wave.k * wave.amplitude * u.waveNumber);
+
+			glm::vec3 vecBase = wave.amplitude * glm::vec3{
+				wave.direction.x * deviation,
+				height,
+				wave.direction.y * deviation
+			};
+
+			// Position
+			heighVEC3 += vecBase * glm::vec3{ sharpCoef, 1.f, sharpCoef	};
+			totalAmplitude += wave.amplitude;
+
+			// Normal
+			normalsSum += vecBase * wave.k * glm::vec3{	1.f, sharpCoef,	1.f	};
+		}
+		glm::vec3 world = v.position + heighVEC3 * u.scale;
+
+		out.position = u.vp * glm::vec4(world, 1.0f);
+		out.worldPos = world;
+
+		// Color of vertex
+		float h = heighVEC3.y / totalAmplitude;
+		//glm::vec4 color = glm::mix(ToColor(0x416BDF), ToColor(0x5CB5E1), std::clamp(h, 0.f, 1.f));
+		glm::vec4 color = glm::mix(ToColor(0x0B3A4A), ToColor(0x3E8FA8), std::clamp(h, 0.f, 1.f));
+		color.a = v.color.a;
+		out.color = color;
+
+		// Normal of vertex
+		normalsSum *= glm::vec3{ -1.f, 0.f, -1.f };
+		normalsSum = glm::vec3{ 0.f, 1.f, 0.f } - normalsSum;
+		normalsSum /= glm::vec3{ u.scale.x, u.scale.y, u.scale.z };
+		out.normal = glm::normalize(normalsSum);
+
+		out.uv = v.uv;
+		return out;
+	}
+	out.position = u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos = v.position;
+	out.normal = v.normal;
+	out.color = v.color;
+	out.uv = v.uv;
+	out.tangent = v.tangent;
+	return out;
+}
+
+const Shader GerstnerWavesShader = { MultipleGerstnerWavesVS, LambertPS };

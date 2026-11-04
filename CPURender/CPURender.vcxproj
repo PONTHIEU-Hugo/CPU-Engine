@@ -160,6 +160,7 @@
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MainScene.cpp" />
+    <ClCompile Include="OceanWaves.cpp" />
     <ClCompile Include="Model.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
     <ClCompile Include="Pipeline.cpp" />
@@ -191,6 +192,7 @@
     <ClInclude Include="engine.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="MainScene.h" />
+    <ClInclude Include="OceanWaves.h" />
     <ClInclude Include="Model.h" />
     <ClInclude Include="ParticleSystem.h" />
     <ClInclude Include="Pipeline.h" />
@@ -219,6 +221,7 @@
     <ClInclude Include="Material.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="Renderer.h" />
+    <ClInclude Include="WaveData.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
