@@ -612,6 +612,7 @@ namespace GeometryFactory
     			fscanf_s(file, "%f %f %f",
 					&normal.x, &normal.y, &normal.z);
 
+				normal.x = -normal.x;
     			normal.z = -normal.z;
 
     			rawNormals.push_back(normal);

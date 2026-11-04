@@ -303,6 +303,7 @@ void Renderer::BuildBaseUniforms(const Scene& scene, Uniforms& base)
 	base.vp        = scene.camera->GetVPMatrix();
 	base.ambient   = scene.sun.ambient;
 	base.cameraPos = scene.camera->GetPosition();
+	base.lightDirection = glm::normalize(scene.sun.direction);
 	m_shadow.ApplyTo(base);
 }
 

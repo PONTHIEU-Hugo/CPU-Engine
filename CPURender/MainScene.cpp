@@ -95,8 +95,8 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.25f, 20.0);	
-	Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform->SetPosition({ 0, 0, 0 });
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
+	RenderObject& rTerrain = Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial()));
 
 	m_Ocean.GenerateMesh({ 100, 100 });
 	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);   // houle principale

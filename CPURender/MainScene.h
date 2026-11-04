@@ -39,7 +39,7 @@ private:
     ObjectId m_car = 0;
     ObjectId m_wheelAr = -1;
     ObjectId m_wheelAv = -1;
-    ObjectId m_skybox;
+    ObjectId m_skybox = 0;
 
     bool     m_pWasDown = false;
 
