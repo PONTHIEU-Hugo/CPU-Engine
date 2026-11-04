@@ -154,7 +154,6 @@ private:
 		std::vector<int>            bins[TILE_COUNT];  
 	};
 
-	
 	bool SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const;
 	void BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& local) const;
 	void RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1);

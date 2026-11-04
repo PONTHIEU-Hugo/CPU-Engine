@@ -393,7 +393,7 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 {
 	SurfaceData data = EvaluateSurface(in, u);
 	
-	glm::vec3 visibility(1.0f);
+	glm::vec3 visibility{ 1.0f };
 	float diffuse = 1.0f;
 	float specular = 0.0f;
 
