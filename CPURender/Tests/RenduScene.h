@@ -2,6 +2,8 @@
 #define RENDU_SCENE_H_INCLUDED
 
 #include "../Scene.h"
+#include "../SnowEmitter.h"
+#include "../TerrainGenerator.h"
 
 class RenduScene : public Scene
 {
@@ -12,6 +14,8 @@ public:
     void HandleEvent(float _dt) override;
     
 private:
+    void Move(glm::vec3 dir);
+    
     Material m_roofMaterial;
     Material m_rockMaterial;
     Material m_concreteMaterial;
@@ -39,13 +43,21 @@ private:
     Texture  m_displacementConcrete;
 
     Texture  m_armWood;
-    Texture  m_displacementWood;
     
     Mesh     m_roof;
     Mesh     m_wood;
     Mesh     m_wallOfRock;
     Mesh     m_wallOfConcrete;
     Mesh     m_assets;
+    
+    SnowEmitter*    m_snow = nullptr;
+    TerrainGenerator m_Terrain;
+    
+    ObjectId m_roofID;
+    ObjectId m_wallOfRockID;
+    ObjectId m_wallOfConcreteID;
+    ObjectId m_woodID;
+    ObjectId m_assetsID;
 };
 
 

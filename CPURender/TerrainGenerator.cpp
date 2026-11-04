@@ -4,7 +4,7 @@
 
 TerrainGenerator::TerrainGenerator()
 {
-	m_Material.shader = &LambertShader;
+	m_Material.shader = &ShadowLambertShader;
 
 	m_Material.specular = 0.01f;
 	m_Material.roughness = 0.3f;

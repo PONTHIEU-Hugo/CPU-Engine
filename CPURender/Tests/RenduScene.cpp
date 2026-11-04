@@ -13,16 +13,17 @@ void RenduScene::Init()
     m_wood              = GeometryFactory::LoadGeometry("Assets/Maison/wood.obj");
     m_assets            = GeometryFactory::LoadGeometry("Assets/Maison/asset.obj");
     
-    Add(m_roof, m_roofMaterial, true,
-         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_wallOfRock, m_rockMaterial, true,
-         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_wallOfConcrete, m_concreteMaterial, true,
-        new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_wood, m_woodMaterial, true,
-         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_assets, m_assetMaterial, true,
-         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    glm::vec3 pos = glm::vec3(70.0f, 27.5f, 88.0f);
+    m_roofID = Add(m_roof, m_roofMaterial, true,
+         new Transform(pos, {1,0,0,0}, glm::vec3(1.0f)));
+    m_wallOfRockID = Add(m_wallOfRock, m_rockMaterial, true,
+         new Transform(pos, {1,0,0,0}, glm::vec3(1.0f)));
+    m_wallOfConcreteID = Add(m_wallOfConcrete, m_concreteMaterial, true,
+        new Transform(pos, {1,0,0,0}, glm::vec3(1.0f)));
+    m_woodID = Add(m_wood, m_woodMaterial, true,
+         new Transform(pos, {1,0,0,0}, glm::vec3(1.0f)));
+    m_assetsID = Add(m_assets, m_assetMaterial, true,
+         new Transform(pos, {1,0,0,0}, glm::vec3(1.0f)));
     
     
     m_roofTexture.Load("Assets/roof/albedo.png");
@@ -43,7 +44,6 @@ void RenduScene::Init()
     m_woodTexture.Load("Assets/maple/albedo.png");
     m_normalMapWood.Load("Assets/maple/normal.png");
     m_armWood.Load("Assets/maple/arm.png");
-    m_displacementWood.Load("Assets/maple/displacement.png");
     
     m_assetTexture.Load("Assets/Maison/assets.png");
     
@@ -75,7 +75,6 @@ void RenduScene::Init()
     m_woodMaterial.texture                  = &m_woodTexture;
     m_woodMaterial.normalMap                = &m_normalMapWood;
     m_woodMaterial.armMap                   = &m_armWood;
-    m_woodMaterial.displacementMap          = &m_displacementWood;
     m_woodMaterial.displacementScale        = 0.05f;
     m_woodMaterial.normalFlipY              = true;
     
@@ -88,12 +87,26 @@ void RenduScene::Init()
     m_transforms.push_back(&camera->transform);
 
     sun.direction           = glm::vec3(-0.5f, -1.0f, -0.3f);
-    sun.ambient             = 0.8f;
-    sun.shadowRadius        = 50.0f;
-    sun.shadowCasterExtra   = 30.0f;
-    sun.color            = {255.0f, 255.0f, 255.0f};
+    sun.ambient             = 0.2f;
+    sun.shadowRadius        = 500.0f;
+    sun.shadowCasterExtra   = 300.0f;
+    sun.color            = {247, 202, 74};
     sun.shadowFocus         = camera->GetPosition();
     
+    m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.25f, 10.0f, 1.0f);	
+    ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+    Transform* transformTerrain = Get(terrainID).transform;
+    transformTerrain->SetPosition({ 0, -20, 0 });
+    
+    float scale = 10.0f;
+    transformTerrain->SetScale(glm::vec3(scale, scale, scale));
+    
+    m_snow = new SnowEmitter(10000000);
+    m_snow->swayFrequency = 5.0f;
+    m_snow->Init();
+    m_snow->GetSettings().radius = m_Terrain.GetMesh().localBounds.max.x * scale * 0.5f;
+    
+    AddEmitter(*m_snow);
     LoadSkybox();
 }
 
@@ -103,12 +116,25 @@ void RenduScene::Update(float _dt)
     glm::vec3 cam = camera->GetPosition();
     sun.shadowFocus = glm::vec3(cam.x, 0, cam.z);
     HandleEvent(_dt);
+    
+    m_snow->SetOrigin(glm::vec3(62.18f, 49.04f, 51.06f));
+    m_snow->Update(_dt);
+    
     Scene::Update(_dt);
 }
 
 void RenduScene::LoadSkybox()
 {
     
+}
+
+void RenduScene::Move(glm::vec3 dir)
+{
+    Get(m_roofID).transform->Move(dir);
+    Get(m_wallOfRockID).transform->Move(dir);
+    Get(m_wallOfConcreteID).transform->Move(dir);
+    Get(m_woodID).transform->Move(dir);
+    Get(m_assetsID).transform->Move(dir);
 }
 
 void RenduScene::HandleEvent(float _dt)
@@ -120,6 +146,22 @@ void RenduScene::HandleEvent(float _dt)
         glm::mat4 rot = glm::rotate(glm::mat4(1.0f), glm::radians(15.0f), glm::vec3(0, 1, 0));
         sun.direction = glm::vec3(rot * glm::vec4(sun.direction, 0.0f));
     }
+    
+    if ( keys[SDL_SCANCODE_KP_4] )
+        Move({ -1.0f, 0.0f, 0.0f });
+    if ( keys[SDL_SCANCODE_KP_6] )
+        Move({ 1.0f, 0.0f, 0.0f });
+    if ( keys[SDL_SCANCODE_KP_8] )
+        Move({ 0.0f, 0.0f, 1.0f});
+    if ( keys[SDL_SCANCODE_KP_5] )
+        Move({0.0f, 0.0f, -1.0f});
+    if ( keys[SDL_SCANCODE_KP_PLUS] )
+        Move({ 0.0f, 1.0f, 0.0f});
+    if ( keys[SDL_SCANCODE_KP_MINUS] )
+        Move({0.0f, -1.0f, 0.0f});
+    
+    if ( keys[SDL_SCANCODE_KP_ENTER] )
+        printf("vec3(%.2f, %.2f, %.2f)\n", camera->GetPosition().x, camera->GetPosition().y, camera->GetPosition().z);
 }
 
 #endif

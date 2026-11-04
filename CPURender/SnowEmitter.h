@@ -11,6 +11,7 @@ public:
 
     explicit SnowEmitter(int _max = 4000);
 
+    EmitterSettings& GetSettings() { return settings; }
     BlendMode GetBlendMode() const override { return BlendMode::Alpha; }
 
 protected:
