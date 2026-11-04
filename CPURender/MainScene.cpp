@@ -77,7 +77,7 @@ void MainScene::Init()
 	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
 	//Add(m_cubeMesh, m_cubeMaterial, true,
 	// 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
-	Add(m_groundMesh, m_groundMaterial, false);
+	//Add(m_groundMesh, m_groundMaterial, false);
 	
 	Transform* carT = Get(m_car).transform;
 	Get(m_wheelAr).transform->SetParent(carT);
@@ -95,8 +95,8 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.25f, 20.0);	
-	Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform->SetPosition({ 0, 0, 0 });
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
+	RenderObject& rTerrain = Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial()));
 
 	// Systèmes
 	LoadSkybox();
