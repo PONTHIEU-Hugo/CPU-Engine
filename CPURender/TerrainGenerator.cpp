@@ -15,26 +15,31 @@ TerrainGenerator::~TerrainGenerator()
 	if (m_Generation != nullptr) delete m_Generation;
 }
 
-void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, float spaceValue, double factorValue)
+void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, float spaceValue, double factorValue, float scale)
 {
 	if (m_Generation != nullptr) delete m_Generation;
 
 	m_SpaceValue = spaceValue;
 	m_FactorValue = factorValue;
+	m_Scale = scale;
 
 	switch (type)
 	{
 	case HeighMapType::_DIAMOND_SQUARE:
 		m_Generation = Generation_Algorithm::DiamondSquare_HeighMap((size_t)size.x);
 		m_FactorValue *= 0.025f;
+		m_SpaceValue *= 5.f;
+		m_Scale *= 0.1f;
 		break;
 	case HeighMapType::_PERLIN_2D:
 		m_Generation = Generation_Algorithm::Perlin(size, 0.1);
 		m_FactorValue *= 5.f;
+		m_SpaceValue *= 0.25f;
 		break;
 	case HeighMapType::_OCTAVE_PERLIN_2D:
 		m_Generation = Generation_Algorithm::PerlinOctave(size, 0.025, 5, 0.5);
 		m_FactorValue *= 20.f;
+		m_SpaceValue *= 0.25f;
 		break;
 	default:
 		break;
@@ -97,7 +102,7 @@ Vertex TerrainGenerator::MakeVertex(glm::ivec2 heighmapID)
 	glm::vec3 valueFactor{ m_SpaceValue, m_FactorValue, m_SpaceValue };
 
 	return Vertex{
-				glm::vec3	{ x,	static_cast<float>(m_Generation->height[y][x]),		y } * valueFactor,
+				glm::vec3	{ x,	static_cast<float>(m_Generation->height[y][x]),		y } * valueFactor * m_Scale,
 				NormalOf({ x,	y}),
 				ColorOf({ x,	y}),
 				glm::vec2(0.f, 0.f)
@@ -109,13 +114,13 @@ glm::dvec3 TerrainGenerator::NormalOf(glm::ivec2 heighmapID)
 	std::vector<std::vector<double>>& rHeight = m_Generation->height;
 	if (rHeight.size() <= 0) return glm::dvec3(1000.0);
 
-	glm::dvec3 valueFactor{ m_SpaceValue, m_FactorValue, m_SpaceValue };
+	glm::dvec3 valueFactor = glm::dvec3{ m_SpaceValue, m_FactorValue, m_SpaceValue } * static_cast<double>(m_Scale);
 
 	glm::dvec3 xDiff = { 0, 0, 0 };
 	if (heighmapID.x - 1 >= 0)
 		xDiff = glm::dvec3{ (heighmapID.x - 1), rHeight[heighmapID.y][heighmapID.x - 1],	heighmapID.y } * valueFactor;
 	else
-		xDiff = glm::dvec3{ heighmapID.x,		rHeight[heighmapID.y][heighmapID.x],		heighmapID.y };
+		xDiff = glm::dvec3{ heighmapID.x,		rHeight[heighmapID.y][heighmapID.x],		heighmapID.y } * valueFactor;
 	if (heighmapID.x + 1 < rHeight[0].size())
 		xDiff -= glm::dvec3{(heighmapID.x + 1), rHeight[heighmapID.y][heighmapID.x + 1],	heighmapID.y } * valueFactor;
 	else
