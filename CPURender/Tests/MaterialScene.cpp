@@ -101,6 +101,11 @@ void MaterialScene::Update(float _dt)
     Scene::Update(_dt);
 }
 
+void MaterialScene::LoadSkybox()
+{
+    
+}
+
 void MaterialScene::HandleEvent(float _dt)
 {
     const bool* keys = SDL_GetKeyboardState(nullptr);

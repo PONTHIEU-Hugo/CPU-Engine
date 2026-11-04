@@ -343,8 +343,6 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	const int maxX = std::min(tri.maxX, tileX1);
 	const int minY = std::max(tri.minY, tileY0);
 	const int maxY = std::min(tri.maxY, tileY1);
-	if (minX > maxX || minY > maxY)
-		return;
 
 	const int width = m_target->width;
 
@@ -361,46 +359,34 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	
 	auto attrAt = [&](const glm::vec2& p) -> Attr
 	{
-		float a = EdgeFunction(sB, sC, p) * tri.invArea * tri.invW[0];
-		float b = EdgeFunction(sC, sA, p) * tri.invArea * tri.invW[1];
-		float c = EdgeFunction(sA, sB, p) * tri.invArea * tri.invW[2]; 
+		float a = EdgeFunction(sB, sC, p) * tri.invArea / vertexA.position.w;
+		float b = EdgeFunction(sC, sA, p) * tri.invArea / vertexB.position.w;
+		float c = EdgeFunction(sA, sB, p) * tri.invArea / vertexC.position.w;
 		const float inv = 1.0f / (a + b + c);
 		return {
 			(a * vertexA.uv       + b * vertexB.uv       + c * vertexC.uv)       * inv,
 			(a * vertexA.worldPos + b * vertexB.worldPos + c * vertexC.worldPos) * inv
 		};
 	};
-
-	// Poids A = arete (B,C), B = arete (C,A), C = arete (A,B)
-	const float dAx = -(sC.y - sB.y) * tri.invArea, dAy = (sC.x - sB.x) * tri.invArea;
-	const float dBx = -(sA.y - sC.y) * tri.invArea, dBy = (sA.x - sC.x) * tri.invArea;
-	const float dCx = -(sB.y - sA.y) * tri.invArea, dCy = (sB.x - sA.x) * tri.invArea;
-
-	const float dZx = dAx * screenA.z + dBx * screenB.z + dCx * screenC.z;
 	
 	for (int y = minY; y <= maxY; ++y)
 	{
-		// Rasterisation
-		// Valeur exacte en debut de ligne : l'erreur d'accumulation ne depasse jamais une largeur de tuile
-		const glm::vec2 rowStart(minX + 0.5f, y + 0.5f);
-		float weightA = EdgeFunction(sB, sC, rowStart) * tri.invArea;
-		float weightB = EdgeFunction(sC, sA, rowStart) * tri.invArea;
-		float weightC = EdgeFunction(sA, sB, rowStart) * tri.invArea;
-		float depth = weightA * screenA.z + weightB * screenB.z + weightC * screenC.z;
-
-		size_t index = (size_t)y * width + minX;
-
 		for (int x = minX; x <= maxX; ++x)
 		{
-			++index;
-			weightA += dAx;
-			weightB += dBx;
-			weightC += dCx;
-			depth += dZx;
+			const glm::vec2 pixelCenter(x + 0.5f, y + 0.5f);
 
+			// Rasterisation
+			const float weightA = EdgeFunction(sB, sC, pixelCenter) * tri.invArea;
+			const float weightB = EdgeFunction(sC, sA, pixelCenter) * tri.invArea;
+			const float weightC = EdgeFunction(sA, sB, pixelCenter) * tri.invArea;
+
+			// Poids negatif = pixel hors du triangle
 			if (weightA < kEdgeTolerance || weightB < kEdgeTolerance || weightC < kEdgeTolerance)
 				continue;
 
+			// Depth Test (z-buffer)
+			const float depth = weightA * screenA.z + weightB * screenB.z + weightC * screenC.z;
+			const size_t index = (size_t)y * width + x;
 			if (depth >= m_target->depth[index])
 				continue;
 
@@ -410,12 +396,11 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 					m_target->depth[index] = depth;
 				continue;
 			}
-
-			const glm::vec2 pixelCenter(x + 0.5f, y + 0.5f);
-
-			float perspectiveA = weightA * tri.invW[0];
-			float perspectiveB = weightB * tri.invW[1];
-			float perspectiveC = weightC * tri.invW[2];
+			
+			// Interpolation et correction perspective
+			float perspectiveA = weightA / vertexA.position.w;
+			float perspectiveB = weightB / vertexB.position.w;
+			float perspectiveC = weightC / vertexC.position.w;
 
 			const float invPerspectiveSum = 1.0f / (perspectiveA + perspectiveB + perspectiveC);
 
