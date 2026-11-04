@@ -603,6 +603,7 @@ namespace GeometryFactory
 				glm::vec3 pos;
     			fscanf_s(file, "%f %f %f\n", &pos.x, &pos.y, &pos.z);
     			pos.z = -pos.z;
+    			pos.x = -pos.x;
     			rawPositions.push_back(pos);
     		}
     		else if (strcmp(lineHeader, "vn") == 0)
@@ -637,7 +638,7 @@ namespace GeometryFactory
     				return {};
     			}
 
-    			int order[3] = {0, 2, 1};
+    			int order[3] = {0, 1, 2};
     			for (int k = 0; k < 3; ++k)
     			{
     				int idx = order[k];
