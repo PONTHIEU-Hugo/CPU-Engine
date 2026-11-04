@@ -27,12 +27,14 @@ void Renderer::UpdateLight(const Scene& scene)
 
 	if (sun.direction != m_lastLightDir
 		|| sun.shadowRadius != m_lastShadowRadius
-		|| sun.shadowCasterExtra != m_lastCasterExtra)
+		|| sun.shadowCasterExtra != m_lastCasterExtra
+		|| sun.color != m_lastColor)
 	{
-		m_shadow.SetFollowMode(sun.direction, sun.shadowRadius, sun.shadowCasterExtra);
+		m_shadow.SetFollowMode(sun.direction, sun.shadowRadius, sun.shadowCasterExtra, sun.color);
 		m_lastLightDir     = sun.direction;
 		m_lastShadowRadius = sun.shadowRadius;
 		m_lastCasterExtra  = sun.shadowCasterExtra;
+		m_lastColor        = sun.color;
 	}
 
 	m_shadow.Follow(sun.shadowFocus);
@@ -350,20 +352,24 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 {
 	const Material& material = *object.material;
 
-	Uniforms uniforms		  = base;
-	uniforms.texture		  = material.texture;
-	uniforms.normalMap		  = material.normalMap;
-	uniforms.normalStrength	  = material.normalStrength;
-	uniforms.normalFlipY	  = material.normalFlipY;
-	uniforms.baseColor		  = material.baseColor;
-	uniforms.armMap			  = material.armMap;
-	uniforms.aoMap			  = material.aoMap;
-	uniforms.roughnessMap	  = material.roughnessMap;
-	uniforms.metalnessMap	  = material.metalnessMap;
-	uniforms.eta			  = material.eta;
-	uniforms.thickness		  = material.thickness;
-	uniforms.specularStrength = material.specular;
-	uniforms.shininess		  = ShininessFromRoughness(material.roughness);
+	Uniforms uniforms				= base;
+	uniforms.texture				= material.texture;
+	uniforms.normalMap				= material.normalMap;
+	uniforms.normalStrength			= material.normalStrength;
+	uniforms.normalFlipY			= material.normalFlipY;
+	uniforms.baseColor				= material.baseColor;
+	uniforms.armMap					= material.armMap;
+	uniforms.aoMap					= material.aoMap;
+	uniforms.roughnessMap			= material.roughnessMap;
+	uniforms.metalnessMap			= material.metalnessMap;
+	uniforms.eta					= material.eta;
+	uniforms.thickness				= material.thickness;
+	uniforms.specularStrength		= material.specular;
+	uniforms.shininess				= ShininessFromRoughness(material.roughness);
+	uniforms.displacementMap        = material.displacementMap;
+	uniforms.displacementScale      = material.displacementScale;
+	uniforms.displacementMidpoint   = material.displacementMidpoint;
+	uniforms.displacementPixelEdge  = material.displacementPixelEdge;
 
 	m_pipeline.SetCullMode(material.cull);
 	m_pipeline.BindShader(*material.shader);

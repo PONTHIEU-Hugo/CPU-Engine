@@ -156,13 +156,12 @@ static float PhongSpecular(const Varyings& in, const Uniforms& u, const glm::vec
 static Varyings BasicVS(const Vertex& v, const Uniforms& u)
 {
 	Varyings out;
-	// v.position et v.normal sont deja en espace monde (Pipeline::Draw applique la matrice modele).
-	out.position = u.vp * glm::vec4(v.position, 1.0f);
-	out.worldPos = v.position;
-	out.normal = v.normal;
-	out.color = v.color;
-	out.uv = v.uv;
-	out.tangent = v.tangent;
+	out.position	= u.vp * glm::vec4(v.position, 1.0f);
+	out.worldPos	= v.position;
+	out.normal		= v.normal;
+	out.color		= v.color;
+	out.uv			= v.uv;
+	out.tangent	 = v.tangent;
 
 	return out;
 }
@@ -315,17 +314,35 @@ static glm::vec3 ShadowLight(const Varyings& in, const Uniforms& u, float cosThe
 	return sum / 9.0f;
 }
 
+static Vertex DisplacementVS(const Vertex& v, const Uniforms& u)
+{
+	Vertex d = v;
+	if (u.displacementMap && u.displacementMap->IsValid())
+	{
+		glm::vec2 uv = v.uv;
+		if (uv.y < 1e-4f || uv.y > 1.0f - 1e-4f)
+			uv.x = 0.0f;                        
+
+		const float h = u.displacementMap->SampleHeightBilinear(uv);
+		d.position += v.normal * ((h - u.displacementMidpoint) * u.displacementScale);
+	}
+	return d;
+}
+
 static Varyings ShadowVS(const Vertex& v, const Uniforms& u)
 {
+	Vertex d = DisplacementVS(v, u);
 	Varyings out;
-	out.position = u.vp * glm::vec4(v.position, 1.0f);
-	out.worldPos = v.position;
-	out.normal = v.normal;
-	out.color  = v.color;
-	out.uv     = v.uv;
-	out.lightPos = glm::vec3(u.lightVP * glm::vec4(v.position, 1.0f));
+	out.position	= u.vp * glm::vec4(d.position, 1.0f);
+	out.worldPos	= d.position;
+	out.normal		= v.normal;
+	out.color		= v.color;
+	out.uv			= v.uv;
+	out.tangent  = v.tangent;
+	out.lightPos = glm::vec3(u.lightVP * glm::vec4(d.position, 1.0f));
 	return out;
 }
+
 
 static glm::vec4 RefractionPS(const Varyings& in, const Uniforms& u)
 {
@@ -338,11 +355,6 @@ static glm::vec4 RefractionPS(const Varyings& in, const Uniforms& u)
 	float px = in.position.x;
 	float py = in.position.y;
 
-	float cosT = glm::clamp(glm::dot(-v, n), 0.0f, 1.0f);
-	float F0 = 0.04f;
-	float fresnel = F0 + (1.0f - F0) * std::pow(1.0f - cosT, 5.0f);
-
-	glm::vec3 reflColor(200.0f, 210.0f, 230.0f);
 	glm::vec3 refl = glm::reflect(v, n);
 
 	glm::vec3 pointFond = in.worldPos + refl * u.thickness;
@@ -402,7 +414,7 @@ static glm::vec4 ShadowLambertPS(const Varyings& in, const Uniforms& u)
 	glm::vec3 F0 = glm::mix(glm::vec3(0.04f), base / 255.0f, data.metal);
 	glm::vec3 diffuseColor = base * (1.0f - data.metal);
 
-	glm::vec3 lighting = glm::vec3(u.ambient * data.ao) + (1.0f - u.ambient) * diffuse * visibility;
+	glm::vec3 lighting = glm::vec3(u.ambient * data.ao) + (1.0f - u.ambient) * diffuse * visibility * (u.lightColor / 255.0f);
 	glm::vec3 rgb = diffuseColor * lighting + 255.0f * F0 * specular * visibility;
 
 	return glm::vec4(rgb, data.color.a);

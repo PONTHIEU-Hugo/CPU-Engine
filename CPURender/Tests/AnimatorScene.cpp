@@ -12,7 +12,7 @@ void AnimatorScene::Init()
     m_anim = new Animation("Assets/dance2.dae", &m_model);
     m_animator = new Animator(m_anim);
 
-    m_groundMesh = GeometryFactory::BuildSquare();
+    m_groundMesh = GeometryFactory::BuildPlane();
     Add(m_groundMesh, m_groundMaterial, true,
             new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
     

@@ -23,7 +23,7 @@ class ShadowMap
 public:
 	void Init(int resolution);
 	void SetLight(const glm::vec3& direction, const AABB& sceneBounds);
-	void SetFollowMode(const glm::vec3& direction, float radius, float casterExtra);
+	void SetFollowMode(const glm::vec3& direction, float radius, float casterExtra, const glm::vec3& color);
 	void Follow(const glm::vec3& focus);
 
 	void Invalidate()     { m_dirty = true; }
@@ -45,6 +45,7 @@ private:
 
 	glm::vec3 m_lightDir{ 0.0f, -1.0f, 0.0f };
 	glm::mat4 m_lightVP{ 1.0f };
+	glm::vec3 m_lightColor{ 255.0f, 255.0f, 255.0f};
 	float m_radius = 1.0f;
 
 	bool m_follow = false;

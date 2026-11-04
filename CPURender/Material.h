@@ -17,6 +17,11 @@ struct Material
 	const Texture* roughnessMap = nullptr;
 	const CubeMap* cubeMap = nullptr;
 	
+	const Texture* displacementMap = nullptr;
+	float displacementScale = 0.0f;      
+	float displacementMidpoint = 0.5f; 
+	float displacementPixelEdge = 32.0f;
+	
 	glm::vec4      baseColor = { 255.0f, 255.0f, 255.0f, 255.0f };  
 	CullMode       cull = CullMode::Back;
 
