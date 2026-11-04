@@ -10,14 +10,16 @@ enum class HeighMapType : uint8_t
 	_OCTAVE_PERLIN_2D
 };
 
-constexpr float HeighmapValueSpace = 1.f;
-
 class TerrainGenerator
 {
 private:
 	Mesh m_Mesh;
 	Material m_Material;
 	Generation* m_Generation = nullptr;
+
+	float m_SpaceValue = 1.f;
+	float m_Scale = 1.f;
+	double m_FactorValue = 1.0;
 
 public:
 	TerrainGenerator();
@@ -26,10 +28,11 @@ public:
 	Mesh& GetMesh() { return m_Mesh; }
 	Material& GetMaterial() { return m_Material; }
 
-	void GenerateHeighmap(size_t size, HeighMapType type, double scale = 1.0) { return GenerateHeighmap(glm::vec2{ size, size }, type, scale); }
-	void GenerateHeighmap(glm::vec2 size, HeighMapType type, double scale = 1.0);
+	void GenerateHeighmap(size_t size, HeighMapType type, float spaceValue = 1.f, double factorValue = 1.0, double scale = 1.0) { return GenerateHeighmap(glm::vec2{ size, size }, type, spaceValue, factorValue, scale); }
+	void GenerateHeighmap(glm::vec2 size, HeighMapType type, float spaceValue = 1.f, double factorValue = 1.0, double scale = 1.0);
 
 private:
-	glm::dvec3 NormalOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
-	glm::vec4 ColorOf(glm::ivec2 heighmapID, double heighmapValueFactor, double scale);
+	Vertex MakeVertex(glm::ivec2 heighmapID);
+	glm::dvec3 NormalOf(glm::ivec2 heighmapID);
+	glm::vec4 ColorOf(glm::ivec2 heighmapID);
 };

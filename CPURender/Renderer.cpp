@@ -55,7 +55,7 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 
 		mix(i);
 		mix(reinterpret_cast<uintptr_t>(object.mesh));
-		mix(object.transform.Version());
+		mix(object.transform->Version());
 
 		if (object.material)
 		{
@@ -66,7 +66,7 @@ bool Renderer::ShadowCastersChanged(const Scene& scene)
 			mix((uint64_t)(object.material->baseColor.a * 4.0f));
 		}
 		
-		mix(object.transform.Version());
+		mix(object.transform->Version());
 		if (object.animator)
 			mix(object.animator->Version());
 	}
@@ -92,7 +92,7 @@ void Renderer::ShadowPass(const Scene& scene)
 
 		ShadowCaster caster;
 		caster.mesh   = GetMeshToDraw(object);
-		caster.world  = object.transform.GetWorldMatrix();
+		caster.world  = object.transform->GetWorldMatrix();
 		caster.bounds = object.WorldBounds();
 
 		const bool transparent = object.material && object.material->transparent;
@@ -336,7 +336,7 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 	m_pipeline.BindShader(*material.shader);
 	m_pipeline.BindVertexBuffer(meshOverride ? meshOverride : object.mesh);
 	m_pipeline.BindUniforms(uniforms);
-	m_pipeline.Draw(object.transform.GetWorldMatrix());
+	m_pipeline.Draw(object.transform->GetWorldMatrix());
 }
 
 void Renderer::DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out)
