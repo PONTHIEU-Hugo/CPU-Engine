@@ -247,7 +247,6 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 	for (int y = minY; y <= maxY; ++y)
 	{
 		// Rasterisation
-		// Valeur exacte en debut de ligne : l'erreur d'accumulation ne depasse jamais une largeur de tuile
 		const glm::vec2 rowStart(minX + 0.5f, y + 0.5f);
 		float weightA = EdgeFunction(sB, sC, rowStart) * tri.invArea;
 		float weightB = EdgeFunction(sC, sA, rowStart) * tri.invArea;
@@ -256,14 +255,8 @@ void Pipeline::RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0
 
 		size_t index = (size_t)y * width + minX;
 
-		for (int x = minX; x <= maxX; ++x)
+		for (int x = minX; x <= maxX; ++x, ++index, weightA += dAx, weightB += dBx, weightC += dCx, depth += dZx)
 		{
-			++index;
-			weightA += dAx;
-			weightB += dBx;
-			weightC += dCx;
-			depth += dZx;
-
 			if (weightA < kEdgeTolerance || weightB < kEdgeTolerance || weightC < kEdgeTolerance)
 				continue;
 
