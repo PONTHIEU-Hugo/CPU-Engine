@@ -7,19 +7,19 @@
 
 void MaterialScene::Init()
 {
-    m_planeMesh     = GeometryFactory::LoadGeometry("Assets/minecraft.obj");
+    m_planeMesh     = GeometryFactory::BuildPlane();
     m_sphereMesh    = GeometryFactory::BuildUVSphere(16, 16);
     m_sphereIcoMesh = GeometryFactory::BuildCube();
     m_donutMesh      = GeometryFactory::BuildDonut(0.5f, 0.3f, 32, 16);
     
     Add(m_planeMesh, m_defaultMaterial, true,
          new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
-    // Add(m_sphereMesh, m_rockMaterial, true,
-    //      new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    // Add(m_sphereIcoMesh, m_sheetMaterial, true,
-    //     new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    // Add(m_donutMesh, m_barkMaterial, true,
-    //      new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_sphereMesh, m_rockMaterial, true,
+         new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_sphereIcoMesh, m_sheetMaterial, true,
+        new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_donutMesh, m_barkMaterial, true,
+         new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
     
     m_texture.Load("Assets/rock1k/albedo.png");
@@ -27,10 +27,10 @@ void MaterialScene::Init()
     m_arm.Load("Assets/rock1k/arm.png");
     m_displacement.Load("Assets/rock1k/displacement.png");
     
-    m_texture4.Load("Assets/minecraft.jpg");
-    // m_normalMap4.Load("Assets/grass/normal.png");
-    // m_arm4.Load("Assets/grass/arm.png");
-    // m_displacement4.Load("Assets/grass/displacement.png");
+    m_texture4.Load("Assets/grass/albedo.png");
+    m_normalMap4.Load("Assets/grass/normal.png");
+    m_arm4.Load("Assets/grass/arm.png");
+    m_displacement4.Load("Assets/grass/displacement.png");
     
     m_texture2.Load("Assets/sheet/albedo.png");
     m_normalMap2.Load("Assets/sheet/normal.png");
@@ -44,11 +44,11 @@ void MaterialScene::Init()
     
     m_defaultMaterial.shader                = &ShadowLambertShader;
     m_defaultMaterial.texture               = &m_texture4;
-    // m_defaultMaterial.normalMap             = &m_normalMap4;
-    // m_defaultMaterial.normalFlipY           = true;
-    // m_defaultMaterial.armMap                = &m_arm4;
-    // m_defaultMaterial.displacementMap       = &m_displacement4;
-    // m_defaultMaterial.displacementScale     = 0.1f;
+    m_defaultMaterial.normalMap             = &m_normalMap4;
+    m_defaultMaterial.normalFlipY           = true;
+    m_defaultMaterial.armMap                = &m_arm4;
+    m_defaultMaterial.displacementMap       = &m_displacement4;
+    m_defaultMaterial.displacementScale     = 0.1f;
     
     m_rockMaterial.shader                   = &ShadowLambertShader;
     m_rockMaterial.texture                  = &m_texture;
