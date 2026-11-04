@@ -48,16 +48,6 @@ void AnimatorScene::Update(float _dt)
     camera->HandleEvent(_dt);
 }
 
-void AnimatorScene::LoadSkybox()
-{
-    skybox.faces[0].Load("Assets/right.jpg");
-    skybox.faces[1].Load("Assets/left.jpg");
-    skybox.faces[2].Load("Assets/top.jpg");
-    skybox.faces[3].Load("Assets/bottom.jpg");
-    skybox.faces[4].Load("Assets/front.jpg");
-    skybox.faces[5].Load("Assets/back.jpg");
-}
-
 void AnimatorScene::HandleEvent(float _dt)
 {
     

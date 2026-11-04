@@ -19,13 +19,13 @@ struct RenderObject
 {
 	const Mesh* mesh = nullptr;
 	const Material* material = nullptr;
-	Transform       transform;
+	Transform*       transform = nullptr;
 	bool            castShadow = true;
 	bool            visible = true;
 
 	Animator*       animator = nullptr;
 
-	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform.GetWorldMatrix()); }
+	AABB WorldBounds() const { return TransformAABB(mesh->localBounds, transform->GetWorldMatrix()); }
 };
 
 struct DirectionalLight
@@ -49,7 +49,7 @@ class Scene
 public:
 	Camera*       camera = nullptr;
 	DirectionalLight sun;
-	CubeMap skybox;
+	CubeMap cubemap;
 	std::vector<RenderObject> objects;
 	std::vector<Emitter*>     emitters;   // dessines apres les objets (voir Renderer::ParticlePass)
 
@@ -60,7 +60,7 @@ public:
 		RenderObject object;
 		object.mesh = &mesh;
 		object.material = &material;
-		object.transform = *transform;
+		object.transform = transform;
 		object.castShadow = castShadow;
 		objects.push_back(object);
 		m_transforms.push_back(transform);
@@ -77,7 +77,7 @@ public:
 	virtual void LoadSkybox() = 0;
     virtual void HandleEvent(float _dt) = 0;
 	
-	void EnableSkybox(bool enable) { skybox.enabled = enable; }
+	void EnableSkybox(bool enable) { cubemap.enabled = enable; }
 	
 	RenderObject& Get(ObjectId id) { return objects[id]; }
 	const RenderObject& Get(ObjectId id) const { return objects[id]; }

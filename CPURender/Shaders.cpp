@@ -2,6 +2,7 @@
 #include "Texture.h"
 #include <cmath>
 #include <SDL3/SDL_init.h>
+#include "CubeMap.h"
 
 #include "core.h"
 
@@ -190,6 +191,27 @@ static glm::vec4 LambertPS(const Varyings& in, const Uniforms& u)
 }
 
 const Shader LambertShader = { BasicVS, LambertPS };
+
+static Varyings SkyboxVS(const Vertex& v, const Uniforms& u)
+{
+	Varyings o;
+	o.worldPos = v.position;                       
+	o.position = u.vp * glm::vec4(v.position, 1.0f);
+	o.position.z = o.position.w * 0.99999f;        
+	return o;
+}
+
+static glm::vec4 SkyboxPS(const Varyings& in, const Uniforms& u)
+{
+	if (!u.cubeMap || !u.cubeMap->enabled)
+		return glm::vec4(0.0f, 0.0f, 0.0f, 255.0f);
+
+	const glm::vec3 dir = in.worldPos - u.cameraPos;
+
+	return glm::vec4(u.cubeMap->Sample(dir), 255.0f);
+}
+
+const Shader SkyboxShader = { SkyboxVS, SkyboxPS };
 
 // ---------------------------------------------------------------------------
 // Ombres 

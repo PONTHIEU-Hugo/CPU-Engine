@@ -10,6 +10,7 @@
 
 struct Texture;
 struct Mesh;
+struct CubeMap;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
@@ -56,6 +57,8 @@ struct Uniforms
 	const Texture* roughnessMap	= nullptr;
 	const Texture* metalnessMap = nullptr;
 	const Texture* armMap = nullptr;
+
+    const CubeMap* cubeMap = nullptr;
 	
 	// displacement
 	const Texture* displacementMap = nullptr;
@@ -88,8 +91,8 @@ class Pipeline
 {
 public:
 	// Clusters 
-	static constexpr int TILES_X = 4;
-	static constexpr int TILES_Y = 4;
+	static constexpr int TILES_X = 16;
+	static constexpr int TILES_Y = 9;
 	static constexpr int TILE_COUNT = TILES_X * TILES_Y;
 
 	Pipeline();
@@ -137,8 +140,12 @@ private:
 	{
 		Varyings  varyings[3];        
 		glm::vec3 screenPos[3] = { glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
-		float     invArea = 1;     
-		int       minX, maxX, minY, maxY = 0;  
+        float invW[3] = { 0.0f, 0.0f, 0.0f };
+		float invArea = 1;     
+        int minX = 0;
+        int maxX = 0;
+        int minY = 0;
+        int maxY = 0;
 	};
 
 	struct ThreadBins

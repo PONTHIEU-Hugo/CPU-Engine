@@ -58,7 +58,7 @@ void Chrono::Update()
 	}
 
 	if (m_DeltaTime < m_CapFPS && m_CapFPS > 0.f)
-		SDL_Delay((m_CapFPS - m_DeltaTime) * 1000);
+		SDL_Delay((Uint32)((m_CapFPS - m_DeltaTime) * 1000));
 }
 
 std::string Chrono::GetCurrentTimeAsString() const

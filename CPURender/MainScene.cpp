@@ -51,8 +51,8 @@ void MainScene::Init()
 	// 	m_cubeMaterial.texture = &m_cubeTexture;
 
 	m_carMaterial = m_defaultMaterial;
-	m_carMaterial.baseColor.a = 255 / 2;
-	m_carMaterial.transparent = true;
+	m_carMaterial.baseColor.a = 255;
+	m_carMaterial.transparent = false;
 	if (m_carTexture.IsValid()) 
 		m_carMaterial.texture = &m_carTexture;
 
@@ -79,9 +79,9 @@ void MainScene::Init()
 	// 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
 	Add(m_groundMesh, m_groundMaterial, false);
 	
-	Transform& carT = Get(m_car).transform;
-	Get(m_wheelAr).transform.SetParent(&carT);
-	Get(m_wheelAv).transform.SetParent(&carT);
+	Transform* carT = Get(m_car).transform;
+	Get(m_wheelAr).transform->SetParent(carT);
+	Get(m_wheelAv).transform->SetParent(carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
@@ -96,7 +96,8 @@ void MainScene::Init()
 	sun.shadowFocus       = camera->GetPosition();
 
 	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
-	//Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform.SetPosition({ 0, -5, 0 });
+	ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
+	Get(terrainID).transform->SetPosition({ 0, -5, 0 });
 
 	// Systèmes
 	LoadSkybox();
@@ -109,8 +110,8 @@ void MainScene::Init()
 
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
 	AddEmitter(m_smoke);
-	//AddEmitter(m_snow);
-	AddEmitter(m_sparkle);
+	AddEmitter(m_snow);
+	//AddEmitter(m_sparkle);
 }
 
 void MainScene::Update(float _dt)
@@ -118,8 +119,10 @@ void MainScene::Update(float _dt)
 	camera->HandleEvent(_dt);
 	HandleEvent(_dt);
 
+	Get(m_skybox).transform->SetPosition(camera->GetPosition());
+
 	const glm::vec3 exhaustLocalOffset(1.7f, 1.3f, 9.2f);
-	const glm::mat4& carWorld = Get(m_car).transform.GetWorldMatrix();
+	const glm::mat4& carWorld = Get(m_car).transform->GetWorldMatrix();
 	m_smoke.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
 	m_smoke.Update(_dt);
 
@@ -137,12 +140,21 @@ void MainScene::Update(float _dt)
 
 void MainScene::LoadSkybox()
 {
-    skybox.faces[0].Load("Assets/right.jpg");
-    skybox.faces[1].Load("Assets/left.jpg");
-    skybox.faces[2].Load("Assets/top.jpg");
-    skybox.faces[3].Load("Assets/bottom.jpg");
-    skybox.faces[4].Load("Assets/front.jpg");
-    skybox.faces[5].Load("Assets/back.jpg");
+	m_skyboxMesh = GeometryFactory::BuildSkybox();
+
+	cubemap.faces[0].Load("Assets/right.jpg");
+	cubemap.faces[1].Load("Assets/left.jpg");
+	cubemap.faces[2].Load("Assets/top.jpg");
+	cubemap.faces[3].Load("Assets/bottom.jpg");
+	cubemap.faces[4].Load("Assets/front.jpg");
+	cubemap.faces[5].Load("Assets/back.jpg");
+
+	m_skyboxMaterial.cubeMap = &cubemap;
+	m_skyboxMaterial.cull = CullMode::None;
+	m_skyboxMaterial.isSkybox = true;
+	m_skyboxMaterial.shader = &SkyboxShader;
+
+	m_skybox = Add(m_skyboxMesh, m_skyboxMaterial, false);
 }
 
 void MainScene::HandleEvent(float _dt)
@@ -179,30 +191,30 @@ void MainScene::HandleEvent(float _dt)
 	
 	if (keys[SDL_SCANCODE_KP_8])
 	{
-		Get(currentObj).transform.Move(Get(currentObj).transform.GetForward() * (speed * dt));
-		if ( m_wheelAr != -1) Get(m_wheelAr).transform.AddYPR({0.0f, -speedRot * dt, 0.0f});
-		if ( m_wheelAv != -1) Get(m_wheelAv).transform.AddYPR({0.0f, -speedRot * dt, 0.0f});
+		Get(currentObj).transform->Move(Get(currentObj).transform->GetForward() * (speed * dt));
+		if ( m_wheelAr != -1) Get(m_wheelAr).transform->AddYPR({0.0f, -speedRot * dt, 0.0f});
+		if ( m_wheelAv != -1) Get(m_wheelAv).transform->AddYPR({0.0f, -speedRot * dt, 0.0f});
 	}
 	if (keys[SDL_SCANCODE_KP_5])
 	{
-		Get(currentObj).transform.Move(Get(currentObj).transform.GetForward() * (-speed * dt));
-		if ( m_wheelAr != -1) Get(m_wheelAr).transform.AddYPR({0.0f, speedRot * dt, 0.0f});
-		if ( m_wheelAv != -1) Get(m_wheelAv).transform.AddYPR({0.0f, speedRot * dt, 0.0f});
+		Get(currentObj).transform->Move(Get(currentObj).transform->GetForward() * (-speed * dt));
+		if ( m_wheelAr != -1) Get(m_wheelAr).transform->AddYPR({0.0f, speedRot * dt, 0.0f});
+		if ( m_wheelAv != -1) Get(m_wheelAv).transform->AddYPR({0.0f, speedRot * dt, 0.0f});
 	}
 	if (keys[SDL_SCANCODE_KP_1])
-		Get(currentObj).transform.Move(Get(currentObj).transform.GetUp() * (-speed * dt));
+		Get(currentObj).transform->Move(Get(currentObj).transform->GetUp() * (-speed * dt));
 	if (keys[SDL_SCANCODE_KP_3])
-		Get(currentObj).transform.Move(Get(currentObj).transform.GetUp() * (speed * dt));
+		Get(currentObj).transform->Move(Get(currentObj).transform->GetUp() * (speed * dt));
 	
 	if (keys[SDL_SCANCODE_KP_4])
-		Get(currentObj).transform.AddYPR({speedRot * dt, 0.0f, 0.0f});
+		Get(currentObj).transform->AddYPR({speedRot * dt, 0.0f, 0.0f});
 	if (keys[SDL_SCANCODE_KP_6])
-		Get(currentObj).transform.AddYPR({-speedRot * dt, 0.0f, 0.0f});
+		Get(currentObj).transform->AddYPR({-speedRot * dt, 0.0f, 0.0f});
 	
 	if (keys[SDL_SCANCODE_KP_PLUS])
-		Get(currentObj).transform.AddScale(speedSca * dt);
+		Get(currentObj).transform->AddScale(speedSca * dt);
 	if (keys[SDL_SCANCODE_KP_MINUS])
-		Get(currentObj).transform.AddScale(-speedSca * dt);
+		Get(currentObj).transform->AddScale(-speedSca * dt);
 }
 
 

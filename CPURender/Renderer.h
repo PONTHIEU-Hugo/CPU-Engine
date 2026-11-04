@@ -39,7 +39,7 @@ private:
 	void TransparencyPass(const Scene& scene, FinalFrameBuffer& out);
 	void DrawObject(const RenderObject& object, const Uniforms& base, const Mesh* meshOverride = nullptr);
 	void ParticlePass(const Scene& scene, const Uniforms& base);
-	void DrawSkybox(const CubeMap& skybox, const glm::mat4& view, const glm::mat4 proj, FinalFrameBuffer& out);
+	void DrawSkybox(const RenderObject* skybox, const Uniforms& base);
 
 	Pipeline  m_pipeline;
 	ShadowMap m_shadow;

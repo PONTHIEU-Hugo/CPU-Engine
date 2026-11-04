@@ -24,7 +24,7 @@ Generation* Generation_Algorithm::DiamondSquare_HeighMap(size_t size)
 	for (size_t i = 0; i < oddSize; i++)
 		row.push_back(column);
 
-	float topL, topR, bottomL, bottomR = 0;
+	float topL = 0, topR = 0, bottomL = 0, bottomR = 0;
 
 	// Initialize
 	row[0][0] =						RANDOM::GetRandomInt(0, 255);
@@ -32,37 +32,37 @@ Generation* Generation_Algorithm::DiamondSquare_HeighMap(size_t size)
 	row[oddSize - 1][0] =			RANDOM::GetRandomInt(0, 255);
 	row[oddSize - 1][oddSize - 1] = RANDOM::GetRandomInt(0, 255);
 
-	int step = oddSize;
+	int step = (int)oddSize;
 	while (step > 1)
 	{
-		int half = step * 0.5f;
+		int half = (int)(step * 0.5f);
 
 		// Diamond
 		for (int x = half; x < oddSize; x += step)
 		{
 			for (int y = half; y < oddSize; y += step)
 			{
-				float value = 0.f;
+				double value = 0.f;
 				int added = 0;
 
 				if (y - half >= 0)
 				{
-					value = row[y - half][x];
+					value = row[y - half][(int)x];
 					added++;
 				}
 				if (x - half >= 0)
 				{
-					value = row[y][x - half];
+					value = row[y][(int)x - half];
 					added++;
 				}
 				if (x + half <= oddSize)
 				{
-					value = row[y][x + half];
+					value = row[y][(int)x + half];
 					added++;
 				}
 				if (y + half <= oddSize)
 				{
-					value = row[y + half][x];
+					value = row[y + half][(int)x];
 					added++;
 				}
 
@@ -77,27 +77,27 @@ Generation* Generation_Algorithm::DiamondSquare_HeighMap(size_t size)
 		{
 			for (int y = (x % 2 == 0 ? half : 0); y < oddSize; y += step)
 			{
-				float value = 0.f;
+				double value = 0.f;
 				int added = 0;
 
 				if (y - half >= 0)
 				{
-					value = row[y - half][x];
+					value = row[y - half][(int)x];
 					added++;
 				}
 				if (x - half >= 0)
 				{
-					value = row[y][x - half];
+					value = row[y][(int)x - half];
 					added++;
 				}
 				if (x + half < oddSize)
 				{
-					value = row[y][x + half];
+					value = row[y][(int)x + half];
 					added++;
 				}
 				if (y + half < oddSize)
 				{
-					value = row[y + half][x];
+					value = row[y + half][(int)x];
 					added++;
 				}
 
@@ -107,7 +107,7 @@ Generation* Generation_Algorithm::DiamondSquare_HeighMap(size_t size)
 			}
 		}
 
-		step *= 0.5f;
+		step = (int)(step * 0.5f);
 	}
 	return new Generation{ row, { oddSize, oddSize, 1 } };
 }
@@ -181,7 +181,7 @@ double Generation_Algorithm::PerlinNoise::PerlinFor(std::vector<int>& doublePerm
 	posI = posI & 255;
 	std::vector<int> hash = Hash(doublePermutation, posI);
 
-	double x1, x2, y1, y2, z1, z2;
+	double x1 = 0.0, x2 = 0.0, y1 = 0.0, y2 = 0.0, z1 = 0.0, z2 = 0.0;
 	x1 = Lerp(Grad(hash[0], posD),
 		Grad(hash[4], posD - glm::dvec3{ 1.0, 0.0, 0.0 }),
 		fadePos.x);
