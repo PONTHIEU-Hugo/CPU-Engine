@@ -156,6 +156,7 @@
     <ClCompile Include="Bone.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chrono.cpp" />
+    <ClCompile Include="CloudEmitter.cpp" />
     <ClCompile Include="CubeMap.cpp" />
     <ClCompile Include="engine.cpp" />
     <ClCompile Include="main.cpp" />
@@ -189,6 +190,7 @@
     <ClInclude Include="Bone.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Chrono.h" />
+    <ClInclude Include="CloudEmitter.h" />
     <ClInclude Include="CubeMap.h" />
     <ClInclude Include="engine.h" />
     <ClInclude Include="main.h" />

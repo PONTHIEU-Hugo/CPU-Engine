@@ -1,9 +1,11 @@
 ﻿#ifndef RENDU_SCENE_H_INCLUDED
 #define RENDU_SCENE_H_INCLUDED
 
+#include "../CloudEmitter.h"
 #include "../Scene.h"
 #include "../SnowEmitter.h"
 #include "../TerrainGenerator.h"
+#include "../OceanWaves.h"
 
 class RenduScene : public Scene
 {
@@ -16,6 +18,11 @@ public:
 private:
     void Move(glm::vec3 dir);
     
+    enum class Weather { Clear, Cloudy, Snowy };
+    
+    void SetWeather(Weather w);
+    
+    Material m_groundMaterial;
     Material m_roofMaterial;
     Material m_rockMaterial;
     Material m_concreteMaterial;
@@ -44,6 +51,7 @@ private:
 
     Texture  m_armWood;
     
+    Mesh     m_ground;
     Mesh     m_roof;
     Mesh     m_wood;
     Mesh     m_wallOfRock;
@@ -51,7 +59,13 @@ private:
     Mesh     m_assets;
     
     SnowEmitter*    m_snow = nullptr;
+    CloudEmitter*   m_cloud = nullptr;
+    
     TerrainGenerator m_Terrain;
+    ObjectId m_oceanID = 0;
+    OceanWaves m_ocean;
+    Transform* m_oceanTransform = nullptr;
+    int m_oceanAmplitude = 0;
     
     ObjectId m_roofID;
     ObjectId m_wallOfRockID;

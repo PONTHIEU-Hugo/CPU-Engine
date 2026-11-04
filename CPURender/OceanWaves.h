@@ -16,11 +16,12 @@ private:
 
 	static constexpr float _gravity = 9.81f;
 
+	float m_TotalAmplitude = 0.f;
 public:
 	OceanWaves();
 	~OceanWaves() = default;
 
 	void AddWave(glm::vec2 dir, float amplitude, float sharpness, float lambda);
 
-	void GenerateMesh(glm::ivec2 size);
+	void GenerateMesh(glm::ivec2 size, float cellSize = 1.f);
 };

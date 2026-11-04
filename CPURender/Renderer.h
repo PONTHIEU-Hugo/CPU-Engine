@@ -59,6 +59,8 @@ private:
 	std::vector<TransparentEntry> m_transparents;
 	std::vector<ShadowCaster> m_casters;
 	std::vector<ShadowCaster> m_tintCasters;
+	
+	glm::vec3 m_clearColor = {0.0f, 0.0f, 0.0f};
 };
 
 #endif // !RENDERER_H_INCLUDED

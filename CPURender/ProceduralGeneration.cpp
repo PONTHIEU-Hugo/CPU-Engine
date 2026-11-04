@@ -200,6 +200,60 @@ double Generation_Algorithm::PerlinNoise::PerlinFor(std::vector<int>& doublePerm
 	return (Lerp(y1, y2, fadePos.z));
 }
 
+void Generation_Algorithm::ApplyMountainMask(Generation* pGeneration, double sharpness, double coneWeight)
+{
+	if (pGeneration == nullptr || pGeneration->height.empty()) return;
+
+	const int h = (int)pGeneration->height.size();
+	const int w = (int)pGeneration->height[0].size();
+
+	double lo = DBL_MAX, hi = -DBL_MAX;
+	for (const auto& row : pGeneration->height)
+		for (double v : row)
+		{
+			lo = std::min(lo, v);
+			hi = std::max(hi, v);
+		}
+	const double range = (hi - lo) > 1e-9 ? (hi - lo) : 1.0;
+
+	pGeneration->min = DBL_MAX;
+	pGeneration->max = -DBL_MAX;
+
+	for (int y = 0; y < h; y++)
+	{
+		for (int x = 0; x < w; x++)
+		{
+			double n = (pGeneration->height[y][x] - lo) / range;
+
+			double nx = w > 1 ? 2.0 * x / (w - 1) - 1.0 : 0.0;
+			double ny = h > 1 ? 2.0 * y / (h - 1) - 1.0 : 0.0;
+
+			double d = std::min(std::sqrt(nx * nx + ny * ny), 1.0);
+			double t = 1.0 - d;
+			double mask = t * t * (3.0 - 2.0 * t);   
+
+			double v = (n * (1.0 - coneWeight) + t * coneWeight) * mask;
+			v = std::pow(v, sharpness);
+
+			pGeneration->height[y][x] = v;
+			pGeneration->min = std::min(pGeneration->min, v);
+			pGeneration->max = std::max(pGeneration->max, v);
+		}
+	}
+}
+
+void Generation_Algorithm::ComputeMinMax(Generation* g)
+{
+	g->min = DBL_MAX;
+	g->max = -DBL_MAX;
+	for (const auto& row : g->height)
+		for (double v : row)
+		{
+			g->min = std::min(g->min, v);
+			g->max = std::max(g->max, v);
+		}
+}
+
 Generation* Generation_Algorithm::Perlin(glm::ivec2 size, double scale)
 {
 	std::vector<int> doublePermutation(PerlinNoise::permutationSize * 2);

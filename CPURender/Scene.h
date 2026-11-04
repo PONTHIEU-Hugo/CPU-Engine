@@ -47,6 +47,7 @@ using ObjectId = std::size_t;
 class Scene
 {
 public:
+	glm::vec3 clearColor = { 0.0f, 0.0f, 0.0f };
 	Camera*       camera = nullptr;
 	DirectionalLight sun;
 	CubeMap cubemap;

@@ -43,6 +43,8 @@ namespace Generation_Algorithm
 
 		double PerlinFor(std::vector<int>& doublePermutation, glm::ivec2 size, glm::dvec3 pos);
 	}
+	void ComputeMinMax(Generation* g);
+	void ApplyMountainMask(Generation* pGeneration, double sharpness = 1.5, double coneWeight = 0.4);
 	Generation* Perlin(glm::ivec2 size, double scale);
 	Generation* PerlinOctave(glm::ivec2 size, double scale, int octave, double persistence);
 }

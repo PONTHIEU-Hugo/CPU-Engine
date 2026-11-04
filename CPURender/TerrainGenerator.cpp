@@ -15,7 +15,7 @@ TerrainGenerator::~TerrainGenerator()
 	if (m_Generation != nullptr) delete m_Generation;
 }
 
-void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, float spaceValue, double factorValue, float scale)
+void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, float spaceValue, double factorValue, float scale, bool mountain)
 {
 	if (m_Generation != nullptr) delete m_Generation;
 
@@ -45,8 +45,25 @@ void TerrainGenerator::GenerateHeighmap(glm::vec2 size, HeighMapType type, float
 		break;
 	}
 
-	if (m_Generation == nullptr) exit(-1);
+	if (m_Generation == nullptr) 
+		exit(-1);
+	
+	if (mountain)
+		Generation_Algorithm::ApplyMountainMask(m_Generation, sharpness, coneWeight);
+	else
+		Generation_Algorithm::ComputeMinMax(m_Generation);
+	
 	std::vector<std::vector<double>>& rHeight = m_Generation->height;
+
+	const float width  = static_cast<float>(rHeight[0].size() - 1);
+	const float depth  = static_cast<float>(rHeight.size() - 1);
+	const float midH   = static_cast<float>((m_Generation->min + m_Generation->max) * 0.5);
+
+	m_Offset = glm::vec3(
+		width * 0.5f * m_SpaceValue,
+		midH * static_cast<float>(m_FactorValue),
+		depth * 0.5f * m_SpaceValue
+	) * m_Scale;
 
 	glm::vec3 rSize = m_Generation->size;
 	m_Mesh.vertices.clear();
@@ -92,20 +109,20 @@ Vertex TerrainGenerator::MakeVertex(glm::ivec2 heighmapID)
 {
 	int x = heighmapID.x, y = heighmapID.y;
 	if (y < 0 || y >= m_Generation->height.size() || x < 0 || x >= m_Generation->height[0].size())
-	{
-		std::string error = "Can't create vertex for: " + x;
-		error += " / " + y;
-		std::runtime_error(error.c_str());
-		exit(-1);
-	}
+		throw std::runtime_error("Can't create vertex for: " + std::to_string(x) + " / " + std::to_string(y));
+	
 
 	glm::vec3 valueFactor{ m_SpaceValue, m_FactorValue, m_SpaceValue };
 
+	glm::vec3 pos = glm::vec3{ x, static_cast<float>(m_Generation->height[y][x]), y }
+	* valueFactor * m_Scale;
+	pos -= m_Offset;
+
 	return Vertex{
-				glm::vec3	{ x,	static_cast<float>(m_Generation->height[y][x]),		y } * valueFactor * m_Scale,
-				NormalOf({ x,	y}),
-				ColorOf({ x,	y}),
-				glm::vec2(0.f, 0.f)
+		pos,
+		NormalOf({ x, y }),
+		ColorOf({ x, y }),
+		glm::vec2(0.f, 0.f)
 	};
 }
 
@@ -146,12 +163,12 @@ glm::vec4 TerrainGenerator::ColorOf(glm::ivec2 heighmapID)
 	double value = (m_Generation->height[heighmapID.y][heighmapID.x] - m_Generation->min) / (m_Generation->max - m_Generation->min);
 	glm::vec4 color{ 0, 0, 0, 0 };
 
-	if (value > 0.6)			// SNOW
+	if (value > 0.6)			
 		color = glm::mix(ToColor(0x7F8386), ToColor(0xFFFFFF), std::clamp(value, 0.0, 1.0));
-	else if (value > 0.55)	// STONE
-		color = glm::mix(ToColor(0x3F9B0B), ToColor(0x7F8386), std::clamp(value, 0.0, 1.0));
-	else																// SAND
-		color = glm::mix(ToColor(0xC2B280), ToColor(0x3F9B0B), std::clamp(value, 0.0, 1.0));
+	else if (value > 0.55)
+		color = glm::mix(ToColor(0x7F8386), ToColor(0x7F8386), std::clamp(value, 0.0, 1.0));
+	else																
+		color = glm::mix(ToColor(0xC2B280), ToColor(0x7F8386), std::clamp(value, 0.0, 1.0));
 
 	color.a = 255;
 	return color;

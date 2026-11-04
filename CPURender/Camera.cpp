@@ -46,13 +46,6 @@ void Camera::HandleEvent(float _dt)
 	if (keys[SDL_SCANCODE_LCTRL]) 
 	    transform.Move(transform.GetUp() * -speed * _dt);
     
-    if (keys[SDL_SCANCODE_1])
-        transform.SetPosition({5.0f, 1.0f, 3.0f});
-    if (keys[SDL_SCANCODE_2])
-        transform.SetPosition({0.0f, 4.5f, 3.0f});
-    if (keys[SDL_SCANCODE_3])
-        transform.SetPosition({0.0f, 6.5f, 18.0f});
-    
     UpdateViewMatrix();
 }
 

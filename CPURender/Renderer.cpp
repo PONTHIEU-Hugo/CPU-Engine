@@ -13,6 +13,8 @@ void Renderer::Init(int shadowResolution)
 
 void Renderer::Render(const Scene& scene, FinalFrameBuffer& out)
 {
+	m_clearColor = scene.clearColor;
+	
 	UpdateLight(scene);
 	SkinObjects(scene);
 	ShadowPass(scene);
@@ -160,7 +162,7 @@ const Mesh* Renderer::GetMeshToDraw(const RenderObject& object) const
 
 void Renderer::MainPass(const Scene& scene, FinalFrameBuffer& out)
 {
-	out.clear(0x000000);
+	out.clear(ToColor(m_clearColor));
 	m_pipeline.BindFrameBuffer(&out);
 	m_pipeline.ClearDepth();
 

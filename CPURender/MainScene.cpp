@@ -99,9 +99,9 @@ void MainScene::Init()
 	RenderObject& rTerrain = Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial()));
 
 	m_Ocean.GenerateMesh({ 100, 100 });
-	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);   // houle principale
-	m_Ocean.AddWave({ 1.0f, -0.2f }, 1.2f, 0.7f, 25.0f);   // houle secondaire
-	m_Ocean.AddWave({ 0.7f,  0.7f }, 0.6f, 0.6f, 15.0f);   // mer du vent
+	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);  
+	m_Ocean.AddWave({ 1.0f, -0.2f }, 1.2f, 0.7f, 25.0f);   
+	m_Ocean.AddWave({ 0.7f,  0.7f }, 0.6f, 0.6f, 15.0f);  
 	m_Ocean.AddWave({ 1.0f,  0.8f }, 0.3f, 0.5f, 9.0f);   // clapot
 	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material, false);
 	RenderObject& ocean = Get(m_OceanID);

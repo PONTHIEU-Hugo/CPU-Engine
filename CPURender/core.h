@@ -49,4 +49,10 @@ inline glm::vec4 ToColor(uint32_t _color)
     return glm::vec4(r, g, b, a);
 }
 
+inline uint32_t ToColor(glm::vec3 _color)
+{
+    uint32_t color = (int)_color.r << 16 | (int)_color.g << 8 | (int)_color.b;
+    return color;
+}
+
 #endif

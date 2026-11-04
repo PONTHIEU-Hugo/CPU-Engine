@@ -9,7 +9,7 @@ SmokeEmitter::SmokeEmitter(int _max) : Emitter(_max)
     settings.speedMax = 0.8f;
     settings.coneAngle = 15.0f;
     settings.radius = 0.2f;
-    settings.acceleration = { 0.0f, 0.3f, 0.0f };   // la fumee monte doucement
+    settings.acceleration = { 0.6f, 0.3f, 0.0f };
     settings.drag = 0.6f;
     settings.sizeStart = 0.5f;
     settings.sizeEnd = 1.2f;

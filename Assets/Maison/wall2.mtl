@@ -31,6 +31,16 @@ Ni 1.500000
 d 1.000000
 illum 1
 
+newmtl Material_#243.002
+Ns 20.000006
+Ka 1.000000 1.000000 1.000000
+Kd 0.588000 0.588000 0.588000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+
 newmtl Material_#409.011
 Ns 20.000006
 Ka 1.000000 1.000000 1.000000
@@ -38,8 +48,8 @@ Ks 0.000000 0.000000 0.000000
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 illum 1
-map_Kd C:/Users/mlemaire/Downloads/medieval-watchtower-house/source/Watchtowe_Sketchfab_Upload/Watchtowe_Sketchfab_Upload/Textures/Watchtower_Assets_TMap.tga
-map_d C:/Users/mlemaire/Downloads/medieval-watchtower-house/source/Watchtowe_Sketchfab_Upload/Watchtowe_Sketchfab_Upload/Textures/Watchtower_Assets_TMap.tga
+map_Kd assets.png
+map_d assets.png
 
 newmtl Material_#560.001
 Ns 20.000006
