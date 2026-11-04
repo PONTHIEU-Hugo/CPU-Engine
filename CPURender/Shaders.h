@@ -22,4 +22,7 @@ extern const Shader RefractionShader;
 extern const Shader ShadowLambertShader;
 
 // Rendu d'animation des vagues d'eau
+// Rendu basique de vagues arrondis
 extern const Shader SinWavesShader;
+// Rendu plus réaliste utilisant les vagues de Gerstner
+extern const Shader GerstnerWavesShader;

@@ -10,6 +10,7 @@
 
 struct Texture;
 struct Mesh;
+struct WaveData;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
@@ -64,9 +65,11 @@ struct Uniforms
     float shadowBiasSlope = 0.0f;
 
     // Vagues
-    float time, k, w, amplitude;
-    glm::vec2 waveDirection;
-    glm::vec3 scale, translation;
+    float time = 0.f;
+    glm::vec3 scale{ 1, 1, 1 };
+    glm::vec3 translation{ 0, 0, 0 };
+    WaveData* waveDatas = nullptr;
+    uint8_t waveNumber = 0;
 };
 
 enum class CullMode { None, Back, Front };

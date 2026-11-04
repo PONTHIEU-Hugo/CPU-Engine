@@ -5,33 +5,42 @@
 
 OceanWaves::OceanWaves()
 {
-	m_Material.shader = &SinWavesShader;
+	m_Material.shader = &GerstnerWavesShader;
 
-	m_Material.specular = 0.01f;
+	//m_Material.transparent = true;
+	//m_Material.baseColor.a = 128.f;
+
+	m_Material.specular = 0.5f;
 	m_Material.roughness = 0.3f;
-	m_Material.amplitude = 5.f;
 
 	GenerateMesh({ 15, 5 });
-	SetWaveNumber(1);
-	SetOrientation({ -0.5f, 0.5f });
 }
 
-void OceanWaves::SetWaveNumber(size_t waveNumber)
+void OceanWaves::AddWave(glm::vec2 dir, float amplitude, float sharpness, float lambda)
 {
-	m_WaveNumber = waveNumber;
-	UpdateLambda();
-}
+	dir = glm::normalize(dir);
+	sharpness = std::clamp(sharpness, 0.f, 1.f);
 
-void OceanWaves::SetOrientation(glm::vec2 newDir)
-{
-	m_Dir = glm::normalize(newDir);
-	m_Material.direction = m_Dir;
-	UpdateLambda();
-}
+	if (lambda == 0.f)
+	{
+		std::runtime_error("Lambda wave can't be 0)");
+		exit(-1);
+	}
 
-void OceanWaves::SetAmplitude(float newAmplitude)
-{
-	m_Material.amplitude = newAmplitude;
+	float k = glm::two_pi<float>() / lambda;
+
+	m_Waves.push_back({
+		k,
+		std::sqrt(_gravity * k),
+		amplitude,
+		sharpness,
+		dir
+		});
+	m_Material.waveDatas = m_Waves.data();
+	m_Material.waveNumber = static_cast<size_t>(m_Waves.size());
+
+	m_Mesh.localBounds.min -= glm::vec3(amplitude);
+	m_Mesh.localBounds.max += glm::vec3(amplitude);
 }
 
 void OceanWaves::GenerateMesh(glm::ivec2 size)
@@ -79,29 +88,4 @@ void OceanWaves::GenerateMesh(glm::ivec2 size)
 	}
 	m_Mesh.ComputeBounds();
 	m_Size = size;
-}
-
-void OceanWaves::UpdateLambda()
-{
-	float x = std::abs(m_Size.x * m_Dir.x);
-	float y = std::abs(m_Size.y * m_Dir.y);
-	m_Material.lambda = (x + y) / static_cast<float>(m_WaveNumber); // Distance entre les vagues
-}
-
-void OceanWaves::AdaptColor(Vertex& rVertex)
-{
-	// Blue colors
-
-	glm::vec4 color;
-	if (rVertex.position.y > 0.6)
-		color = ToColor(0x5CB5E1);
-	else if (rVertex.position.y > 0.55)
-		color = ToColor(0x3EA4F0);
-	else if (rVertex.position.y > 0.35)
-		color = ToColor(0x5D97E7);
-	else
-		color = ToColor(0x416BDF);
-
-	color.a = 255;
-	rVertex.color = color;
 }

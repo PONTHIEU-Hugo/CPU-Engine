@@ -2,6 +2,7 @@
 #include "Mesh.h"
 #include "Material.h"
 #include "Transform.h"
+#include "WaveData.h"
 
 class OceanWaves
 {
@@ -10,22 +11,16 @@ public:
 	Material m_Material;
 
 private:
-	size_t m_WaveNumber;
 	glm::ivec2 m_Size;
-	glm::vec2 m_Dir;
+	std::vector<WaveData> m_Waves;
+
+	static constexpr float _gravity = 9.81f;
 
 public:
 	OceanWaves();
 	~OceanWaves() = default;
 
-	void SetWaveNumber(size_t waveNumber);
-	void SetOrientation(glm::vec2 newDir);
-	void SetAmplitude(float newAmplitude);
+	void AddWave(glm::vec2 dir, float amplitude, float sharpness, float lambda);
 
 	void GenerateMesh(glm::ivec2 size);
-
-private:
-	void UpdateLambda();
-
-	void AdaptColor(Vertex& rVertex);
 };

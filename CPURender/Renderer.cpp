@@ -335,10 +335,9 @@ void Renderer::DrawObject(const RenderObject& object, const Uniforms& base, cons
 	uniforms.shininess = ShininessFromRoughness(material.roughness);
 	
 	uniforms.time = static_cast<float>(CHRONO->GetTotalTime());
-	uniforms.k = glm::two_pi<float>() / material.lambda;
-	uniforms.w = 1.f * static_cast<float>(uniforms.time);
-	uniforms.amplitude = material.amplitude;
-	uniforms.waveDirection = material.direction;
+	//uniforms.w = 1.f * static_cast<float>(uniforms.time);
+	uniforms.waveDatas = material.waveDatas;
+	uniforms.waveNumber = material.waveNumber;
 	uniforms.scale = object.transform->GetScale();
 	uniforms.translation = object.transform->GetPosition();
 

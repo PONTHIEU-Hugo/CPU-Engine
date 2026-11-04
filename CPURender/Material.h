@@ -27,9 +27,8 @@ struct Material
 	
 	bool transparent = false;
 
-	float lambda = 0.f;
-	float amplitude = 0.f;
-	glm::vec2 direction = { 0.f, 0.f };
+	WaveData* waveDatas = nullptr;	// ptr on array of waves
+	uint8_t waveNumber = 0;			// number of wave => number of element in waves array
 };
 
 inline float ShininessFromRoughness(float roughness)

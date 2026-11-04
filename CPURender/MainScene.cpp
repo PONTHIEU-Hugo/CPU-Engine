@@ -69,19 +69,19 @@ void MainScene::Init()
 	//ObjectId cube = Add(m_cubeMesh, m_defaultMaterial);
 	//Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
 
-	m_car = Add(m_carMesh, m_carMaterial, true,
-		new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
-			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
-	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
+	//m_car = Add(m_carMesh, m_carMaterial, true,
+	//	new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	//m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
+	//		new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	//m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
+	// 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
 	//Add(m_cubeMesh, m_cubeMaterial, true,
 	// 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
 	//Add(m_groundMesh, m_groundMaterial, false);
 	
-	Transform* carT = Get(m_car).transform;
-	Get(m_wheelAr).transform->SetParent(carT);
-	Get(m_wheelAv).transform->SetParent(carT);
+	//Transform* carT = Get(m_car).transform;
+	//Get(m_wheelAr).transform->SetParent(carT);
+	//Get(m_wheelAv).transform->SetParent(carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
@@ -99,14 +99,15 @@ void MainScene::Init()
 	//ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
 	//Get(terrainID).transform->SetPosition({ 0, -5, 0 });
 
-	m_Ocean.GenerateMesh({ 500, 500 });
-	m_Ocean.SetWaveNumber(3);
-	m_Ocean.SetOrientation({ -1.5f, 1.f });
-	m_Ocean.SetAmplitude(2.5f);
-	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material);
+	m_Ocean.GenerateMesh({ 100, 100 });
+	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);   // houle principale
+	m_Ocean.AddWave({ 1.0f, -0.2f }, 1.2f, 0.7f, 25.0f);   // houle secondaire
+	m_Ocean.AddWave({ 0.7f,  0.7f }, 0.6f, 0.6f, 15.0f);   // mer du vent
+	m_Ocean.AddWave({ 1.0f,  0.8f }, 0.3f, 0.5f, 9.0f);   // clapot
+	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material, false);
 	RenderObject& ocean = Get(m_OceanID);
 	ocean.transform->SetPosition({ 0, -3, 0 });
-	ocean.transform->SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.5f);
+	ocean.transform->SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.1f);
 	
 	// Systèmes
 	LoadSkybox();
@@ -118,9 +119,9 @@ void MainScene::Init()
 	m_sparkle.Init();
 
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
-	AddEmitter(m_smoke);
+	//AddEmitter(m_smoke);
 	//AddEmitter(m_snow);
-	AddEmitter(m_sparkle);
+	//AddEmitter(m_sparkle);
 }
 
 void MainScene::Update(float _dt)
@@ -190,12 +191,12 @@ void MainScene::HandleEvent(float _dt)
 	if (keys[SDL_SCANCODE_KP_MULTIPLY])
 	{
 		m_OceanAmplitude++;
-		m_Ocean.SetAmplitude(m_OceanAmplitude);
+		//m_Ocean.SetAmplitude(m_OceanAmplitude);
 	}
 	else if(keys[SDL_SCANCODE_KP_DIVIDE])
 	{
 		m_OceanAmplitude--;
-		m_Ocean.SetAmplitude(m_OceanAmplitude);
+		//m_Ocean.SetAmplitude(m_OceanAmplitude);
 	}
 
 	if (keys[SDL_SCANCODE_KP_8])
