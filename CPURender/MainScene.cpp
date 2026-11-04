@@ -51,8 +51,8 @@ void MainScene::Init()
 	// 	m_cubeMaterial.texture = &m_cubeTexture;
 
 	m_carMaterial = m_defaultMaterial;
-	m_carMaterial.baseColor.a = 255 / 2;
-	m_carMaterial.transparent = true;
+	m_carMaterial.baseColor.a = 255;
+	m_carMaterial.transparent = false;
 	if (m_carTexture.IsValid()) 
 		m_carMaterial.texture = &m_carTexture;
 
@@ -95,9 +95,8 @@ void MainScene::Init()
 	sun.shadowCasterExtra = 30.0f;
 	sun.shadowFocus       = camera->GetPosition();
 
-	//m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);	
-	//ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
-	//Get(terrainID).transform->SetPosition({ 0, -5, 0 });
+	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.25f, 20.0);	
+	Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial())).transform->SetPosition({ 0, 0, 0 });
 
 	m_Ocean.GenerateMesh({ 100, 100 });
 	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);   // houle principale
@@ -119,8 +118,8 @@ void MainScene::Init()
 	m_sparkle.Init();
 
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
-	//AddEmitter(m_smoke);
-	//AddEmitter(m_snow);
+	AddEmitter(m_smoke);
+	AddEmitter(m_snow);
 	//AddEmitter(m_sparkle);
 }
 
@@ -128,6 +127,8 @@ void MainScene::Update(float _dt)
 {
 	camera->HandleEvent(_dt);
 	HandleEvent(_dt);
+
+	Get(m_skybox).transform->SetPosition(camera->GetPosition());
 
 	const glm::vec3 exhaustLocalOffset(1.7f, 1.3f, 9.2f);
 	const glm::mat4& carWorld = Get(m_car).transform->GetWorldMatrix();
@@ -148,12 +149,21 @@ void MainScene::Update(float _dt)
 
 void MainScene::LoadSkybox()
 {
-    skybox.faces[0].Load("Assets/right.jpg");
-    skybox.faces[1].Load("Assets/left.jpg");
-    skybox.faces[2].Load("Assets/top.jpg");
-    skybox.faces[3].Load("Assets/bottom.jpg");
-    skybox.faces[4].Load("Assets/front.jpg");
-    skybox.faces[5].Load("Assets/back.jpg");
+	m_skyboxMesh = GeometryFactory::BuildSkybox();
+
+	cubemap.faces[0].Load("Assets/right.jpg");
+	cubemap.faces[1].Load("Assets/left.jpg");
+	cubemap.faces[2].Load("Assets/top.jpg");
+	cubemap.faces[3].Load("Assets/bottom.jpg");
+	cubemap.faces[4].Load("Assets/front.jpg");
+	cubemap.faces[5].Load("Assets/back.jpg");
+
+	m_skyboxMaterial.cubeMap = &cubemap;
+	m_skyboxMaterial.cull = CullMode::None;
+	m_skyboxMaterial.isSkybox = true;
+	m_skyboxMaterial.shader = &SkyboxShader;
+
+	m_skybox = Add(m_skyboxMesh, m_skyboxMaterial, false);
 }
 
 void MainScene::HandleEvent(float _dt)

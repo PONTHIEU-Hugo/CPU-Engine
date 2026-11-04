@@ -12,6 +12,7 @@ extern const Shader TintShader;
 extern const Shader BasicShader;
 extern const Shader TextureShader;
 extern const Shader ParticleShader;
+extern const Shader SkyboxShader;
 
 // Texture (ou couleur des sommets) eclairee par la lumiere directionnelle des Uniforms.
 // Necessite des normales dans les sommets (voir GeometryFactory::CalculateNormals). 

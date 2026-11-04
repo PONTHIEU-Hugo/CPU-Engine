@@ -7,46 +7,87 @@
 
 void MaterialScene::Init()
 {
+    m_planeMesh     = GeometryFactory::BuildPlane();
     m_sphereMesh    = GeometryFactory::BuildUVSphere(16, 16);
-    m_sphereIcoMesh    = GeometryFactory::BuildIcosphere(5);
-    m_cubeMesh      = GeometryFactory::BuildCube();
+    m_sphereIcoMesh = GeometryFactory::BuildCube();
+    m_donutMesh      = GeometryFactory::BuildDonut(0.5f, 0.3f, 32, 16);
     
-    // Add(m_sphereMesh, m_defaultMaterial, true,
-    //     new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_planeMesh, m_defaultMaterial, true,
+         new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
+    Add(m_sphereMesh, m_rockMaterial, true,
+         new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     Add(m_sphereIcoMesh, m_sheetMaterial, true,
         new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    // Add(m_cubeMesh, m_defaultMaterial, true,
-    //     new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    Add(m_donutMesh, m_barkMaterial, true,
+         new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
     
-    m_defaultMaterial.shader = &ShadowLambertShader;
-    m_texture.Load("Assets/rock/albedo.png");
-    m_normalMap.Load("Assets/rock/normal.png");
-    m_arm.Load("Assets/rock/arm.png");
-    m_ao.Load("Assets/rock/ao.png");
-    m_metalness.Load("Assets/rock/metalness.png");
-    m_roughness.Load("Assets/rock/roughness.png");
+    m_texture.Load("Assets/rock1k/albedo.png");
+    m_normalMap.Load("Assets/rock1k/normal.png");
+    m_arm.Load("Assets/rock1k/arm.png");
+    m_displacement.Load("Assets/rock1k/displacement.png");
     
-    m_defaultMaterial.texture      = &m_texture;
+    m_texture4.Load("Assets/grass/albedo.png");
+    m_normalMap4.Load("Assets/grass/normal.png");
+    m_arm4.Load("Assets/grass/arm.png");
+    m_displacement4.Load("Assets/grass/displacement.png");
     
-    m_sheetMaterial                = m_defaultMaterial;
-    m_sheetMaterial.armMap         = &m_arm;
-    m_sheetMaterial.specular       = 1.0f;
+    m_texture2.Load("Assets/sheet/albedo.png");
+    m_normalMap2.Load("Assets/sheet/normal.png");
+    m_arm2.Load("Assets/sheet/arm.png");
+    m_displacement2.Load("Assets/sheet/displacement.png");
     
-    m_sheetMaterial.normalMap    = &m_normalMap;
-    m_sheetMaterial.normalFlipY  = true;
+    m_texture3.Load("Assets/bark/albedo.png");
+    m_normalMap3.Load("Assets/bark/normal.png");
+    m_arm3.Load("Assets/bark/arm.png");
+    m_displacement3.Load("Assets/bark/displacement.png");
     
+    m_defaultMaterial.shader                = &ShadowLambertShader;
+    m_defaultMaterial.texture               = &m_texture4;
+    m_defaultMaterial.normalMap             = &m_normalMap4;
+    m_defaultMaterial.normalFlipY           = true;
+    m_defaultMaterial.armMap                = &m_arm4;
+    m_defaultMaterial.displacementMap       = &m_displacement4;
+    m_defaultMaterial.displacementScale     = 0.1f;
+    
+    m_rockMaterial.shader                   = &ShadowLambertShader;
+    m_rockMaterial.texture                  = &m_texture;
+    m_rockMaterial.normalMap                = &m_normalMap;
+    m_rockMaterial.armMap                   = &m_arm;
+    m_rockMaterial.displacementMap          = &m_displacement;
+    m_rockMaterial.displacementScale        = 0.5f;
+    m_rockMaterial.normalFlipY              = true;
+    
+    m_sheetMaterial.shader                  = &ShadowLambertShader;
+    m_sheetMaterial.texture                 = &m_texture2;
+    m_sheetMaterial.normalMap               = &m_normalMap2;
+    m_sheetMaterial.armMap                  = &m_arm2;
+    m_sheetMaterial.displacementMap         = &m_displacement2;
+    m_sheetMaterial.displacementScale       = 0.01f;
+    m_sheetMaterial.displacementPixelEdge   = 4.0f;
+    m_sheetMaterial.normalFlipY             = true;
+    
+    m_barkMaterial.shader                   = &ShadowLambertShader;
+    m_barkMaterial.texture                  = &m_texture3;
+    m_barkMaterial.normalMap                = &m_normalMap3;
+    m_barkMaterial.armMap                   = &m_arm3;
+    m_barkMaterial.displacementMap          = &m_displacement3;
+    m_barkMaterial.displacementScale        = 0.05f;
+    m_barkMaterial.displacementPixelEdge    = 4.0f;
+    m_barkMaterial.specular                 = 1.0f;
+    m_barkMaterial.normalFlipY              = true;
     
     float aspect = float(WIDTH) / float(HEIGHT);
     camera = new Camera({0.0f, 0.0f, 1.0f}, nullptr);
     camera->SetPerspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
     m_transforms.push_back(&camera->transform);
 
-    sun.direction         = glm::vec3(-0.5f, -1.0f, -0.3f);
-    sun.ambient           = 0.1f;
-    sun.shadowRadius      = 50.0f;
-    sun.shadowCasterExtra = 30.0f;
-    sun.shadowFocus       = camera->GetPosition();
+    sun.direction           = glm::vec3(-0.5f, -1.0f, -0.3f);
+    sun.ambient             = 0.8f;
+    sun.shadowRadius        = 50.0f;
+    sun.shadowCasterExtra   = 30.0f;
+    sun.color            = {255.0f, 255.0f, 255.0f};
+    sun.shadowFocus         = camera->GetPosition();
     
     LoadSkybox();
 }
@@ -62,12 +103,7 @@ void MaterialScene::Update(float _dt)
 
 void MaterialScene::LoadSkybox()
 {
-    skybox.faces[0].Load("Assets/skybox/de_dust2/right.png");
-    skybox.faces[1].Load("Assets/skybox/de_dust2/left.png");
-    skybox.faces[2].Load("Assets/skybox/de_dust2/top.png");
-    skybox.faces[3].Load("Assets/skybox/de_dust2/bottom.png");
-    skybox.faces[4].Load("Assets/skybox/de_dust2/front.png");
-    skybox.faces[5].Load("Assets/skybox/de_dust2/back.png");
+    
 }
 
 void MaterialScene::HandleEvent(float _dt)

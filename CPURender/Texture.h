@@ -27,7 +27,8 @@ struct Texture
 
 	glm::vec4 Sample(glm::vec2 uv) const { return Sample(uv, 0.0f); }
 	glm::vec4 Sample(glm::vec2 uv, float lod) const;      
-	glm::vec4 SampleLevel(int level, glm::vec2 uv) const; 
+	glm::vec4 SampleLevel(int level, glm::vec2 uv) const;
+	float SampleHeightBilinear(glm::vec2 uv, int level = 0) const;
 };
 
 #endif // !TEXTURE_H_INCLUDED

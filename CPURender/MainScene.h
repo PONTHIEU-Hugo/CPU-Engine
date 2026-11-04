@@ -26,6 +26,7 @@ private:
     Mesh     m_wheelAvMesh;
     Mesh     m_wheelArMesh;
     Mesh     m_groundMesh;
+    Mesh     m_skyboxMesh;
     Texture  m_carTexture;
     Texture  m_cubeTexture;
 
@@ -33,10 +34,12 @@ private:
     Material m_cubeMaterial;
     Material m_carMaterial;
     Material m_groundMaterial;
+    Material m_skyboxMaterial;
     
     ObjectId m_car = 0;
     ObjectId m_wheelAr = -1;
     ObjectId m_wheelAv = -1;
+    ObjectId m_skybox;
 
     bool     m_pWasDown = false;
 

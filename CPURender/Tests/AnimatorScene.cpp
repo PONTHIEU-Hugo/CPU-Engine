@@ -12,7 +12,7 @@ void AnimatorScene::Init()
     m_anim = new Animation("Assets/dance2.dae", &m_model);
     m_animator = new Animator(m_anim);
 
-    m_groundMesh = GeometryFactory::BuildSquare();
+    m_groundMesh = GeometryFactory::BuildPlane();
     Add(m_groundMesh, m_groundMaterial, true,
             new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
     
@@ -46,16 +46,6 @@ void AnimatorScene::Update(float _dt)
 {
     Scene::Update(_dt);
     camera->HandleEvent(_dt);
-}
-
-void AnimatorScene::LoadSkybox()
-{
-    skybox.faces[0].Load("Assets/right.jpg");
-    skybox.faces[1].Load("Assets/left.jpg");
-    skybox.faces[2].Load("Assets/top.jpg");
-    skybox.faces[3].Load("Assets/bottom.jpg");
-    skybox.faces[4].Load("Assets/front.jpg");
-    skybox.faces[5].Load("Assets/back.jpg");
 }
 
 void AnimatorScene::HandleEvent(float _dt)

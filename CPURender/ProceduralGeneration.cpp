@@ -249,7 +249,10 @@ Generation* Generation_Algorithm::PerlinOctave(glm::ivec2 size, double scale, in
 				frequency *= 2.0;
 			}
 			
-			pGeneration->height[i][j] = ((total / maxValue) + 1) * 0.5;
+			double result = ((total / maxValue) + 1) * 0.5;
+			pGeneration->min = std::min(pGeneration->min, result);
+			pGeneration->max = std::max(pGeneration->max, result);
+			pGeneration->height[i][j] = result;
 		}
 	}
 	pGeneration->size = glm::vec3(size.x, size.y, 1.f);

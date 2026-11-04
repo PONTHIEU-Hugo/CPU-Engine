@@ -11,6 +11,7 @@
 struct Texture;
 struct Mesh;
 struct WaveData;
+struct CubeMap;
 
 // out du vertex shader / in du pixel shader (position clipSpace).
 struct Varyings
@@ -35,6 +36,7 @@ struct Uniforms
     const Texture* texture = nullptr;
     glm::vec4 baseColor = { 255.0f, 255.0f, 255.0f, 255.0f };
     glm::vec3 lightDirection = { 0.0f, -1.0f, 0.0f };
+	glm::vec3 lightColor	 = { 255.0f, 255.0f, 255.0f};
     float ambient = 0.2f;
 
     // Reflet speculaire (Phong)
@@ -56,6 +58,15 @@ struct Uniforms
 	const Texture* roughnessMap	= nullptr;
 	const Texture* metalnessMap = nullptr;
 	const Texture* armMap = nullptr;
+
+    const CubeMap* cubeMap = nullptr;
+	
+	// displacement
+	const Texture* displacementMap = nullptr;
+	float displacementScale = 0.0f;
+	float displacementMidpoint = 0.5f;
+	float displacementPixelEdge = 8.0f;
+	float tessPixelEdge = 0.0f;
 	
     // Ombres
     glm::mat4 lightVP{ 1.0f };
@@ -88,8 +99,8 @@ class Pipeline
 {
 public:
 	// Clusters 
-	static constexpr int TILES_X = 4;
-	static constexpr int TILES_Y = 4;
+	static constexpr int TILES_X = 16;
+	static constexpr int TILES_Y = 9;
 	static constexpr int TILE_COUNT = TILES_X * TILES_Y;
 
 	Pipeline();
@@ -137,8 +148,12 @@ private:
 	{
 		Varyings  varyings[3];        
 		glm::vec3 screenPos[3] = { glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(0.0f) };
-		float     invArea = 1;     
-		int       minX, maxX, minY, maxY = 0;  
+        float invW[3] = { 0.0f, 0.0f, 0.0f };
+		float invArea = 1;     
+        int minX = 0;
+        int maxX = 0;
+        int minY = 0;
+        int maxY = 0;
 	};
 
 	struct ThreadBins
@@ -147,10 +162,14 @@ private:
 		std::vector<int>            bins[TILE_COUNT];  
 	};
 
+	
 	bool SetupTriangle(const Varyings& a, const Varyings& b, const Varyings& c, ScreenTriangle& out) const;
 	void BinTriangle(const ScreenTriangle& tri, int index, ThreadBins& local) const;
 	void RasterizeInTile(const ScreenTriangle& tri, int tileX0, int tileY0, int tileX1, int tileY1);
-
+	int  ComputeTessLevel(const std::vector<Vertex>& world) const;
+	void TessellateTriangle(const Vertex& a, const Vertex& b, const Vertex& c, int N, std::vector<Vertex>& out) const;
+	
+	std::vector<Vertex> m_worldVertices, m_tessVertices;
     const Mesh* m_mesh = nullptr;
 
     VertexShader m_vertexShader;
