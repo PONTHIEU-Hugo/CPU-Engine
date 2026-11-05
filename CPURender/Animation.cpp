@@ -6,9 +6,29 @@
 #include <assimp/postprocess.h>
 #include <filesystem>
 
-Animation::Animation(const std::string& animationPath, Model* model)
+static const aiNode* FindMeshNode(const aiNode* n)
+{
+    if (n->mNumMeshes > 0) return n;
+    for (unsigned i = 0; i < n->mNumChildren; i++)
+        if (const aiNode* r = FindMeshNode(n->mChildren[i])) return r;
+    return nullptr;
+}
+
+static void BindMeshToBone(Mesh& mesh, int boneID)
+{
+    mesh.skin.assign(mesh.vertices.size(), VertexSkin{});
+    for (auto& s : mesh.skin)
+    {
+        for (int i = 0; i < MAX_BONE_INFLUENCE; ++i) { s.boneIDs[i] = -1; s.weights[i] = 0.0f; }
+        s.boneIDs[0] = boneID;
+        s.weights[0] = 1.0f;
+    }
+}
+
+Animation::Animation(const std::string& animationPath, Model* model, Mesh* staticMesh)
 {
     Assimp::Importer importer;
+    importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, false);
     const aiScene* scene = importer.ReadFile(animationPath, aiProcess_Triangulate);
 
     if (!scene || !scene->mRootNode)
@@ -28,6 +48,26 @@ Animation::Animation(const std::string& animationPath, Model* model)
     m_TicksPerSecond = animation->mTicksPerSecond != 0.0 ? (float)animation->mTicksPerSecond : 25.0f;
     ReadHeirarchyData(m_RootNode, scene->mRootNode);
     ReadMissingBones(animation, *model);
+
+    if (staticMesh && !staticMesh->IsSkinned())
+    {
+        const aiNode* meshNode = FindMeshNode(scene->mRootNode);
+        if (!meshNode) { printf("Animation: aucun nœud portant un mesh\n"); return; }
+
+        auto& boneInfoMap = model->GetBoneInfoMap();
+        int&  boneCount   = model->GetBoneCount();
+        std::string name  = meshNode->mName.data;
+
+        if (boneInfoMap.find(name) == boneInfoMap.end())
+        {
+            BoneInfo info;
+            info.id = boneCount++;
+            info.offset = glm::mat4(1.0f);
+            boneInfoMap[name] = info;
+            m_BoneInfoMap = boneInfoMap;
+        }
+        BindMeshToBone(*staticMesh, boneInfoMap[name].id);
+    }
 }
 
 Bone* Animation::FindBone(const std::string& name)
@@ -49,10 +89,12 @@ void Animation::ReadMissingBones(const aiAnimation* animation, Model& model)
     auto& boneInfoMap = model.GetBoneInfoMap();//getting m_BoneInfoMap from Model class
     int& boneCount = model.GetBoneCount(); //getting the m_BoneCounter from Model class
 
+    
     //reading channels(bones engaged in an animation and their keyframes)
     for (int i = 0; i < size; i++)
     {
         auto channel = animation->mChannels[i];
+        printf("canal: %s\n", channel->mNodeName.data);
         std::string boneName = channel->mNodeName.data;
 
         if (boneInfoMap.find(boneName) == boneInfoMap.end())

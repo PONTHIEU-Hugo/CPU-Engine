@@ -5,6 +5,91 @@
 #include "../GeometryFactory.hpp"
 #include "../Shaders.h"
 
+void Boat::Init(Scene& scene)
+{
+    barqueMesh   = GeometryFactory::LoadGeometry("Assets/boat/barque.obj");
+    supportMesh  = GeometryFactory::LoadGeometry("Assets/boat/support.obj");
+    floorMesh    = GeometryFactory::LoadGeometry("Assets/boat/floor.obj");
+    nappeMesh    = GeometryFactory::LoadGeometry("Assets/boat/nappe.obj");
+    cabineMesh   = GeometryFactory::LoadGeometry("Assets/boat/cabine.obj");
+    motorMesh    = GeometryFactory::LoadGeometry("Assets/boat/motor.obj");
+    
+    glm::vec3 posBoat = glm::vec3(0.0f, -5.5f, 17.5f);
+    glm::vec3 scaleBoat = glm::vec3(0.5f, 0.5f, 0.5f);
+    
+    ObjectId barqueID = scene.Add(barqueMesh, barqueMaterial, true,
+         new Transform(posBoat, {1,0,0,0}, scaleBoat));
+    ObjectId supportID = scene.Add(supportMesh, supportMaterial, true,
+         new Transform(glm::vec3(0.0f), {1,0,0,0}, glm::vec3(1.0f)));
+    ObjectId floorID = scene.Add(floorMesh, floorMaterial, true,
+        new Transform(glm::vec3(0.0f), {1,0,0,0}, glm::vec3(1.0f)));
+    ObjectId nappeID = scene.Add(nappeMesh, nappeMaterial, true,
+         new Transform(glm::vec3(0.0f), {1,0,0,0}, glm::vec3(1.0f)));
+    ObjectId cabineID = scene.Add(cabineMesh, cabineMaterial, true,
+         new Transform(glm::vec3(0.0f), {1,0,0,0}, glm::vec3(1.0f)));
+    ObjectId motorID = scene.Add(motorMesh, motorMaterial, true,
+         new Transform(glm::vec3(0.0f), {1,0,0,0}, glm::vec3(1.0f)));
+    
+    RenderObject& barque = scene.Get(barqueID);
+    m_transform = barque.transform;
+    RenderObject& support = scene.Get(supportID);
+    support.transform->SetParent(m_transform);
+    RenderObject& floor = scene.Get(floorID);
+    floor.transform->SetParent(m_transform);
+    RenderObject& nappe = scene.Get(nappeID);
+    nappe.transform->SetParent(m_transform);
+    RenderObject& cabine = scene.Get(cabineID);
+    cabine.transform->SetParent(m_transform);
+    RenderObject& motor = scene.Get(motorID);
+    motor.transform->SetParent(m_transform);
+    
+    m_transform->SetYawPitchRoll(glm::vec3(glm::pi<float>() / 2.0f, 0.0f, 0.0f));
+    Texture* barqueTexture = new Texture();
+    barqueTexture->Load("Assets/boat/textures/Image_0.png");
+    Texture* barqueNormal = new Texture();
+    barqueNormal->Load("Assets/boat/textures/Image_1.png");
+     
+    Texture* supportTexture = new Texture();
+    supportTexture->Load("Assets/boat/textures/Image_8.png");
+    
+    Texture* floorTexture = new Texture();
+    floorTexture->Load("Assets/boat/textures/Image_5.png");
+    Texture* floorNormal = new Texture();
+    floorNormal->Load("Assets/boat/textures/Image_6.png");
+    
+    Texture* nappeTexture = new Texture();
+    nappeTexture->Load("Assets/boat/textures/Image_4.png");
+    
+    Texture* cabineTexture = new Texture();
+    cabineTexture->Load("Assets/boat/textures/Image_9.png");
+    
+    Texture* motorTexture = new Texture();
+    motorTexture->Load("Assets/boat/textures/Image_7.png");
+    
+    barqueMaterial.shader             = &ShadowLambertShader;
+    barqueMaterial.texture            = barqueTexture;
+    barqueMaterial.normalMap          = barqueNormal;
+    barqueMaterial.normalFlipY        = true;
+    
+    supportMaterial.shader            = &ShadowLambertShader;
+    supportMaterial.texture           = supportTexture;
+    floorMaterial.shader              = &ShadowLambertShader;
+    floorMaterial.texture             = floorTexture;
+    floorMaterial.normalMap           = floorNormal;
+    floorMaterial.normalFlipY         = true;
+    nappeMaterial.shader              = &ShadowLambertShader;
+    nappeMaterial.texture             = nappeTexture;
+    cabineMaterial.shader             = &ShadowLambertShader;
+    cabineMaterial.texture            = cabineTexture;
+    motorMaterial.shader              = &ShadowLambertShader;
+    motorMaterial.texture             = motorTexture;
+    
+}
+
+void Boat::TurnAround(float _dt)
+{
+    m_transform->OrbitAroundAxis(m_transform->GetUp(), glm::pi<float>() / 32.0f * _dt, 17.5f);
+}
 
 void RenduScene::SetWeather(Weather w)
 {
@@ -42,19 +127,44 @@ void RenduScene::SetWeather(Weather w)
         cloud.emissionRate = 35.0f;
         cloud.colorStart   = { 185, 190, 200, 110 };
         cloud.colorEnd     = { 150, 155, 165, 100 };
-        snow.emissionRate  = 2000.0f;
+        snow.emissionRate  = 200.0f;
         break;
     }
 }
 
 void RenduScene::Init()
 {
-    m_ground              = GeometryFactory::BuildPlane();
+    m_boat.Init(*this);
+    
+    m_ground            = GeometryFactory::BuildPlane();
     m_roof              = GeometryFactory::LoadGeometry("Assets/Maison/roof2.obj");
     m_wallOfRock        = GeometryFactory::LoadGeometry("Assets/Maison/wall2.obj");
     m_wallOfConcrete    = GeometryFactory::LoadGeometry("Assets/Maison/concrete2.obj");
     m_wood              = GeometryFactory::LoadGeometry("Assets/Maison/wood2.obj");
     m_assets            = GeometryFactory::LoadGeometry("Assets/Maison/asset2.obj");
+    
+    m_dolphin = m_dolphinModel.Load("Assets/boat/dolphin.fbx"); 
+    m_animDolphin = new Animation("Assets/boat/dolphin.fbx", &m_dolphinModel, &m_dolphin);
+    m_animator = new Animator(m_animDolphin);
+    
+    m_dolphinMaterial.shader = &ShadowLambertShader;
+    m_dolphinMaterial.baseColor = glm::vec4(100.0f, 100.0f, 100.0f, 255.0f);
+    
+    const float dolphinScale = 0.0025f;
+    ObjectId id = Add(m_dolphin, m_dolphinMaterial, true,
+        new Transform(glm::vec3(-25.0f, -6.5f, 0.0f), {1,0,0,0}, glm::vec3(dolphinScale)));
+    ObjectId id2 = Add(m_dolphin, m_dolphinMaterial, true,
+    new Transform(glm::vec3(-2.0f, 0.0f, 1.5f) / dolphinScale, {1,0,0,0}, glm::vec3(1.0f)));
+    ObjectId id3 = Add(m_dolphin, m_dolphinMaterial, true,
+        new Transform(glm::vec3(-4.0f, 0.0f, 0.0f) / dolphinScale, {1,0,0,0}, glm::vec3(1.0f)));
+    
+    Get(id).animator = m_animator; 
+    Get(id3).animator = m_animator;
+    m_dolphinTransform = Get(id).transform;
+    m_dolphinTransform->SetYawPitchRoll({glm::pi<float>() * 2 / 2.0f, 0.0f, 0.0f});
+    
+    Get(id2).transform->SetParent(m_dolphinTransform);
+    Get(id3).transform->SetParent(m_dolphinTransform);
     
     Add(m_ground, m_groundMaterial, true,
          new Transform(glm::vec3(0.0f, -10.0f, 0.0f), {1,0,0,0}, glm::vec3(256.0f)));
@@ -72,64 +182,81 @@ void RenduScene::Init()
     m_assetsID = Add(m_assets, m_assetMaterial, true,
          new Transform(posHouse, {1,0,0,0}, scaleHouse));
     
+    Texture* roofTexture = new Texture();
+    roofTexture->Load("Assets/roof/albedo.png");
     
-    m_roofTexture.Load("Assets/roof/albedo.png");
-    m_normalMapRoof.Load("Assets/roof/normal.png");
-    m_armRoof.Load("Assets/roof/arm.png");
-    m_displacementRoof.Load("Assets/roof/displacement.png");
+    Texture* normalMapRoof = new Texture();
+    normalMapRoof->Load("Assets/roof/normal.png");
+    Texture* armRoof = new Texture();
+    armRoof->Load("Assets/roof/arm.png");
+    Texture* displacementRoof = new Texture();
+    displacementRoof->Load("Assets/roof/displacement.png");
     
-    m_rockTexture.Load("Assets/rock1k/albedo.png");
-    m_normalMapRock.Load("Assets/rock1k/normal.png");
-    m_armRock.Load("Assets/rock1k/arm.png");
-    m_displacementRock.Load("Assets/rock1k/displacement.png");
+    Texture* rockTexture = new Texture();
+    rockTexture->Load("Assets/rock1k/albedo.png");
+    Texture* normalMapRock = new Texture();
+    normalMapRock->Load("Assets/rock1k/normal.png");
+    Texture* armRock = new Texture();
+    armRock->Load("Assets/rock1k/arm.png");
+    Texture* displacementRock = new Texture();
+    displacementRock->Load("Assets/rock1k/displacement.png");
     
-    m_concreteTexture.Load("Assets/concrete/albedo.png");
-    m_normalMapConcrete.Load("Assets/concrete/normal.png");
-    m_armConcrete.Load("Assets/concrete/arm.png");
-    m_displacementConcrete.Load("Assets/concrete/displacement.png");
+    Texture* concreteTexture = new Texture();
+    concreteTexture->Load("Assets/concrete/albedo.png");
+    Texture* normalMapConcrete = new Texture();
+    normalMapConcrete->Load("Assets/concrete/normal.png");
+    Texture* armConcrete = new Texture();
+    armConcrete->Load("Assets/concrete/arm.png");
+    Texture* displacementConcrete = new Texture();
+    displacementConcrete->Load("Assets/concrete/displacement.png");
     
-    m_woodTexture.Load("Assets/maple/albedo.png");
-    m_normalMapWood.Load("Assets/maple/normal.png");
-    m_armWood.Load("Assets/maple/arm.png");
     
-    m_assetTexture.Load("Assets/Maison/assets.png");
+    Texture* woodTexture = new Texture();
+    woodTexture->Load("Assets/maple/albedo.png");
+    Texture* normalMapWood = new Texture();
+    normalMapWood->Load("Assets/maple/normal.png");
+    Texture* armWood = new Texture();
+    armWood->Load("Assets/maple/arm.png");
+    
+    Texture* assetTexture = new Texture();
+    assetTexture->Load("Assets/Maison/assets.png");
     
     m_groundMaterial.shader              = &ShadowLambertShader;
     m_groundMaterial.baseColor           = ToColor(0xC2B280);
     
     m_roofMaterial.shader                = &ShadowLambertShader;
-    m_roofMaterial.texture               = &m_roofTexture;
-    m_roofMaterial.normalMap             = &m_normalMapRoof;
-    m_roofMaterial.armMap                = &m_armRoof;
-    m_roofMaterial.displacementMap       = &m_displacementRoof;
+    m_roofMaterial.texture               = roofTexture;
+    m_roofMaterial.normalMap             = normalMapRoof;
+    m_roofMaterial.armMap                = armRoof;
+    m_roofMaterial.displacementMap       = displacementRoof;
     m_roofMaterial.displacementScale     = 0.1f;
     m_roofMaterial.normalFlipY           = true;
     
     m_rockMaterial.shader                   = &ShadowLambertShader;
-    m_rockMaterial.texture                  = &m_rockTexture;
-    m_rockMaterial.normalMap                = &m_normalMapRock;
-    m_rockMaterial.armMap                   = &m_armRock;
-    m_rockMaterial.displacementMap          = &m_displacementRock;
+    m_rockMaterial.texture                  = rockTexture;
+    m_rockMaterial.normalMap                = normalMapRock;
+    m_rockMaterial.armMap                   = armRock;
+    m_rockMaterial.displacementMap          = displacementRock;
     m_rockMaterial.displacementScale        = 0.5f;
     m_rockMaterial.normalFlipY              = true;
     
     m_concreteMaterial.shader               = &ShadowLambertShader;
-    m_concreteMaterial.texture              = &m_concreteTexture;
-    m_concreteMaterial.normalMap            = &m_normalMapConcrete;
-    m_concreteMaterial.armMap               = &m_armConcrete;
-    m_concreteMaterial.displacementMap      = &m_displacementConcrete;
+    m_concreteMaterial.texture              = concreteTexture;
+    m_concreteMaterial.normalMap            = normalMapConcrete;
+    m_concreteMaterial.armMap               = armConcrete;
+    m_concreteMaterial.displacementMap      = displacementConcrete;
     m_concreteMaterial.displacementScale    = 0.01f;
     m_concreteMaterial.normalFlipY          = true;
     
     m_woodMaterial.shader                   = &ShadowLambertShader;
-    m_woodMaterial.texture                  = &m_woodTexture;
-    m_woodMaterial.normalMap                = &m_normalMapWood;
-    m_woodMaterial.armMap                   = &m_armWood;
+    m_woodMaterial.texture                  = woodTexture;
+    m_woodMaterial.normalMap                = normalMapWood;
+    m_woodMaterial.armMap                   = armWood;
     m_woodMaterial.displacementScale        = 0.05f;
     m_woodMaterial.normalFlipY              = true;
     
     m_assetMaterial.shader                   = &ShadowLambertShader;
-    m_assetMaterial.texture                  = &m_assetTexture;
+    m_assetMaterial.texture                  = assetTexture;
     
     m_Terrain.coneWeight = 0.1;
     m_Terrain.sharpness = 1.0;
@@ -163,14 +290,14 @@ void RenduScene::Init()
     sun.color            = {247, 202, 74};
     sun.shadowFocus         = camera->GetPosition();
     
-    m_snow = new SnowEmitter(10000000);
+    m_snow = new SnowEmitter(10000);
     m_snow->swayFrequency = 5.0f;
     m_snow->Init();
     m_snow->GetSettings().radius = m_Terrain.GetMesh().localBounds.max.x * scale * 2.0f;
     
     AddEmitter(*m_snow);
     
-    m_cloud = new CloudEmitter(50000);
+    m_cloud = new CloudEmitter(500);
     m_cloud->swayAmplitude = 0.15f;
     m_cloud->swayFrequency = 0.3f;
     m_cloud->Init();
@@ -188,10 +315,13 @@ void RenduScene::Update(float _dt)
     sun.shadowFocus = glm::vec3(cam.x, 0, cam.z);
     HandleEvent(_dt);
     
+    m_boat.TurnAround(_dt);
+    
     m_snow->SetOrigin(glm::vec3(0.0f, 20.0f, 0.0f));
     m_snow->Update(_dt);
     m_cloud->Update(_dt);
     
+    m_dolphinTransform->OrbitAroundAxis(m_dolphinTransform->GetUp(), glm::pi<float>() / 32.0f * -_dt, 25.0f);
     Scene::Update(_dt);
 }
 

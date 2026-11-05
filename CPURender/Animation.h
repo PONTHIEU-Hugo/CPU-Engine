@@ -20,14 +20,14 @@ class Animation
 public:
     Animation() = default;
 
-    Animation(const std::string& animationPath, Model* model);
+    Animation(const std::string& animationPath, Model* model, Mesh* staticMesh = nullptr);
 
     ~Animation() { }
 
     Bone* FindBone(const std::string& name);
     
-    float GetTicksPerSecond() { return m_TicksPerSecond; }
-    float GetDuration() { return m_Duration;}
+    float& GetTicksPerSecond() { return m_TicksPerSecond; }
+    float& GetDuration() { return m_Duration;}
     const AssimpNodeData& GetRootNode() { return m_RootNode; }
     const std::unordered_map<std::string,BoneInfo>& GetBoneIDMap() { return m_BoneInfoMap; }
 

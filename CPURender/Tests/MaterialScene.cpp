@@ -8,16 +8,16 @@
 void MaterialScene::Init()
 {
     m_planeMesh     = GeometryFactory::BuildPlane();
-    m_sphereMesh    = GeometryFactory::BuildUVSphere(16, 16);
+    m_sphereMesh    = GeometryFactory::BuildIcosphere(5);
     m_sphereIcoMesh = GeometryFactory::BuildCube();
-    m_donutMesh      = GeometryFactory::BuildDonut(0.5f, 0.3f, 32, 16);
+    m_donutMesh      = GeometryFactory::BuildDonut(0.5f, 0.2f, 32, 16);
     
-    Add(m_planeMesh, m_defaultMaterial, true,
-         new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
+    // Add(m_planeMesh, m_defaultMaterial, true,
+    //      new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
     Add(m_sphereMesh, m_rockMaterial, true,
          new Transform({2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-    Add(m_sphereIcoMesh, m_sheetMaterial, true,
-        new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+    // Add(m_sphereIcoMesh, m_sheetMaterial, true,
+    //     new Transform({0.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     Add(m_donutMesh, m_barkMaterial, true,
          new Transform({-2.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     
@@ -68,14 +68,16 @@ void MaterialScene::Init()
     m_sheetMaterial.normalFlipY             = true;
     
     m_barkMaterial.shader                   = &ShadowLambertShader;
-    m_barkMaterial.texture                  = &m_texture3;
-    m_barkMaterial.normalMap                = &m_normalMap3;
-    m_barkMaterial.armMap                   = &m_arm3;
-    m_barkMaterial.displacementMap          = &m_displacement3;
-    m_barkMaterial.displacementScale        = 0.05f;
-    m_barkMaterial.displacementPixelEdge    = 4.0f;
-    m_barkMaterial.specular                 = 1.0f;
+    // m_barkMaterial.texture                  = &m_texture3;
+    // m_barkMaterial.normalMap                = &m_normalMap3;
+    // m_barkMaterial.armMap                   = &m_arm3;
+    // m_barkMaterial.displacementMap          = &m_displacement3;
+    // m_barkMaterial.displacementScale        = 0.05f;
+    // m_barkMaterial.displacementPixelEdge    = 4.0f;
+    // m_barkMaterial.specular                 = 1.0f;
     m_barkMaterial.normalFlipY              = true;
+    m_barkMaterial.transparent              = true;
+    m_barkMaterial.baseColor              = {255.0f, 0.0f, 0.0f , 128.0f};
     
     float aspect = float(WIDTH) / float(HEIGHT);
     camera = new Camera({0.0f, 0.0f, 1.0f}, nullptr);
@@ -83,12 +85,13 @@ void MaterialScene::Init()
     m_transforms.push_back(&camera->transform);
 
     sun.direction           = glm::vec3(-0.5f, -1.0f, -0.3f);
-    sun.ambient             = 0.8f;
+    sun.ambient             = 0.4f;
     sun.shadowRadius        = 50.0f;
     sun.shadowCasterExtra   = 30.0f;
     sun.color            = {255.0f, 255.0f, 255.0f};
     sun.shadowFocus         = camera->GetPosition();
     
+    clearColor = ToColor(0x0b0f14);
     LoadSkybox();
 }
 

@@ -136,4 +136,29 @@ void Transform::LookAt(glm::vec3 _target)
 
 void Transform::OrbitAroundAxis(glm::vec3 _axis, float _angle, float _radius)
 {
+    if (glm::dot(_axis, _axis) < 1e-12f) return;
+    glm::vec3 axis = glm::normalize(_axis);
+
+    if (parent)
+        axis = glm::normalize(glm::inverse(parent->GetWorldRotation()) * axis);
+
+    const glm::vec3 along  = axis * glm::dot(position, axis);
+    glm::vec3       radial = position - along;
+
+    if (_radius > 0.0f)
+    {
+        if (glm::dot(radial, radial) < 1e-12f)
+        {
+            const glm::vec3 ref = (glm::abs(axis.y) < 0.99f) ? glm::vec3(0, 1, 0)
+                                                             : glm::vec3(1, 0, 0);
+            radial = glm::cross(axis, ref);
+        }
+        radial = glm::normalize(radial) * _radius;
+    }
+
+    const glm::quat q = glm::angleAxis(_angle, axis);
+    position = along + q * radial;
+    rotation = glm::normalize(q * rotation);
+
+    MakeDirty();
 }

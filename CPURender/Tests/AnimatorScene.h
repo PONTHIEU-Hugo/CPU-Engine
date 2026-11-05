@@ -21,6 +21,10 @@ private:
     Mesh        m_groundMesh;
     Animation*  m_anim = nullptr;
     Animator*   m_animator = nullptr;
+    Texture  m_carTexture;
+    Mesh     m_skyboxMesh;
+    ObjectId m_skybox = 0;
+    Material m_skyboxMaterial;
 };
 
 #endif

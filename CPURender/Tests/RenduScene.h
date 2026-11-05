@@ -7,6 +7,28 @@
 #include "../TerrainGenerator.h"
 #include "../OceanWaves.h"
 
+struct Boat
+{
+    void Init(Scene& scene);
+    void TurnAround(float _dt);
+    
+    Mesh barqueMesh;
+    Mesh supportMesh;
+    Mesh floorMesh;
+    Mesh nappeMesh;
+    Mesh cabineMesh;
+    Mesh motorMesh;
+    
+    Material barqueMaterial;
+    Material supportMaterial;
+    Material floorMaterial;
+    Material nappeMaterial;
+    Material cabineMaterial;
+    Material motorMaterial;
+    
+    Transform* m_transform = nullptr;
+};
+
 class RenduScene : public Scene
 {
 public:
@@ -21,6 +43,16 @@ private:
     enum class Weather { Clear, Cloudy, Snowy };
     
     void SetWeather(Weather w);
+    void BuildBoat();
+
+    Model m_dolphinModel;
+    Mesh m_dolphin;
+    Animation*  m_animDolphin = nullptr;
+    Animator*   m_animator = nullptr;
+    Material m_dolphinMaterial;
+    Transform* m_dolphinTransform = nullptr;
+    
+    Boat m_boat;
     
     Material m_groundMaterial;
     Material m_roofMaterial;
@@ -28,28 +60,6 @@ private:
     Material m_concreteMaterial;
     Material m_woodMaterial;
     Material m_assetMaterial;
-    
-    Texture  m_roofTexture;
-    Texture  m_rockTexture;
-    Texture  m_concreteTexture;
-    Texture  m_woodTexture;
-    Texture  m_assetTexture;
-    
-    Texture  m_normalMapRoof;
-    Texture  m_normalMapRock;
-    Texture  m_normalMapConcrete;
-    Texture  m_normalMapWood;
-    
-    Texture  m_armRoof;
-    Texture  m_displacementRoof;
-    
-    Texture  m_armRock;
-    Texture  m_displacementRock;
-    
-    Texture  m_armConcrete;
-    Texture  m_displacementConcrete;
-
-    Texture  m_armWood;
     
     Mesh     m_ground;
     Mesh     m_roof;
