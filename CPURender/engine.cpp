@@ -3,9 +3,9 @@
 #include <cstdio>
 
 #include "Chrono.h"
-#include "MainScene.h"
 #include "Shaders.h"
 #include "Tests/AnimatorScene.h"
+#include "Tests/MainScene.h"
 #include "Tests/MaterialScene.h"
 #include "Tests/ParticleScene.h"
 #include "Tests/RenduScene.h"
@@ -16,7 +16,7 @@ void Engine::init()
 	printf("Init engine \n");
 	m_renderer.Init(4096 );
 	m_renderer.showShadowDebug = false;
-	m_scene = new RenduScene();   // MainScene(), MaterialScene()... pour changer de scene
+	m_scene = new MainScene();   // MainScene(), MaterialScene(), AnimatorScene(), RenduScene()
 	m_scene->Init();
 }
 

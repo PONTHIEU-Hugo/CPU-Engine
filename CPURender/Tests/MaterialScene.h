@@ -15,14 +15,13 @@ private:
     Material m_defaultMaterial;
     Material m_rockMaterial;
     Material m_sheetMaterial;
-    Material m_barkMaterial;
+    Material m_refractMaterial;
+    Material m_skyboxMaterial;
     
     Texture  m_texture;
     Texture  m_normalMap;
     Texture  m_texture2;
     Texture  m_normalMap2;
-    Texture  m_texture3;
-    Texture  m_normalMap3;
     Texture  m_texture4;
     Texture  m_normalMap4;
     
@@ -31,12 +30,6 @@ private:
     Texture  m_metalness;
     Texture  m_roughness;
     Texture  m_displacement;
-    
-    Texture  m_arm3;
-    Texture  m_ao3;
-    Texture  m_metalness3;
-    Texture  m_roughness3;
-    Texture  m_displacement3;
     
     Texture  m_arm2;
     Texture  m_ao2;
@@ -49,8 +42,11 @@ private:
     
     Mesh     m_sphereMesh;
     Mesh     m_sphereIcoMesh;
-    Mesh     m_donutMesh;
+    Mesh     m_sphereRefractionMesh;
     Mesh     m_planeMesh;
+    Mesh     m_skyboxMesh;
+    
+    ObjectId m_skybox = 0;
 };
 
 

@@ -6,58 +6,25 @@
 #include <SDL3/SDL_events.h>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "Shaders.h"
-#include "GeometryFactory.hpp"
-
-static Mesh BuildGround(float y, float half)
-{
-	auto make = [&](float x, float z)
-	{
-		Vertex v;
-		v.position = { x, y, z };
-		v.normal   = { 0.0f, 1.0f, 0.0f };
-		v.color    = { 180.0f, 180.0f, 180.0f, 255.0f };
-		return v;
-	};
-	Vertex p0 = make(-half, half), p1 = make(half, half), p2 = make(half, -half), p3 = make(-half, -half);
-
-	Mesh mesh;
-	mesh.vertices = { p0, p1, p2, p0, p2, p3 };
-	mesh.ComputeBounds();
-	return mesh;
-}
+#include "../Shaders.h"
+#include "../GeometryFactory.hpp"
 
 void MainScene::Init()
 {
-    m_cubeMesh = GeometryFactory::BuildCube();
 	m_carMesh = GeometryFactory::LoadGeometry("Assets/car.obj");
 	m_wheelArMesh = GeometryFactory::LoadGeometry("Assets/wheelAr.obj");
 	m_wheelAvMesh = GeometryFactory::LoadGeometry("Assets/wheelAv.obj");
 	
 	m_carTexture.Load("Assets/vivien.png");
-	m_cubeTexture.Load("Assets/max.png");
-
-	const AABB& carBounds = m_carMesh.localBounds;
-	float carRadius = glm::length(carBounds.max - carBounds.min) * 0.5f;
-	m_groundMesh = BuildGround(carBounds.min.y, carRadius * 5.0f);
 
 	// Materiaux
 	m_defaultMaterial.shader = &ShadowLambertShader;
-	
-	m_cubeMaterial = m_defaultMaterial;
-	m_cubeMaterial.baseColor.a = 255;
-	m_cubeMaterial.transparent = false;
-	// if (m_cubeTexture.IsValid())
-	// 	m_cubeMaterial.texture = &m_cubeTexture;
 
 	m_carMaterial = m_defaultMaterial;
 	m_carMaterial.baseColor.a = 255;
 	m_carMaterial.transparent = false;
 	if (m_carTexture.IsValid()) 
 		m_carMaterial.texture = &m_carTexture;
-
-	m_groundMaterial      = m_defaultMaterial;
-	m_groundMaterial.cull = CullMode::None;
 
 	m_defaultMaterial.specular  = 0.8f;  
 	m_defaultMaterial.roughness = 0.3f;
@@ -66,22 +33,16 @@ void MainScene::Init()
 	m_carMaterial.roughness     = 0.4f;
 
 	// Scene 
-	//ObjectId cube = Add(m_cubeMesh, m_defaultMaterial);
-	//Get(cube).transform.SetPosition({ 0.0f, 0.5f, 0.0f });
-
-	//m_car = Add(m_carMesh, m_carMaterial, true,
-	//	new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	//m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
-	//		new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
-	//m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
-	// 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
-	//Add(m_cubeMesh, m_cubeMaterial, true,
-	// 		new Transform({-7.0f, 1.0f, 15.0f}, {1,0,0,0}, glm::vec3(5.0f)));
-	//Add(m_groundMesh, m_groundMaterial, false);
+	m_car = Add(m_carMesh, m_carMaterial, true,
+		new Transform({-10.0f, 0.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	m_wheelAr = Add(m_wheelArMesh, m_carMaterial, true,
+			new Transform({0.0f, 1.1f, 5.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	m_wheelAv = Add(m_wheelAvMesh, m_carMaterial, true,
+	 		new Transform({0.0f, 1.05f, -5.5f}, {1,0,0,0}, glm::vec3(1.0f)));
 	
-	//Transform* carT = Get(m_car).transform;
-	//Get(m_wheelAr).transform->SetParent(carT);
-	//Get(m_wheelAv).transform->SetParent(carT);
+	Transform* carT = Get(m_car).transform;
+	Get(m_wheelAr).transform->SetParent(carT);
+	Get(m_wheelAv).transform->SetParent(carT);
 	
 	float aspect = float(WIDTH) / float(HEIGHT);
 	camera = new Camera({0.0f, 4.5f, 3.0f}, nullptr);
@@ -96,22 +57,23 @@ void MainScene::Init()
 	sun.shadowFocus       = camera->GetPosition();
 
 	m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D);
-	RenderObject& rTerrain = Get(Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial()));
-
-	m_Ocean.GenerateMesh({ 100, 100 });
+	Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial(), true,
+		new Transform({0.0f, -1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+	
+	m_Ocean.GenerateMesh({ 250, 250 });
 	m_Ocean.AddWave({ 1.0f,  0.3f }, 2.0f, 0.8f, 40.0f);  
 	m_Ocean.AddWave({ 1.0f, -0.2f }, 1.2f, 0.7f, 25.0f);   
 	m_Ocean.AddWave({ 0.7f,  0.7f }, 0.6f, 0.6f, 15.0f);  
-	m_Ocean.AddWave({ 1.0f,  0.8f }, 0.3f, 0.5f, 9.0f);   // clapot
+	m_Ocean.AddWave({ 1.0f,  0.8f }, 0.3f, 0.5f, 9.0f);
 	m_OceanID = Add(m_Ocean.m_Mesh, m_Ocean.m_Material, false);
 	RenderObject& ocean = Get(m_OceanID);
-	ocean.transform->SetPosition({ 0, -3, 0 });
+	ocean.transform->SetPosition({ 0, -1.0f, 12.5f});
 	ocean.transform->SetScale(glm::vec3{ 0.5f, 0.5f, 0.5f } * 0.1f);
 	
 	// Systèmes
 	LoadSkybox();
 	
-	m_snow.groundHeight = m_groundMesh.localBounds.min.y;
+	m_snow.groundHeight = 20.0f;
 
 	m_smoke.Init();
 	m_snow.Init();
@@ -120,7 +82,7 @@ void MainScene::Init()
 	// Ordre de dessin : fumee et neige (alpha) puis etincelles (additif).
 	AddEmitter(m_smoke);
 	AddEmitter(m_snow);
-	//AddEmitter(m_sparkle);
+	AddEmitter(m_sparkle);
 }
 
 void MainScene::Update(float _dt)
@@ -135,7 +97,7 @@ void MainScene::Update(float _dt)
 	m_smoke.SetOrigin(glm::vec3(carWorld * glm::vec4(exhaustLocalOffset, 1.0f)));
 	m_smoke.Update(_dt);
 
-	const glm::vec3 roofLocalOffset(0.0f, 4.0f, 0.0f);
+	const glm::vec3 roofLocalOffset(0.0f, 10.0f, 0.0f);
 	m_sparkle.SetOrigin(glm::vec3(carWorld * glm::vec4(roofLocalOffset, 1.0f)));
 	m_sparkle.Update(_dt);
 
@@ -143,7 +105,7 @@ void MainScene::Update(float _dt)
 	m_snow.SetOrigin(cam + glm::vec3(0.0f, 20.0f, 0.0f));
 	m_snow.Update(_dt);
 
-	sun.shadowFocus = glm::vec3(cam.x, m_groundMesh.localBounds.min.y, cam.z);
+	sun.shadowFocus = glm::vec3(cam.x, 0.0f, cam.z);
 	Scene::Update(_dt);
 }
 

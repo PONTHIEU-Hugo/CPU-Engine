@@ -1,13 +1,13 @@
 ﻿#ifndef MAIN_SCENE_H_INCLUDED
 #define MAIN_SCENE_H_INCLUDED
 
-#include "Scene.h"
-#include "Texture.h"
-#include "TerrainGenerator.h"
-#include "OceanWaves.h"
-#include "SmokeEmitter.h"
-#include "SnowEmitter.h"
-#include "SparkleEmitter.h"
+#include "../Scene.h"
+#include "../Texture.h"
+#include "../TerrainGenerator.h"
+#include "../OceanWaves.h"
+#include "../SmokeEmitter.h"
+#include "../SnowEmitter.h"
+#include "../SparkleEmitter.h"
 
 class MainScene : public Scene
 {
@@ -20,20 +20,15 @@ public:
     void HandleEvent(float _dt) override;
     
 private:
-    
-    Mesh     m_cubeMesh;
     Mesh     m_carMesh;
     Mesh     m_wheelAvMesh;
     Mesh     m_wheelArMesh;
-    Mesh     m_groundMesh;
     Mesh     m_skyboxMesh;
     Texture  m_carTexture;
     Texture  m_cubeTexture;
 
     Material m_defaultMaterial;
-    Material m_cubeMaterial;
     Material m_carMaterial;
-    Material m_groundMaterial;
     Material m_skyboxMaterial;
     
     ObjectId m_car = 0;

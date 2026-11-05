@@ -8,23 +8,22 @@
 
 void AnimatorScene::Init()
 {
-    m_mesh = m_model.Load("Assets/boat/boat.fbx"); 
-    m_anim = new Animation("Assets/boat/boat.fbx", &m_model, &m_mesh);
+    m_mesh = m_model.Load("Assets/dance.fbx"); 
+    m_anim = new Animation("Assets/dance.fbx", &m_model);
     m_animator = new Animator(m_anim);
     
     m_groundMesh = GeometryFactory::BuildPlane();
     Add(m_groundMesh, m_groundMaterial, true,
-            new Transform({0.0f, -5.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
+        new Transform({0.0f, -2.0f, 0.0f}, {1,0,0,0}, glm::vec3(10.0f)));
     
-    // m_texture.Load("Assets/Character_Male_34.png");
+    m_texture.Load("Assets/Character_Male_34.png");
     m_material.shader = &ShadowLambertShader;
     
     m_groundMaterial = m_material;
-    // m_material.texture = &m_texture;
-    m_material.baseColor = glm::vec4(100.0f, 100.0f, 100.0f, 255.0f);
+    m_material.texture = &m_texture;
 
     ObjectId id = Add(m_mesh, m_material, true,
-        new Transform({0.0f, 0.76f, 0.0f}, {1,0,0,0}, glm::vec3(0.005f)));
+        new Transform({0.0f, -1.0f, 0.0f}, {1,0,0,0}, glm::vec3(1.0f)));
     Get(id).animator = m_animator; 
     
     float aspect = float(WIDTH) / float(HEIGHT);
@@ -45,12 +44,12 @@ void AnimatorScene::LoadSkybox()
 {
     m_skyboxMesh = GeometryFactory::BuildSkybox();
 
-    cubemap.faces[0].Load("Assets/right.png");
-    cubemap.faces[1].Load("Assets/left.png");
-    cubemap.faces[2].Load("Assets/top.png");
-    cubemap.faces[3].Load("Assets/bottom.png");
-    cubemap.faces[4].Load("Assets/front.png");
-    cubemap.faces[5].Load("Assets/back.png");
+    cubemap.faces[0].Load("Assets/right.jpg");
+    cubemap.faces[1].Load("Assets/left.jpg");
+    cubemap.faces[2].Load("Assets/top.jpg");
+    cubemap.faces[3].Load("Assets/bottom.jpg");
+    cubemap.faces[4].Load("Assets/front.jpg");
+    cubemap.faces[5].Load("Assets/back.jpg");
 
     m_skyboxMaterial.cubeMap = &cubemap;
     m_skyboxMaterial.cull = CullMode::None;
