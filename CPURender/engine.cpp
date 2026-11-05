@@ -14,7 +14,7 @@
 void Engine::init()
 {
 	printf("Init engine \n");
-	m_renderer.Init(4096);
+	m_renderer.Init(4096 );
 	m_renderer.showShadowDebug = false;
 	m_scene = new RenduScene();   // MainScene(), MaterialScene()... pour changer de scene
 	m_scene->Init();

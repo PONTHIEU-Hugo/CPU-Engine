@@ -49,10 +49,10 @@ void Camera::HandleEvent(float _dt)
     UpdateViewMatrix();
 }
 
-void Camera::SetOrthographic(glm::float32 w, glm::float32 h, glm::float32 nearZ, glm::float32 farZ)
+void Camera::SetOrthographic(glm::float32 left, glm::float32 right, glm::float32 bottom, glm::float32 top, glm::float32 nearZ, glm::float32 farZ)
 {
     m_type = ORTHOGRAPHIC;
-    m_proj = glm::ortho(-w * 0.5f, w * 0.5f, -h * 0.5f, h * 0.5f, nearZ, farZ);
+    m_proj = glm::ortho(left, right, bottom, top, nearZ, farZ);
     UpdateViewProj();
 }
 

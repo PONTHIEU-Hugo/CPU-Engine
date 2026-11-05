@@ -14,7 +14,7 @@ class Camera
 public:
     Camera(glm::vec3 const& pos, Transform* parent = nullptr);
     void HandleEvent(float _dt);
-    void SetOrthographic(glm::float32 viewWidth, glm::float32 viewHeight, glm::float32 nearZ, glm::float32 farZ);
+    void SetOrthographic(glm::float32 left, glm::float32 right, glm::float32 bottom, glm::float32 top, glm::float32 nearZ, glm::float32 farZ);
     void SetPerspective(glm::float32 fovAngleY, glm::float32 aspectRatio, glm::float32 nearZ, glm::float32 farZ);
 
     glm::mat4 const& GetMatrix()     const { return transform.GetWorldMatrix(); }

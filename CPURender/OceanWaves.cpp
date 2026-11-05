@@ -8,7 +8,7 @@ OceanWaves::OceanWaves()
 	m_Material.shader = &GerstnerWavesShader;
 
 	m_Material.transparent = true;
-	m_Material.baseColor.a = 128.f;
+	m_Material.baseColor.a = 200.f;
 
 	m_Material.specular = 0.5f;
 	m_Material.roughness = 0.3f;

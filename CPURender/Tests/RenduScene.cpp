@@ -263,7 +263,7 @@ void RenduScene::Init()
     m_Terrain.GenerateHeighmap(glm::vec2(50, 50), HeighMapType::_OCTAVE_PERLIN_2D, 0.25f, 0.2f, 1.0f, true);	
     ObjectId terrainID = Add(m_Terrain.GetMesh(), m_Terrain.GetMaterial());
     Transform* transformTerrain = Get(terrainID).transform;
-    transformTerrain->SetPosition({ 0, 0, 0 });
+    transformTerrain->SetPosition({ 0, -0.9, 0 });
     float scale = 10.0f;
     transformTerrain->SetScale(glm::vec3(scale, scale, scale));
     
@@ -278,8 +278,14 @@ void RenduScene::Init()
     m_oceanTransform->SetPosition({ 0, -6.0f, 0 });
     
     float aspect = float(WIDTH) / float(HEIGHT);
-    camera = new Camera(glm::vec3(30.0f, 30.0f, 30.0f), nullptr);
-    camera->SetPerspective(glm::radians(45.0f), aspect, 0.5f, 1000.0f);
+    float orthoHeight = 30.0f;                 
+    float orthoWidth  = orthoHeight * aspect;
+    camera = new Camera(glm::vec3(30.0f, 20.0f, 30.0f), nullptr);
+    camera->SetOrthographic( 
+        -orthoWidth  * 0.5f,  orthoWidth  * 0.5f,   // left, right
+        -orthoHeight * 0.5f,  orthoHeight * 0.5f,   // bottom, top
+        -500.0f, 500.0f); 
+    
     camera->transform.LookAt(transformTerrain->GetPosition());
     m_transforms.push_back(&camera->transform);
 
@@ -290,14 +296,14 @@ void RenduScene::Init()
     sun.color            = {247, 202, 74};
     sun.shadowFocus         = camera->GetPosition();
     
-    m_snow = new SnowEmitter(10000);
+    m_snow = new SnowEmitter(1000);
     m_snow->swayFrequency = 5.0f;
     m_snow->Init();
     m_snow->GetSettings().radius = m_Terrain.GetMesh().localBounds.max.x * scale * 2.0f;
     
     AddEmitter(*m_snow);
     
-    m_cloud = new CloudEmitter(500);
+    m_cloud = new CloudEmitter(50);
     m_cloud->swayAmplitude = 0.15f;
     m_cloud->swayFrequency = 0.3f;
     m_cloud->Init();
