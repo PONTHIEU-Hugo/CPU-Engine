@@ -94,8 +94,7 @@ void Boat::TurnAround(float _dt)
 void RenduScene::SetWeather(Weather w)
 {
     sun.direction = glm::normalize(glm::vec3(-0.15f, -1.0f, -0.1f)); 
-
-    auto& cloud = m_cloud->GetSettings();
+    
     auto& snow  = m_snow->GetSettings();
 
     switch (w)
@@ -104,9 +103,6 @@ void RenduScene::SetWeather(Weather w)
         sun.color   = { 255, 245, 230 };
         sun.ambient = 0.2f;
         clearColor    = { 120, 170, 230 };
-        cloud.emissionRate = 8.0f;
-        cloud.colorStart   = { 255, 255, 255, 90 };
-        cloud.colorEnd     = { 235, 240, 250, 70 };
         snow.emissionRate  = 0.0f;
         break;
 
@@ -114,9 +110,6 @@ void RenduScene::SetWeather(Weather w)
         sun.color   = { 175, 180, 190 };
         sun.ambient = 0.5f;
         clearColor    = { 165, 172, 182 };
-        cloud.emissionRate = 100.0f;
-        cloud.colorStart   = { 150, 155, 165, 110 };
-        cloud.colorEnd     = { 110, 115, 125, 100 };
         snow.emissionRate  = 0.0f;
         break;
 
@@ -124,9 +117,6 @@ void RenduScene::SetWeather(Weather w)
         sun.color   = { 150, 158, 170 };
         sun.ambient = 0.6f;
         clearColor    = { 190, 196, 205 };
-        cloud.emissionRate = 35.0f;
-        cloud.colorStart   = { 185, 190, 200, 110 };
-        cloud.colorEnd     = { 150, 155, 165, 100 };
         snow.emissionRate  = 200.0f;
         break;
     }
@@ -303,12 +293,13 @@ void RenduScene::Init()
     
     AddEmitter(*m_snow);
     
-    m_cloud = new CloudEmitter(50);
-    m_cloud->swayAmplitude = 0.15f;
-    m_cloud->swayFrequency = 0.3f;
-    m_cloud->Init();
-    m_cloud->SetOrigin({ 0.0f, 5.0f, 0.0f });
-    AddEmitter(*m_cloud);
+    m_smoke = new SmokeEmitter(5000);
+    m_smoke->settings.colorStart = glm::vec4(100.0f, 100.0f, 100.0f, 225.0f);
+    m_smoke->settings.acceleration = glm::vec3( -0.6f, 1.0f, 0.0f);
+    m_smoke->settings.lifeMax = 10.0f;
+    m_smoke->Init();
+    m_smoke->SetOrigin(posHouse + glm::vec3(0.0f, 5.0f, 0.0f));
+    AddEmitter(*m_smoke);
     
     SetWeather(Weather::Clear);
     LoadSkybox();
@@ -325,7 +316,7 @@ void RenduScene::Update(float _dt)
     
     m_snow->SetOrigin(glm::vec3(0.0f, 20.0f, 0.0f));
     m_snow->Update(_dt);
-    m_cloud->Update(_dt);
+    m_smoke->Update(_dt);
     
     m_dolphinTransform->OrbitAroundAxis(m_dolphinTransform->GetUp(), glm::pi<float>() / 32.0f * -_dt, 25.0f);
     Scene::Update(_dt);

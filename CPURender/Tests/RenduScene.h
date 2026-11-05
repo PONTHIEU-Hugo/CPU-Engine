@@ -6,6 +6,7 @@
 #include "../SnowEmitter.h"
 #include "../TerrainGenerator.h"
 #include "../OceanWaves.h"
+#include "../SmokeEmitter.h"
 
 struct Boat
 {
@@ -69,7 +70,7 @@ private:
     Mesh     m_assets;
     
     SnowEmitter*    m_snow = nullptr;
-    CloudEmitter*   m_cloud = nullptr;
+    SmokeEmitter*   m_smoke = nullptr;
     
     TerrainGenerator m_Terrain;
     ObjectId m_oceanID = 0;
